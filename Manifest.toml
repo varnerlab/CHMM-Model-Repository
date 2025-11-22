@@ -2221,9 +2221,9 @@ version = "0.15.8"
 
 [[deps.StringManipulation]]
 deps = ["PrecompileTools"]
-git-tree-sha1 = "725421ae8e530ec29bcbdddbe91ff8053421d023"
+git-tree-sha1 = "a3c1536470bf8c5e02096ad4853606d7c8f62721"
 uuid = "892a3eda-7b42-436c-8928-eab12a02cf0e"
-version = "0.4.1"
+version = "0.4.2"
 
 [[deps.StructArrays]]
 deps = ["ConstructionBase", "DataAPI", "Tables"]
@@ -2361,9 +2361,9 @@ version = "0.4.85"
 
 [[deps.Turing]]
 deps = ["ADTypes", "AbstractMCMC", "AbstractPPL", "Accessors", "AdvancedHMC", "AdvancedMH", "AdvancedPS", "AdvancedVI", "BangBang", "Bijectors", "Compat", "DataStructures", "Distributions", "DistributionsAD", "DocStringExtensions", "DynamicPPL", "EllipticalSliceSampling", "ForwardDiff", "Libtask", "LinearAlgebra", "LogDensityProblems", "MCMCChains", "NamedArrays", "Optimization", "OptimizationOptimJL", "OrderedCollections", "Printf", "Random", "Reexport", "SciMLBase", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "c58f03b93a9039107e0036705fe202f83ff062ed"
+git-tree-sha1 = "80d381cf351254b1de5f43be8abc2cffde74ad48"
 uuid = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
-version = "0.41.1"
+version = "0.41.3"
 
     [deps.Turing.extensions]
     TuringDynamicHMCExt = "DynamicHMC"
