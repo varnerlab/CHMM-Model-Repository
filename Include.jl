@@ -29,6 +29,7 @@ using Distances;
 using Dates;
 using Turing;
 using ProgressMeter;
+using SpecialFunctions;
 
 
 # include my codes -
