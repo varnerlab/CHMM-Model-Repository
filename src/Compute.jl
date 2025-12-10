@@ -284,15 +284,12 @@ function simulate_jumps_stationary(m::MyContinuousHiddenMarkovModelWithJumps, st
     boom_states = (n_states-2):n_states
     
     for i in 1:n_paths
-        # --- CHANGE IS HERE ---
-        # Instead of rand(m.states), we sample from the Stationary Distribution
-        current_state = sample(m.states, Weights(π_dist)) 
+        current_state = StatsBase.sample(m.states, StatsBase.Weights(π_dist)) 
         
         t = 1
         while t <= steps
             archive[t, i] = current_state
             
-            # (Jump Logic remains the same...)
             if rand() < m.ϵ
                 duration = rand(m.jump_distribution)
                 target_pool = (rand() < 0.5) ? crash_states : boom_states
@@ -300,6 +297,7 @@ function simulate_jumps_stationary(m::MyContinuousHiddenMarkovModelWithJumps, st
                 for _ in 1:duration
                     if t < steps
                         t += 1
+                        # Use standard rand() for unweighted sampling
                         current_state = rand(target_pool)
                         archive[t, i] = current_state
                     end
