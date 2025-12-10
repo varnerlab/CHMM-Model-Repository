@@ -81,6 +81,27 @@ mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
 end
 
 
+"""
+    mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
+
+Extends the Continuous HMM with a Poisson-driven jump mechanism.
+"""
+mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
+    
+    # Inherited Data (from Base Model)
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission::Dict{Int64, Normal}
+    
+    # Jump Parameters
+    ϵ::Float64   # Probability of a jump event starting
+    λ::Float64   # Mean duration of the jump (parameter for Poisson)
+    jump_distribution::Poisson
+
+    # Constructor
+    MyContinuousHiddenMarkovModelWithJumps() = new();
+end
+
 # A concrete type for the Student's t-distribution model
 struct StudentTModel <: AbstractDistributionModel end
 
