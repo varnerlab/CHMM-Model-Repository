@@ -138,3 +138,132 @@ function learn_distribution_mcmc(model_type::AbstractDistributionModel, returns:
     # 3. Return the resulting chain
     return chain
 end
+
+
+# --- Helper for Log Sum Exp ---
+function _logsumexp_vec(x)
+    m = maximum(x)
+    return m + log(sum(exp.(x .- m)))
+end
+
+"""
+    baum_welch(observations::Vector{Float64}, n_states::Int, max_iter::Int=20, tol::Float64=1e-4)
+
+Runs the Expectation-Maximization algorithm to learn parameters for a Gaussian HMM.
+Returns: (TransitionMatrix, Means, Stds, InitProbs, LogLikelihoodHistory, Gamma)
+"""
+function baum_welch(obs::Vector{Float64}, n_states::Int; max_iter::Int=20, tol::Float64=1e-4)
+    
+    N = length(obs)
+    K = n_states
+    
+    # --- 1. ROBUST INITIALIZATION (Quantile Based) ---
+    # This logic was previously in your notebook
+    sorted_data = sort(obs)
+    chunk_size = floor(Int, N / K)
+    
+    curr_μ = zeros(K)
+    curr_σ = zeros(K)
+    
+    for s in 1:K
+        start_idx = (s - 1) * chunk_size + 1
+        end_idx = (s == K) ? N : (s * chunk_size)
+        data_subset = sorted_data[start_idx:end_idx]
+        
+        curr_μ[s] = mean(data_subset)
+        curr_σ[s] = std(data_subset)
+        if curr_σ[s] < 1e-6; curr_σ[s] = 1e-6; end
+    end
+
+    # Initialize T (Transition) and π (Start) uniformly or with diagonal dominance
+    curr_T = ones(K, K) ./ K
+    curr_π = ones(K) ./ K
+    
+    # Storage for history
+    ll_history = Float64[]
+    final_gamma = zeros(N, K)
+    
+    # --- 2. EM LOOP ---
+    prev_ll = -Inf
+    
+    for iter in 1:max_iter
+        # --- E-STEP ---
+        log_B = zeros(N, K)
+        for t in 1:N
+            for k in 1:K
+                d = Normal(curr_μ[k], curr_σ[k])
+                log_B[t, k] = logpdf(d, obs[t])
+            end
+        end
+        
+        # Forward (Alpha)
+        log_alpha = zeros(N, K)
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :]
+        for t in 2:N
+            for j in 1:K
+                 log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j]
+            end
+        end
+        
+        # Backward (Beta)
+        log_beta = zeros(N, K)
+        # log_beta[N, :] is already 0.0 (log(1))
+        for t in N-1:-1:1
+            for i in 1:K
+                log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :]
+                log_beta[t, i] = _logsumexp_vec(log_terms)
+            end
+        end
+        
+        # Gamma
+        log_gamma = log_alpha .+ log_beta
+        γ = zeros(N, K)
+        for t in 1:N
+            γ[t, :] = exp.(log_gamma[t, :] .- _logsumexp_vec(log_gamma[t, :]))
+        end
+        
+        # Xi (Transitions)
+        expected_transitions = zeros(K, K)
+        for t in 1:N-1
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :])
+            for i in 1:K
+                for j in 1:K
+                    log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom
+                    expected_transitions[i, j] += exp(log_xi)
+                end
+            end
+        end
+        
+        # --- M-STEP ---
+        new_π = γ[1, :]
+        
+        for k in 1:K
+            w_sum = sum(γ[:, k])
+            if w_sum > 0
+                curr_μ[k] = sum(γ[:, k] .* obs) / w_sum
+                curr_σ[k] = sqrt(sum(γ[:, k] .* (obs .- curr_μ[k]).^2) / w_sum)
+                if curr_σ[k] < 1e-6; curr_σ[k] = 1e-6; end
+            end
+        end
+        
+        for i in 1:K
+            r_sum = sum(expected_transitions[i, :])
+            if r_sum > 0
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum
+            end
+        end
+        
+        # Check Convergence
+        current_ll = _logsumexp_vec(log_alpha[N, :])
+        push!(ll_history, current_ll)
+        
+        if abs(current_ll - prev_ll) < tol
+            final_gamma = γ
+            break
+        end
+        prev_ll = current_ll
+        final_gamma = γ
+    end
+    
+    return curr_T, curr_μ, curr_σ, curr_π, ll_history, final_gamma
+end
