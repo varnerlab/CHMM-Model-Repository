@@ -60,8 +60,30 @@ mutable struct MyHiddenMarkovModelWithJumps <: AbstractMarkovModel
 end
 
 
+"""
+    mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
+
+Represents a Hidden Markov Model with Gaussian (Normal) emissions trained via EM.
+"""
+mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
+    
+    # data
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    # CHANGE: Emission is now a Normal distribution, not Categorical
+    emission::Dict{Int64, Normal} 
+    
+    # We can store the EM history if we want
+    log_likelihood_history::Array{Float64,1}
+
+    # constructor
+    MyContinuousHiddenMarkovModel() = new();
+end
+
+
 # A concrete type for the Student's t-distribution model
 struct StudentTModel <: AbstractDistributionModel end
+
 
 # A concrete type for the Laplace distribution model
 struct LaplaceModel <: AbstractDistributionModel end
