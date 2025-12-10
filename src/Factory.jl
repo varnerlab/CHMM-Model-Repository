@@ -97,6 +97,42 @@ end
 
 
 """
+    build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)
+
+Builds and trains a Continuous HMM using the Baum-Welch algorithm on the provided observation data.
+data requires keys: `observations` (Vector{Float64}) and `number_of_states` (Int).
+"""
+function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::MyContinuousHiddenMarkovModel
+    
+    # 1. Extract settings
+    obs = data.observations
+    n_states = data.number_of_states
+    
+    # 2. Run the heavy lifting (Compute.jl)
+    T_matrix, μ_vec, σ_vec, π_vec, ll_hist, γ = baum_welch(obs, n_states)
+    
+    # 3. Initialize the struct
+    m = model()
+    m.states = collect(1:n_states)
+    m.log_likelihood_history = ll_hist
+    
+    # 4. Construct Dictionaries for Dispatch
+    transition = Dict{Int64, Categorical}()
+    emission = Dict{Int64, Normal}()
+    
+    for s in 1:n_states
+        transition[s] = Categorical(T_matrix[s, :])
+        emission[s] = Normal(μ_vec[s], σ_vec[s])
+    end
+    
+    m.transition = transition
+    m.emission = emission
+    
+    return m
+end
+
+
+"""
     build_turing_model(::StudentTModel, data)
 
 Builds the Turing.jl model for a Student's t-distribution.
