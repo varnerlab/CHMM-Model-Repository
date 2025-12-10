@@ -274,58 +274,45 @@ end
 
 Simulates paths where the system can 'teleport' to tail states based on a Poisson process.
 """
-function simulate_jumps(m::MyContinuousHiddenMarkovModelWithJumps, steps::Int, n_paths::Int)
+function simulate_jumps_stationary(m::MyContinuousHiddenMarkovModelWithJumps, steps::Int, n_paths::Int, π_dist::Vector{Float64})
     
     archive = Array{Int64, 2}(undef, steps, n_paths)
-    
-    # Define Tail States (Assumes states 1..N are sorted by return)
     n_states = length(m.states)
-    # Bottom 3 states (Deep Crash) and Top 3 states (Big Boom)
+    
+    # Define Tail States
     crash_states = 1:3
     boom_states = (n_states-2):n_states
     
     for i in 1:n_paths
-        # Initialize
-        current_state = rand(m.states) # Or sample from pi
-        t = 1
+        # --- CHANGE IS HERE ---
+        # Instead of rand(m.states), we sample from the Stationary Distribution
+        current_state = sample(m.states, Weights(π_dist)) 
         
+        t = 1
         while t <= steps
             archive[t, i] = current_state
             
-            # --- JUMP LOGIC ---
+            # (Jump Logic remains the same...)
             if rand() < m.ϵ
-                # A Jump Event has occurred! 
-                # 1. Determine Duration (How long do we stay in the regime?)
                 duration = rand(m.jump_distribution)
-                
-                # 2. Determine Direction (Crash vs Boom)
-                # Simple assumption: 50/50 split. 
-                # (You could bias this to 0.7 for crashes if you wanted 'leverage effect')
                 target_pool = (rand() < 0.5) ? crash_states : boom_states
                 
-                # 3. Execute the Jump
                 for _ in 1:duration
                     if t < steps
                         t += 1
-                        # Teleport: Ignore Transition Matrix, pick random tail state
                         current_state = rand(target_pool)
                         archive[t, i] = current_state
                     end
                 end
-                
             else
-                # --- NORMAL TRANSITION ---
                 if t < steps
                     t += 1
-                    # Use the standard Markov transition matrix
                     current_state = rand(m.transition[current_state])
-                    # No archive assignment here, it happens at start of loop
                 else
                     break
                 end
             end
         end
     end
-    
     return archive
 end
