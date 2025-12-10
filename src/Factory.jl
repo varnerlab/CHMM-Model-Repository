@@ -133,6 +133,31 @@ end
 
 
 """
+    build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedTuple)
+
+Wraps a trained `MyContinuousHiddenMarkovModel` with jump parameters.
+Data requires keys: `base_model`, `epsilon`, `lambda`.
+"""
+function build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedTuple)::MyContinuousHiddenMarkovModelWithJumps
+    
+    base = data.base_model
+    
+    m = model()
+    # Copy trained parameters
+    m.states = base.states
+    m.transition = base.transition
+    m.emission = base.emission
+    
+    # Set jump parameters
+    m.ϵ = data.epsilon
+    m.λ = data.lambda
+    m.jump_distribution = Poisson(data.lambda)
+    
+    return m
+end
+
+
+"""
     build_turing_model(::StudentTModel, data)
 
 Builds the Turing.jl model for a Student's t-distribution.
