@@ -97,76 +97,124 @@ end
 
 
 """
-    build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)
+    build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple) -> MyContinuousHiddenMarkovModel
 
-Builds and trains a Continuous HMM using the Baum-Welch algorithm on the provided observation data.
-data requires keys: `observations` (Vector{Float64}) and `number_of_states` (Int).
+This `build` method constructs and trains a `MyContinuousHiddenMarkovModel` instance using the Baum-Welch algorithm. The model's emission probabilities are modeled by Normal distributions.
+
+### Arguments
+- `model::Type{MyContinuousHiddenMarkovModel}`: The type of model to build.
+- `data::NamedTuple`: The data for training the model.
+
+The `data` NamedTuple must contain the following keys:
+- `observations::Vector{Float64}`: A vector of floating-point observations.
+- `number_of_states::Int`: The number of hidden states in the model.
+
+### Returns
+- A fully trained `MyContinuousHiddenMarkovModel` instance with transition and emission distributions learned from the data.
 """
 function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::MyContinuousHiddenMarkovModel
     
-    # 1. Extract settings
+    # Extract training data and model configuration from the data NamedTuple
     obs = data.observations
     n_states = data.number_of_states
     
-    # 2. Run the heavy lifting (Compute.jl)
+    # Run the Baum-Welch algorithm to estimate model parameters
+    # This is the core training step, yielding the transition matrix, and emission distribution parameters (μ, σ)
     T_matrix, μ_vec, σ_vec, π_vec, ll_hist, γ = baum_welch(obs, n_states)
     
-    # 3. Initialize the struct
+    # Initialize an empty model instance
     m = model()
+
+    # Populate the model with the learned parameters
     m.states = collect(1:n_states)
     m.log_likelihood_history = ll_hist
     
-    # 4. Construct Dictionaries for Dispatch
+    # Create dictionaries to hold the transition and emission distributions for each state
     transition = Dict{Int64, Categorical}()
     emission = Dict{Int64, Normal}()
     
+    # For each state, create a Categorical distribution for transitions and a Normal distribution for emissions
     for s in 1:n_states
         transition[s] = Categorical(T_matrix[s, :])
         emission[s] = Normal(μ_vec[s], σ_vec[s])
     end
     
+    # Assign the distribution dictionaries to the model
     m.transition = transition
     m.emission = emission
     
+    # Return the trained model
     return m
 end
 
 
 """
-    build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedTuple)
+    build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedTuple) -> MyContinuousHiddenMarkovModelWithJumps
 
-Wraps a trained `MyContinuousHiddenMarkovModel` with jump parameters.
-Data requires keys: `base_model`, `epsilon`, `lambda`.
+Builds a `MyContinuousHiddenMarkovModelWithJumps` instance by wrapping a pre-trained continuous HMM with jump parameters.
+
+### Arguments
+- `model::Type{MyContinuousHiddenMarkovModelWithJumps}`: The type of model to build.
+- `data::NamedTuple`: The data required to build the jump model.
+
+The `data` NamedTuple must contain the following keys:
+- `base_model::MyContinuousHiddenMarkovModel`: A trained continuous HMM.
+- `epsilon::Float64`: The probability of a jump occurring.
+- `lambda::Float64`: The rate parameter for the Poisson distribution that models the number of jumps.
+
+### Returns
+- A `MyContinuousHiddenMarkovModelWithJumps` instance that incorporates the behavior of the base model with an added jump process.
 """
 function build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedTuple)::MyContinuousHiddenMarkovModelWithJumps
     
-    base = data.base_model
+    # Extract the pre-trained base model and jump parameters from the data
+    base_model = data.base_model
+    epsilon = data.epsilon
+    lambda = data.lambda
     
+    # Initialize an empty model instance for the jump-diffusion HMM
     m = model()
-    # Copy trained parameters
-    m.states = base.states
-    m.transition = base.transition
-    m.emission = base.emission
+
+    # Copy the parameters from the trained base model
+    m.states = base_model.states
+    m.transition = base_model.transition
+    m.emission = base_model.emission
     
-    # Set jump parameters
-    m.ϵ = data.epsilon
-    m.λ = data.lambda
-    m.jump_distribution = Poisson(data.lambda)
+    # Set the jump-specific parameters
+    m.ϵ = epsilon
+    m.λ = lambda
+    m.jump_distribution = Poisson(lambda) # The number of jumps is modeled as a Poisson process
     
+    # Return the fully constructed jump-diffusion model
     return m
 end
 
 
 """
-    build_turing_model(::StudentTModel, data)
+    build_turing_model(::StudentTModel, data::Vector{Float64})
 
-Builds the Turing.jl model for a Student's t-distribution.
+Builds a Turing.jl probabilistic model for data assumed to follow a Student's t-distribution. This is useful for Bayesian inference of the distribution's parameters.
+
+### Arguments
+- `::StudentTModel`: A type instance to dispatch to this method.
+- `data::Vector{Float64}`: A vector of observations.
+
+### Returns
+- A Turing model instance, ready for sampling/inference.
+
+### Model Priors
+- `σ`: Scale parameter (standard deviation), drawn from a truncated Cauchy distribution. This is a weakly informative prior.
+- `μ`: Location parameter (mean), drawn from a Normal distribution centered at 0.
+- `ν`: Degrees of freedom, drawn from an Exponential distribution. This prior favors smaller values of `ν`, accommodating heavy tails.
 """
 function build_turing_model(::StudentTModel, data)
     @model function student_t_model(obs)
-        σ ~ Distributions.Truncated(Distributions.Cauchy(0, 1), 0, Inf)
-        μ ~ Distributions.Normal(0, 0.1)
-        ν ~ Distributions.Exponential(1/30.0)
+        # Priors for the distribution parameters
+        σ ~ Distributions.Truncated(Distributions.Cauchy(0, 1), 0, Inf) # Scale parameter
+        μ ~ Distributions.Normal(0, 0.1)      # Location parameter
+        ν ~ Distributions.Exponential(1/30.0) # Degrees of freedom
+
+        # Likelihood: The observations are modeled as a scaled and shifted Student's t-distribution
         obs .~ Distributions.TDist(ν) * σ .+ μ
     end
     return student_t_model(data)
@@ -174,14 +222,28 @@ end
 
 
 """
-    build_turing_model(::LaplaceModel, data)
+    build_turing_model(::LaplaceModel, data::Vector{Float64})
 
-Builds the Turing.jl model for a Laplace distribution.
+Builds a Turing.jl probabilistic model for data assumed to follow a Laplace (double exponential) distribution.
+
+### Arguments
+- `::LaplaceModel`: A type instance to dispatch to this method.
+- `data::Vector{Float64}`: A vector of observations.
+
+### Returns
+- A Turing model instance, ready for sampling/inference.
+
+### Model Priors
+- `μ`: Location parameter (mean), drawn from a Normal distribution centered at 0.
+- `b`: Scale parameter, drawn from an Exponential distribution.
 """
 function build_turing_model(::LaplaceModel, data)
     @model function laplace_model(obs)
-        μ ~ Distributions.Normal(0, 0.1)
-        b ~ Distributions.Exponential(1.0)
+        # Priors for the distribution parameters
+        μ ~ Distributions.Normal(0, 0.1)  # Location parameter
+        b ~ Distributions.Exponential(1.0) # Scale parameter
+
+        # Likelihood: The observations are modeled as a Laplace distribution
         obs .~ Distributions.Laplace(μ, b)
     end
     return laplace_model(data)
