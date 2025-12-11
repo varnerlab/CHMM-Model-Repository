@@ -78,7 +78,7 @@ mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
     # data
     states::Array{Int64,1}
     transition::Dict{Int64, Categorical}
-    # CHANGE: Emission is now a Normal distribution, not Categorical
+    # Emission here is a Normal distribution, not Categorical
     emission::Dict{Int64, Normal} 
     
     # We can store the EM history if we want
