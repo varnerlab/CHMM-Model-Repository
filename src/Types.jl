@@ -63,7 +63,15 @@ end
 """
     mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
 
-Represents a Hidden Markov Model with Gaussian (Normal) emissions trained via EM.
+The `MyContinuousHiddenMarkovModel` mutable struct represents a hidden Markov model (HMM) with continuous states and Gaussian emissions.
+
+### Required fields
+- `states::Array{Int64,1}`: The states of the model
+- `transition::Dict{Int64, Categorical}`: The transition matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Categorical` distribution
+- `emission::Dict{Int64, Normal}`: The emission matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Normal` distribution
+- `log_likelihood_history::Array{Float64,1}`: The log likelihood history of the model
+### Constructor
+- `MyContinuousHiddenMarkovModel()`: Creates a new instance of the `MyContinuousHiddenMarkovModel` struct.
 """
 mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
     
@@ -84,7 +92,17 @@ end
 """
     mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
 
-Extends the Continuous HMM with a Poisson-driven jump mechanism.
+The `MyContinuousHiddenMarkovModelWithJumps` mutable struct represents a hidden Markov model (HMM) with continuous states, Gaussian emissions and jump probabilities.
+
+### Required fields
+- `states::Array{Int64,1}`: The states of the model
+- `transition::Dict{Int64, Categorical}`: The transition matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Categorical` distribution
+- `emission::Dict{Int64, Normal}`: The emission matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Normal` distribution
+- `ϵ::Float64`: The jump probability
+- `λ::Float64`: The jump distribution parameter
+- `jump_distribution::Poisson`: The jump distribution
+### Constructor
+- `MyContinuousHiddenMarkovModelWithJumps()`: Creates a new instance of the `MyContinuousHiddenMarkovModelWithJumps` struct.
 """
 mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
     
@@ -101,6 +119,7 @@ mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
     # Constructor
     MyContinuousHiddenMarkovModelWithJumps() = new();
 end
+
 
 # A concrete type for the Student's t-distribution model
 struct StudentTModel <: AbstractDistributionModel end
