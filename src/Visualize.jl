@@ -1,5 +1,5 @@
 """
-    plot_acf_comparison(observed::Vector, simulated::Vector, title_text::String, random_index::Int; is_absolute::Bool=false)
+    plot_acf_comparison(observed::Vector, simulated::Vector, title_text::String, random_index::Int; is_absolute::Bool=false, L::Int=252)
 
 Plots the autocorrelation function (ACF) for an observed time series and a single simulated time series on the same graph.
 
@@ -9,16 +9,17 @@ Plots the autocorrelation function (ACF) for an observed time series and a singl
 - `title_text::String`: The title for the plot.
 - `random_index::Int`: The index of the simulated path, used for the legend.
 - `is_absolute::Bool=false`: (Keyword) If `true`, the ACF of the absolute values of the series is plotted to show volatility clustering. Defaults to `false`.
+- `L::Int=252`: (Keyword) The maximum lag to calculate the autocorrelation for. Defaults to 252 (approx. 1 trading year).
 
 ### Returns
 - `Plots.Plot`: The generated plot object.
 """
-function plot_acf_comparison(observed::Vector, simulated::Vector, title_text::String, random_index::Int; is_absolute::Bool=false)
+function plot_acf_comparison(observed::Vector, simulated::Vector, title_text::String, random_index::Int; is_absolute::Bool=false, L::Int=252)
 
     data_obs = is_absolute ? abs.(observed) : observed
     data_sim = is_absolute ? abs.(simulated) : simulated
 
-    L = 252
+    # L is now passed as a keyword argument (default 252)
     τ = 1:(L-1)
     ci = 2.576 / sqrt(length(data_obs))
 
@@ -39,4 +40,4 @@ function plot_acf_comparison(observed::Vector, simulated::Vector, title_text::St
     ylabel!(p, "Autocorrelation (AU)")
 
     return p
-end;
+end

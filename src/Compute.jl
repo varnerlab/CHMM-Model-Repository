@@ -1,3 +1,17 @@
+# --- PRIVATE METHODS --------------------------------------------------------- #
+
+function _logsumexp_vec(x::Array{Float64,1})::Float64
+    m = maximum(x);
+    return m + log(sum(exp.(x .- m)));
+end
+
+# -- Discrete Simulations (Legacy) --
+
+"""
+    _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64) -> Array{Int64,1}
+
+Private method: Simulates a single path of hidden states for the Discrete HMM.
+"""
 function _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
 
     # initialize -
@@ -12,6 +26,11 @@ function _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64)::Array{In
     return chain;
 end
 
+"""
+    _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64) -> Array{Int64,1}
+
+Private method: Simulates a single path of hidden states for the Discrete HMM with Jumps.
+"""
 function _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64)::Array{Int64,1}
 
     # initialize -
@@ -21,36 +40,35 @@ function _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64):
     counter = 2;
 
     # main -
-    jump_state = start;
     while (counter ≤ steps)
         
         if (rand() < m.ϵ)
 
-            # # jump: find the next state. It is lowest probability state from here
+            # jump: find the next state.
             number_of_jumps = rand(m.jump_distribution);
             number_of_states = length(m.states);
             bottom_states = [1,2,3]; # super bad
             top_states = [number_of_states-2,number_of_states-1,number_of_states]; # super good
  
-            @show number_of_jumps
-
             for _ ∈ 1:number_of_jumps
-                if (rand() < 0.52)
-                    tmp_chain[counter] = rand(bottom_states) # a jump transition to bottom states
-                else
-                    tmp_chain[counter] = rand(top_states) # a jump transition to top states
+                if (counter ≤ steps)
+                    if (rand() < 0.52)
+                        tmp_chain[counter] = rand(bottom_states);
+                    else
+                        tmp_chain[counter] = rand(top_states);
+                    end
+                    counter += 1;
                 end
-                counter += 1;
             end
         else
-            tmp_chain[counter] = rand(m.transition[jump_state]); # a normal transition
-            counter += 1; # increment counter
+            # normal transition -
+            current_state = tmp_chain[counter-1];
+            tmp_chain[counter] = rand(m.transition[current_state]);
+            counter += 1;
         end
-
-        jump_state = tmp_chain[counter-1]; # get the last state
     end
 
-    # populate the chain from tmp_chain -
+    # fill the chain -
     for i ∈ 1:steps
         chain[i] = tmp_chain[i];
     end
@@ -59,37 +77,92 @@ function _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64):
     return chain;
 end
 
-(m::MyHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps); 
-(m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps); 
+# -- Continuous Simulations (New) --
 
-# function log_growth_matrix(dataset::Dict{String, DataFrame}, 
-#     firms::Array{String,1}; Δt::Float64 = (1.0/252.0), risk_free_rate::Float64 = 0.0, 
-#     testfirm="AAPL", keycol::Symbol = :volume_weighted_average_price)::Array{Float64,2}
+"""
+    _simulate(m::MyContinuousHiddenMarkovModel, start::Int64, steps::Int64) -> Array{Int64,1}
 
-#     # initialize -
-#     number_of_firms = length(firms);
-#     number_of_trading_days = nrow(dataset[testfirm]);
-#     return_matrix = Array{Float64,2}(undef, number_of_trading_days-1, number_of_firms);
+Private method: Simulates a path for the Continuous Gaussian HMM.
+Uses the transition matrix learned via Baum-Welch.
+"""
+function _simulate(m::MyContinuousHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
+    
+    # initialize -
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
 
-#     # main loop -
-#     for i ∈ eachindex(firms) 
+    # main loop -
+    for t in 2:steps
+        # Transition using the learned transition matrix (stored as Dict of Categoricals)
+        chain[t] = rand(m.transition[chain[t-1]]);
+    end
 
-#         # get the firm data -
-#         firm_index = firms[i];
-#         firm_data = dataset[firm_index];
+    return chain;
+end
 
-#         # compute the log returns -
-#         for j ∈ 2:number_of_trading_days
-#             S₁ = firm_data[j-1, keycol];
-#             S₂ = firm_data[j, keycol];
-#             return_matrix[j-1, i] = (1/Δt)*(log(S₂/S₁)) - risk_free_rate;
-#         end
-#     end
+"""
+    _simulate(m::MyContinuousHiddenMarkovModelWithJumps, start::Int64, steps::Int64) -> Array{Int64,1}
 
-#     # return -
-#     return return_matrix;
-# end
+Private method: Simulates a path for the Continuous Jump HMM (Regime Teleportation).
+Forces the system into extreme tail states (Crash/Boom) when a jump event occurs.
+"""
+function _simulate(m::MyContinuousHiddenMarkovModelWithJumps, start::Int64, steps::Int64)::Array{Int64,1}
 
+    # initialize -
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
+    
+    n_states = length(m.states);
+    # Define Tail States (Assumes states are sorted by return magnitude)
+    crash_states = 1:3;
+    boom_states = (n_states-2):n_states;
+
+    counter = 2;
+
+    # main loop -
+    while (counter <= steps)
+        
+        # Check for Jump Event
+        if (rand() < m.ϵ)
+            
+            # 1. How long does the jump last?
+            duration = rand(m.jump_distribution);
+            
+            # 2. Teleport loop (Regime Persistence)
+            for _ in 1:duration
+                if (counter <= steps)
+                    
+                    # CORRECTION: Flip the coin INSIDE the loop.
+                    # This ensures we get volatility (magnitude) without directional bias (trend).
+                    target_pool = (rand() < 0.52) ? crash_states : boom_states;
+
+                    # Override normal transition: pick randomly from the selected tail pool
+                    chain[counter] = rand(target_pool);
+                    counter += 1;
+                end
+            end
+        else
+            # Normal Markov Transition
+            current_state = chain[counter-1];
+            chain[counter] = rand(m.transition[current_state]);
+            counter += 1;
+        end
+    end
+
+    return chain;
+end
+
+# ----------------------------------------------------------------------------- #
+
+
+# --- PUBLIC METHODS ---------------------------------------------------------- #
+
+"""
+    vwap(df::DataFrame) -> Array{Float64,1}
+
+Calculates the Volume Weighted Average Price (VWAP) for each row in the DataFrame.
+Requires columns: `high`, `low`, `close`, `volume`.
+"""
 function vwap(df::DataFrame)::Array{Float64,1}
 
     # Get the number of rows in the DataFrame
@@ -117,200 +190,204 @@ function vwap(df::DataFrame)::Array{Float64,1}
     return vwap_array
 end
 
-
 """
-    learn_return_distribution_mcmc(returns::Vector{Float64}; samples::Int = 2000)
+    learn_distribution_mcmc(model_type::AbstractDistributionModel, returns::Vector{Float64}; samples::Int = 2000)
 
-Uses a Bayesian MCMC approach to learn the parameters of a Student's t-distribution
-fitted to the equity returns data.
+Uses a Bayesian MCMC approach (NUTS sampler) to learn the parameters of the specified
+probability distribution model given the return data.
 
-Returns a Turing.jl `Chain` object containing the posterior distributions of the parameters.
+Returns a Turing.jl `Chain` object containing posterior samples.
 """
 function learn_distribution_mcmc(model_type::AbstractDistributionModel, returns::Vector{Float64}; samples::Int = 2000)
     
-    # 1. Build the correct model based on the input type (e.g., StudentTModel())
-    #    Julia's multiple dispatch calls the correct function from Factory.jl
-    model_instance = build_turing_model(model_type, returns)
+    # 1. Build the correct model based on the input type
+    #    (Dispatched via Factory.jl)
+    turing_model = build_turing_model(model_type, returns);
 
-    # 2. Run the MCMC sampler
-    chain = Turing.sample(model_instance, NUTS(), samples)
+    # 2. Sample from the posterior using NUTS
+    chain = sample(turing_model, NUTS(), samples);
 
-    # 3. Return the resulting chain
     return chain
 end
 
 
-# --- Helper for Log Sum Exp ---
-function _logsumexp_vec(x)
-    m = maximum(x)
-    return m + log(sum(exp.(x .- m)))
-end
-
 """
-    baum_welch(observations::Vector{Float64}, n_states::Int, max_iter::Int=20, tol::Float64=1e-4)
+    baum_welch(observations::Array{Float64,1}, number_of_states::Int64; 
+        max_iter::Int64=20, tol::Float64=1e-4) -> Tuple
 
-Runs the Expectation-Maximization algorithm to learn parameters for a Gaussian HMM.
-Returns: (TransitionMatrix, Means, Stds, InitProbs, LogLikelihoodHistory, Gamma)
+Estimates the parameters of a Continuous Gaussian Hidden Markov Model using 
+the Baum-Welch (Expectation-Maximization) algorithm.
+
+### Arguments
+- `observations`: Vector of continuous observations (e.g., daily returns).
+- `number_of_states`: Number of hidden regimes to model.
+- `max_iter`: Maximum number of EM iterations (default: 20).
+- `tol`: Convergence tolerance for Log-Likelihood (default: 1e-4).
+
+### Returns
+A tuple containing:
+1. `T`: Transition Matrix [K x K]
+2. `μ`: Vector of Mean values for each state [K]
+3. `σ`: Vector of Std Dev values for each state [K]
+4. `π`: Initial Probability Vector [K]
+5. `ll_history`: Vector of Log-Likelihood values per iteration
+6. `gamma`: Matrix of posterior state probabilities [N x K]
 """
-function baum_welch(obs::Vector{Float64}, n_states::Int; max_iter::Int=20, tol::Float64=1e-4)
+function baum_welch(observations::Array{Float64,1}, number_of_states::Int64; 
+    max_iter::Int64=30, tol::Float64=1e-4)::Tuple{Array{Float64,2}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,2}}
     
-    N = length(obs)
-    K = n_states
+    # initialize -
+    N = length(observations);
+    K = number_of_states;
     
-    # --- 1. ROBUST INITIALIZATION (Quantile Based) ---
-    # This logic was previously in your notebook
-    sorted_data = sort(obs)
-    chunk_size = floor(Int, N / K)
+    # 1. ROBUST INITIALIZATION (Quantile Based) ------------------------------- #
+    # We split sorted data into K chunks to initialize means/stds
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
     
-    curr_μ = zeros(K)
-    curr_σ = zeros(K)
+    curr_μ = zeros(K);
+    curr_σ = zeros(K);
     
     for s in 1:K
-        start_idx = (s - 1) * chunk_size + 1
-        end_idx = (s == K) ? N : (s * chunk_size)
-        data_subset = sorted_data[start_idx:end_idx]
+        start_idx = (s - 1) * chunk_size + 1;
+        end_idx = (s == K) ? N : (s * chunk_size);
+        data_subset = sorted_data[start_idx:end_idx];
         
-        curr_μ[s] = mean(data_subset)
-        curr_σ[s] = std(data_subset)
-        if curr_σ[s] < 1e-6; curr_σ[s] = 1e-6; end
+        curr_μ[s] = mean(data_subset);
+        curr_σ[s] = std(data_subset);
+        if (curr_σ[s] < 1e-6)
+            curr_σ[s] = 1e-6; # Prevent collapse
+        end
     end
 
-    # Initialize T (Transition) and π (Start) uniformly or with diagonal dominance
-    curr_T = ones(K, K) ./ K
-    curr_π = ones(K) ./ K
+    # Initialize T and π uniformly (can be improved with diagonal dominance)
+    curr_T = ones(K, K) ./ K;
+    curr_π = ones(K) ./ K;
     
     # Storage for history
-    ll_history = Float64[]
-    final_gamma = zeros(N, K)
+    ll_history = Float64[];
+    final_gamma = zeros(N, K);
     
-    # --- 2. EM LOOP ---
-    prev_ll = -Inf
+    # 2. EM LOOP -------------------------------------------------------------- #
+    prev_ll = -Inf;
     
     for iter in 1:max_iter
-        # --- E-STEP ---
-        log_B = zeros(N, K)
+        
+        # --- E-STEP: Compute Forward-Backward Probabilities ---
+        log_B = zeros(N, K);
         for t in 1:N
             for k in 1:K
-                d = Normal(curr_μ[k], curr_σ[k])
-                log_B[t, k] = logpdf(d, obs[t])
+                d = Normal(curr_μ[k], curr_σ[k]);
+                log_B[t, k] = logpdf(d, observations[t]);
             end
         end
         
         # Forward (Alpha)
-        log_alpha = zeros(N, K)
-        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :]
+        log_alpha = zeros(N, K);
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
         for t in 2:N
             for j in 1:K
-                 log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j]
+                 log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
             end
         end
         
         # Backward (Beta)
-        log_beta = zeros(N, K)
-        # log_beta[N, :] is already 0.0 (log(1))
+        log_beta = zeros(N, K);
+        # log_beta[N, :] is implicitly 0.0 (log(1))
         for t in N-1:-1:1
             for i in 1:K
-                log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :]
-                log_beta[t, i] = _logsumexp_vec(log_terms)
+                log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
+                log_beta[t, i] = _logsumexp_vec(log_terms);
             end
         end
         
-        # Gamma
-        log_gamma = log_alpha .+ log_beta
-        γ = zeros(N, K)
+        # Gamma (Posterior State Probability)
+        log_gamma = log_alpha .+ log_beta;
+        γ = zeros(N, K);
         for t in 1:N
-            γ[t, :] = exp.(log_gamma[t, :] .- _logsumexp_vec(log_gamma[t, :]))
+            γ[t, :] = exp.(log_gamma[t, :] .- _logsumexp_vec(log_gamma[t, :]));
         end
         
-        # Xi (Transitions)
-        expected_transitions = zeros(K, K)
+        # Xi (Posterior Transition Probability)
+        expected_transitions = zeros(K, K);
         for t in 1:N-1
-            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :])
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]);
             for i in 1:K
                 for j in 1:K
-                    log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom
-                    expected_transitions[i, j] += exp(log_xi)
+                    log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom;
+                    expected_transitions[i, j] += exp(log_xi);
                 end
             end
         end
         
-        # --- M-STEP ---
-        new_π = γ[1, :]
+        # --- M-STEP: Update Parameters ---
+        new_π = γ[1, :];
         
+        # Update Means and Variances
         for k in 1:K
-            w_sum = sum(γ[:, k])
-            if w_sum > 0
-                curr_μ[k] = sum(γ[:, k] .* obs) / w_sum
-                curr_σ[k] = sqrt(sum(γ[:, k] .* (obs .- curr_μ[k]).^2) / w_sum)
-                if curr_σ[k] < 1e-6; curr_σ[k] = 1e-6; end
+            w_sum = sum(γ[:, k]);
+            if (w_sum > 0)
+                curr_μ[k] = sum(γ[:, k] .* observations) / w_sum;
+                curr_σ[k] = sqrt(sum(γ[:, k] .* (observations .- curr_μ[k]).^2) / w_sum);
+                if (curr_σ[k] < 1e-6)
+                     curr_σ[k] = 1e-6; 
+                end
             end
         end
         
+        # Update Transition Matrix
         for i in 1:K
-            r_sum = sum(expected_transitions[i, :])
-            if r_sum > 0
-                curr_T[i, :] = expected_transitions[i, :] ./ r_sum
+            r_sum = sum(expected_transitions[i, :]);
+            if (r_sum > 0)
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
             end
         end
         
         # Check Convergence
-        current_ll = _logsumexp_vec(log_alpha[N, :])
-        push!(ll_history, current_ll)
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        push!(ll_history, current_ll);
         
-        if abs(current_ll - prev_ll) < tol
-            final_gamma = γ
-            break
+        if (abs(current_ll - prev_ll) < tol)
+            final_gamma = γ;
+            break;
         end
-        prev_ll = current_ll
-        final_gamma = γ
+        prev_ll = current_ll;
+        final_gamma = γ;
     end
     
-    return curr_T, curr_μ, curr_σ, curr_π, ll_history, final_gamma
+    # return -
+    return (curr_T, curr_μ, curr_σ, curr_π, ll_history, final_gamma);
 end
 
 
-"""
-    simulate_jumps(m::MyContinuousHiddenMarkovModelWithJumps, steps::Int, n_paths::Int)
+# --- FUNCTORS (Simulation Interface) ----------------------------------------- #
 
-Simulates paths where the system can 'teleport' to tail states based on a Poisson process.
+# Discrete Models
 """
-function simulate_jumps_stationary(m::MyContinuousHiddenMarkovModelWithJumps, steps::Int, n_paths::Int, π_dist::Vector{Float64})
-    
-    archive = Array{Int64, 2}(undef, steps, n_paths)
-    n_states = length(m.states)
-    
-    # Define Tail States
-    crash_states = 1:3
-    boom_states = (n_states-2):n_states
-    
-    for i in 1:n_paths
-        current_state = StatsBase.sample(m.states, StatsBase.Weights(π_dist)) 
-        
-        t = 1
-        while t <= steps
-            archive[t, i] = current_state
-            
-            if rand() < m.ϵ
-                duration = rand(m.jump_distribution)
-                target_pool = (rand() < 0.5) ? crash_states : boom_states
-                
-                for _ in 1:duration
-                    if t < steps
-                        t += 1
-                        # Use standard rand() for unweighted sampling
-                        current_state = rand(target_pool)
-                        archive[t, i] = current_state
-                    end
-                end
-            else
-                if t < steps
-                    t += 1
-                    current_state = rand(m.transition[current_state])
-                else
-                    break
-                end
-            end
-        end
-    end
-    return archive
-end
+    (m::MyHiddenMarkovModel)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Discrete HMM.
+"""
+(m::MyHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+"""
+    (m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Discrete Jump HMM.
+"""
+(m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+# Continuous Models
+"""
+    (m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Continuous Gaussian HMM.
+"""
+(m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+"""
+    (m::MyContinuousHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Continuous Jump HMM (Teleportation).
+"""
+(m::MyContinuousHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
