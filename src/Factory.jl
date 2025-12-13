@@ -114,36 +114,34 @@ The `data` NamedTuple must contain the following keys:
 """
 function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::MyContinuousHiddenMarkovModel
     
-    # Extract training data and model configuration from the data NamedTuple
+    # Extract training data
     obs = data.observations
     n_states = data.number_of_states
     
-    # Run the Baum-Welch algorithm to estimate model parameters
-    # This is the core training step, yielding the transition matrix, and emission distribution parameters (μ, σ)
-    T_matrix, μ_vec, σ_vec, π_vec, ll_hist, γ = baum_welch(obs, n_states)
+    # Check if max_iter is provided in the data, otherwise default to 30
+    max_iterations = haskey(data, :max_iter) ? data.max_iter : 30
+    
+    # Pass max_iterations to the baum_welch function
+    T_matrix, μ_vec, σ_vec, π_vec, ll_hist, γ = baum_welch(obs, n_states, max_iter=max_iterations)
     
     # Initialize an empty model instance
     m = model()
 
-    # Populate the model with the learned parameters
+    # ... (rest of the function remains exactly the same) ...
     m.states = collect(1:n_states)
     m.log_likelihood_history = ll_hist
     
-    # Create dictionaries to hold the transition and emission distributions for each state
     transition = Dict{Int64, Categorical}()
     emission = Dict{Int64, Normal}()
     
-    # For each state, create a Categorical distribution for transitions and a Normal distribution for emissions
     for s in 1:n_states
         transition[s] = Categorical(T_matrix[s, :])
         emission[s] = Normal(μ_vec[s], σ_vec[s])
     end
     
-    # Assign the distribution dictionaries to the model
     m.transition = transition
     m.emission = emission
     
-    # Return the trained model
     return m
 end
 
