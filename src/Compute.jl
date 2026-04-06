@@ -391,3 +391,121 @@ Functor call to simulate a path for the Continuous Gaussian HMM.
 Functor call to simulate a path for the Continuous Jump HMM (Teleportation).
 """
 (m::MyContinuousHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+
+
+
+# ========================================================================================= #
+# Growth Calculation Functions
+# ========================================================================================= #
+
+"""
+    log_growth_matrix(dataset, firms; ...)
+
+Computes the excess log returns for **multiple firms** provided in a Dictionary.
+Result is a Matrix (Time x Firms).
+"""
+function log_growth_matrix(dataset::Dict{String, DataFrame}, 
+    firms::Array{String,1}; Δt::Float64 = (1.0/252.0), risk_free_rate::Float64 = 0.0, 
+    testfirm="AAPL", keycol::Symbol = :volume_weighted_average_price)::Array{Float64,2}
+
+    # initialize -
+    number_of_firms = length(firms);
+    number_of_trading_days = nrow(dataset[testfirm]);
+    return_matrix = Array{Float64,2}(undef, number_of_trading_days-1, number_of_firms);
+
+    # main loop -
+    for i ∈ eachindex(firms) 
+        # get the firm data -
+        firm_index = firms[i];
+        firm_data = dataset[firm_index];
+
+        # compute the log returns -
+        for j ∈ 2:number_of_trading_days
+            S₁ = firm_data[j-1, keycol];
+            S₂ = firm_data[j, keycol];
+            return_matrix[j-1, i] = (1/Δt)*(log(S₂/S₁)) - risk_free_rate;
+        end
+    end
+
+    # return -
+    return return_matrix;
+end
+
+"""
+    log_growth_matrix(dataset, firm; ...)
+
+Computes the excess log returns for a **single firm** (by ticker string) from a Dictionary.
+Result is a Vector.
+"""
+function log_growth_matrix(dataset::Dict{String, DataFrame}, 
+    firm::String; Δt::Float64 = (1.0/252.0), risk_free_rate::Float64 = 0.0, 
+    keycol::Symbol = :volume_weighted_average_price)::Array{Float64,1}
+
+    # initialize -
+    number_of_trading_days = nrow(dataset[firm]);
+    return_matrix = Array{Float64,1}(undef, number_of_trading_days-1);
+
+    # get the firm data -
+    firm_data = dataset[firm];
+
+    # compute the log returns -
+    for j ∈ 2:number_of_trading_days
+        S₁ = firm_data[j-1, keycol];
+        S₂ = firm_data[j, keycol];
+        return_matrix[j-1] = (1/Δt)*log(S₂/S₁) - risk_free_rate;
+    end
+
+    # return -
+    return return_matrix;
+end
+
+"""
+    log_growth_matrix(dataset::DataFrame; ...)
+
+Computes the excess log returns for a **single DataFrame**.
+Useful when the data is already extracted from the dictionary.
+"""
+function log_growth_matrix(dataset::DataFrame; 
+    Δt::Float64 = (1.0/252.0), risk_free_rate::Float64 = 0.0,
+    keycol::Symbol = :volume_weighted_average_price)::Array{Float64,1}
+
+    # initialize -
+    firm_data = dropmissing(dataset, disallowmissing=true);
+    number_of_trading_periods = nrow(firm_data);
+    return_matrix = Array{Float64,1}(undef, number_of_trading_periods - 1);
+
+    # compute the log returns -
+    for j ∈ 2:number_of_trading_periods
+        S₁ = firm_data[j-1, keycol];
+        S₂ = firm_data[j, keycol];
+        return_matrix[j-1] = (1/Δt)*log(S₂/S₁) - risk_free_rate;
+    end
+
+    # return -
+    return return_matrix;
+end
+
+"""
+    log_growth_matrix(dataset::Array{Float64,1}; ...)
+
+Computes the excess log returns for a **raw array of prices**.
+Useful for quick calculations on raw vectors.
+"""
+function log_growth_matrix(dataset::Array{Float64,1}; 
+    Δt::Float64 = (1.0/252.0), risk_free_rate::Float64 = 0.0)::Array{Float64,1}
+
+    # initialize -
+    number_of_trading_periods = length(dataset);
+    return_matrix = Array{Float64,1}(undef, number_of_trading_periods-1);
+
+    # compute the log returns -
+    for j ∈ 2:number_of_trading_periods
+        S₁ = dataset[j-1];
+        S₂ = dataset[j];
+        return_matrix[j-1] = (1/Δt)*log(S₂/S₁) - risk_free_rate;
+    end
+
+    # return -
+    return return_matrix;
+end
