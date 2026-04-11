@@ -82,20 +82,25 @@ end
 
 
 """
-    plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String)
+    plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String; xlabel="Log Return")
 
 Plots the Gaussian emission PDF for each hidden state in the model.
+X-range is computed adaptively from the emission parameters (μ ± 4σ).
 
 ### Returns
 - `Plots.Plot`
 """
-function plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String)
+function plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String; xlabel::String="Log Return")
 
     K = length(model.states)
-    x = range(-0.30, 0.30, length=1000)
+
+    # Data-adaptive x-range: cover μ ± 4σ of the widest emission
+    all_lo = minimum(mean(model.emission[s]) - 4*std(model.emission[s]) for s in model.states)
+    all_hi = maximum(mean(model.emission[s]) + 4*std(model.emission[s]) for s in model.states)
+    x = range(all_lo, all_hi, length=1000)
 
     p = plot(title="Emission Distributions — $(ticker) (K=$(K))", titlefontsize=10,
-             xlabel="Daily Log Return", ylabel="Probability Density", legend=:topright)
+             xlabel=xlabel, ylabel="Probability Density (AU)", legend=:topright)
 
     palette = cgrad(:RdYlGn, K, categorical=true)
 

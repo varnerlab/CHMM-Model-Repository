@@ -136,20 +136,27 @@ end
 d_gauss = Normal(μ_gauss, σ_gauss);
 μ_lap = median(R_is); b_lap = mean(abs.(R_is .- μ_lap));
 d_laplace = Laplace(μ_lap, b_lap);
-x_grid = range(minimum(R_is)*1.2, maximum(R_is)*1.2, length=1000);
+
+# Percentile-based axis limits (0.5th–99.5th with 20% padding)
+x_lo_raw = quantile(R_is, 0.005); x_hi_raw = quantile(R_is, 0.995);
+x_pad = 0.20 * (x_hi_raw - x_lo_raw);
+x_lo = x_lo_raw - x_pad; x_hi = x_hi_raw + x_pad;
+x_grid = range(x_lo, x_hi, length=1000);
 
 # Panel (a): Distribution
-p1 = histogram(R_is, normalize=true, bins=150, alpha=0.4, color=:gray, label="Observed",
-    title="(a) Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Density");
+p1 = histogram(R_is, normalize=:pdf, bins=200, alpha=0.4, color=:lightgray, label="Observed",
+    title="(a) Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
 plot!(p1, x_grid, pdf.(d_gauss, x_grid), lw=2, color=:blue, label="Gaussian", ls=:dash);
 plot!(p1, x_grid, pdf.(d_laplace, x_grid), lw=2, color=:red, label="Laplace");
+xlims!(p1, x_lo, x_hi);
 
 # Panel (b): Q-Q
 sorted_R = sort(R_is); n_r = length(sorted_R);
 theo_q = [quantile(d_gauss, (i-0.5)/n_r) for i in 1:n_r];
+qq_lo = min(minimum(theo_q), minimum(sorted_R)); qq_hi = max(maximum(theo_q), maximum(sorted_R));
 p2 = scatter(theo_q, sorted_R, ms=1, alpha=0.5, color=:steelblue, label="",
     title="(b) Normal Q-Q Plot", titlefontsize=10, xlabel="Theoretical", ylabel="Sample");
-plot!(p2, [minimum(theo_q), maximum(theo_q)], [minimum(theo_q), maximum(theo_q)], lw=2, color=:red, ls=:dash, label="45°");
+plot!(p2, [qq_lo, qq_hi], [qq_lo, qq_hi], lw=2, color=:red, ls=:dash, label="45°");
 
 # Panel (c): Returns ACF
 τ = 1:(L-1); ci = 2.576/sqrt(n_r);
@@ -167,7 +174,7 @@ plot!(p4, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI
 plot!(p4, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
 
 fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700),
-    plot_title="Figure 1: Stylized Facts — $TICKER (2014-2024)", plot_titlefontsize=12);
+    plot_title="Figure 1: Stylized Facts — $TICKER", plot_titlefontsize=12);
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.svg"));
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.pdf"));
 println("  Saved Figure 1 + Table 1")
@@ -228,12 +235,13 @@ for K in K_VALUES
     # ------------------------------------------------------------------- #
     colors_k = cgrad(:RdYlBu, K, categorical=true);
     p_emit = plot(title="Emission Distributions ($TICKER, K=$K)", titlefontsize=10,
-        xlabel=RETURN_LABEL, ylabel="Density", legend=:topright);
-    histogram!(p_emit, R_is, normalize=true, bins=150, alpha=0.3, color=:gray, label="Observed");
+        xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", legend=:topright);
+    histogram!(p_emit, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
     for s in 1:K
         d = base_model.emission[s];
         plot!(p_emit, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="S$s", alpha=0.8);
     end
+    xlims!(p_emit, x_lo, x_hi);
     savefig(p_emit, joinpath(out_dir, "Fig-Emission-PDFs.svg"));
     savefig(p_emit, joinpath(out_dir, "Fig-Emission-PDFs.pdf"));
 
@@ -481,10 +489,11 @@ for K in K_VALUES
 
     # (a) Density
     p3a = plot(title="(a) Density (KS: NJ=$(m_nj_is.ks_rate)%, WJ=$(m_wj_is.ks_rate)%)",
-        titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Density");
-    histogram!(p3a, R_is, normalize=true, bins=150, alpha=0.3, color=:gray, label="Observed");
+        titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
+    histogram!(p3a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
     density!(p3a, decoded_nj[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-NJ");
     density!(p3a, decoded_wj[:,1], lw=2, color=:red, alpha=0.7, label="CHMM-WJ");
+    xlims!(p3a, x_lo, x_hi);
 
     # (b) ACF(|G|)
     acf_obs_is = autocor(abs.(R_is), 1:L);
@@ -529,12 +538,15 @@ for K in K_VALUES
         label="CHMM-WJ", title="(a) OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
     vline!(p4a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
 
-    # (b) Density fan chart
-    p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Density");
+    # (b) Density fan chart (discrete paper style: light simulated, bold observed)
+    p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
     for i in 1:min(50, N_PATHS)
-        density!(p4b, oos_decoded_wj[:,i], color=:navy, alpha=0.05, label="");
+        density!(p4b, oos_decoded_wj[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
     end
     density!(p4b, R_oos, lw=3, color=:red, label="Observed OoS");
+    oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
+    oos_pad = 0.20 * (oos_hi - oos_lo);
+    xlims!(p4b, oos_lo - oos_pad, oos_hi + oos_pad);
 
     # (c) OoS ACF
     τ_oos = 1:min(L, n_steps_oos-1);
