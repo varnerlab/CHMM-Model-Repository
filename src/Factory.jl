@@ -1,3 +1,5 @@
+# --- DISCRETE MODEL BUILDERS (Legacy) ---------------------------------------- #
+
 """
    function build(model::Type{M}, data::NamedTuple) -> AbstractMarkovModel where {M <: AbstractMarkovModel}
 
@@ -96,6 +98,8 @@ function build(model::Type{MyHiddenMarkovModelWithJumps}, data::NamedTuple)::MyH
 end
 
 
+# --- CONTINUOUS MODEL BUILDERS ----------------------------------------------- #
+
 """
     build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple) -> MyContinuousHiddenMarkovModel
 
@@ -187,6 +191,8 @@ function build(model::Type{MyContinuousHiddenMarkovModelWithJumps}, data::NamedT
     return m
 end
 
+
+# --- BAYESIAN MODEL BUILDERS ------------------------------------------------- #
 
 """
     build_turing_model(::StudentTModel, data::Vector{Float64})

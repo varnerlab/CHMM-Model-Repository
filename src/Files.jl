@@ -1,11 +1,51 @@
+# --- DATA LOADING ------------------------------------------------------------ #
+
+"""
+    _jld2(path::String) -> Dict{String,Any}
+
+Private method: loads a JLD2 file and returns its contents as a dictionary.
+"""
 function _jld2(path::String)::Dict{String,Any}
     return load(path);
 end
 
-MyPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2")); # Training dataset
-MyOutOfSamplePortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2025-to-11-18-2025.jld2")); # Out-of-sample dataset
-MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2")); # Original dataset
+"""
+    MyPortfolioDataSet() -> Dict{String,Any}
 
-# MyPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "train_dataset_2014_2023.jld2")); # Training dataset
-# MyOutOfSamplePortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "test_dataset_2024_onward.jld2")); # Out-of-sample dataset
-# MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-02-07-2025.jld2")); # Original dataset
+Loads the training dataset containing S&P 500 constituent OHLCV data.
+
+### Coverage
+- **Period**: January 3, 2014 -- December 31, 2024
+- **Tickers**: 400+ US-listed equities and ETFs
+- **Columns**: `date`, `open`, `high`, `low`, `close`, `volume`, `volume_weighted_average_price`
+
+### Returns
+- A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
+"""
+MyPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2"));
+
+"""
+    MyOutOfSamplePortfolioDataSet() -> Dict{String,Any}
+
+Loads the out-of-sample test dataset for model validation.
+
+### Coverage
+- **Period**: January 3, 2025 -- November 18, 2025
+- **Tickers**: Same universe as training set
+
+### Returns
+- A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
+"""
+MyOutOfSamplePortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2025-to-11-18-2025.jld2"));
+
+"""
+    MyOriginalPortfolioDataSet() -> Dict{String,Any}
+
+Loads the original (unsplit) dataset. Currently identical to the training set.
+
+### Returns
+- A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
+"""
+MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2"));
+
+# ----------------------------------------------------------------------------- #

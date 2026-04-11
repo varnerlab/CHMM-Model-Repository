@@ -1,6 +1,10 @@
+# --- ABSTRACT TYPES ---------------------------------------------------------- #
 abstract type AbstractMarkovModel end
 abstract type AbstractDistributionModel end
+# ----------------------------------------------------------------------------- #
 
+
+# --- DISCRETE MODELS (Legacy) ----------------------------------------------- #
 
 """
     mutable struct MyHiddenMarkovModel <: AbstractMarkovModel
@@ -59,6 +63,8 @@ mutable struct MyHiddenMarkovModelWithJumps <: AbstractMarkovModel
     MyHiddenMarkovModelWithJumps() = new();
 end
 
+
+# --- CONTINUOUS MODELS (Active) ---------------------------------------------- #
 
 """
     mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
@@ -121,9 +127,21 @@ mutable struct MyContinuousHiddenMarkovModelWithJumps <: AbstractMarkovModel
 end
 
 
-# A concrete type for the Student's t-distribution model
+# --- DISTRIBUTION MODELS (Bayesian Inference) -------------------------------- #
+
+"""
+    struct StudentTModel <: AbstractDistributionModel
+
+Dispatch tag for Bayesian Student's t-distribution fitting via Turing.jl.
+Used with `build_turing_model` and `learn_distribution_mcmc`.
+"""
 struct StudentTModel <: AbstractDistributionModel end
 
+"""
+    struct LaplaceModel <: AbstractDistributionModel
 
-# A concrete type for the Laplace distribution model
+Dispatch tag for Bayesian Laplace distribution fitting via Turing.jl.
+Used with `build_turing_model` and `learn_distribution_mcmc`.
+"""
 struct LaplaceModel <: AbstractDistributionModel end
+# ----------------------------------------------------------------------------- #
