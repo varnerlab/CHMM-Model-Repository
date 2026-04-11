@@ -158,6 +158,101 @@ end
 # --- PUBLIC METHODS ---------------------------------------------------------- #
 
 """
+    viterbi(observations, model::MyContinuousHiddenMarkovModel) -> Vector{Int64}
+
+Decodes the most likely hidden state sequence using the Viterbi algorithm
+for a continuous Gaussian HMM.
+
+### Returns
+- `states::Vector{Int64}`: Most probable state at each time step.
+"""
+function viterbi(observations::Vector{Float64}, model::MyContinuousHiddenMarkovModel)::Vector{Int64}
+
+    N = length(observations);
+    K = length(model.states);
+
+    # Extract transition matrix
+    T_mat = zeros(K, K);
+    for i in 1:K
+        T_mat[i, :] = model.transition[i].p;
+    end
+
+    # log probabilities
+    log_delta = zeros(N, K);
+    psi = zeros(Int64, N, K);
+
+    # initialization: uniform prior
+    for k in 1:K
+        log_delta[1, k] = log(1.0 / K) + logpdf(model.emission[k], observations[1]);
+    end
+
+    # recursion
+    for t in 2:N
+        for j in 1:K
+            vals = log_delta[t-1, :] .+ log.(T_mat[:, j]);
+            log_delta[t, j] = maximum(vals) + logpdf(model.emission[j], observations[t]);
+            psi[t, j] = argmax(vals);
+        end
+    end
+
+    # backtrack
+    states = Vector{Int64}(undef, N);
+    states[N] = argmax(log_delta[N, :]);
+    for t in N-1:-1:1
+        states[t] = psi[t+1, states[t+1]];
+    end
+
+    return states;
+end
+
+
+"""
+    walk_forward_regimes(observations, window_size, n_states; max_iter=30) -> Vector{Int64}
+
+Walk-forward (rolling window) regime classification. At each step, trains a
+fresh Baum-Welch model on the preceding `window_size` observations and decodes
+the current time step via Viterbi.
+
+### Arguments
+- `observations::Vector{Float64}`: Full observation sequence.
+- `window_size::Int`: Training window length (e.g., 252 for 1 year).
+- `n_states::Int`: Number of hidden states.
+- `max_iter::Int=30`: Max EM iterations per window.
+
+### Returns
+- `regimes::Vector{Int64}`: Decoded regime for each out-of-sample time step
+  (length = `length(observations) - window_size`).
+"""
+function walk_forward_regimes(observations::Vector{Float64}, window_size::Int, n_states::Int; max_iter::Int=30)::Vector{Int64}
+
+    N = length(observations);
+    regimes = Vector{Int64}(undef, N - window_size);
+
+    p = Progress(N - window_size, desc="Walk-forward: ", showspeed=true);
+
+    for i in (window_size+1):N
+        window = observations[(i - window_size):(i-1)];
+
+        model = build(MyContinuousHiddenMarkovModel,
+            (observations=window, number_of_states=n_states, max_iter=max_iter));
+
+        decoded = viterbi(window, model);
+        current_state = decoded[end];
+
+        # Canonical ordering: state 1 = lowest variance (calm)
+        variances = [std(model.emission[s]) for s in model.states];
+        sorted_idx = sortperm(variances);
+        rank_map = Dict(sorted_idx[r] => r for r in 1:n_states);
+        regimes[i - window_size] = rank_map[current_state];
+
+        next!(p);
+    end
+
+    return regimes;
+end
+
+
+"""
     vwap(df::DataFrame) -> Array{Float64,1}
 
 Calculates the Volume Weighted Average Price (VWAP) for each row in the DataFrame.

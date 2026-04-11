@@ -82,6 +82,30 @@
         @test length(R) == 3
     end
 
+    @testset "Viterbi decoding" begin
+        model = _make_test_model(n_states=3)
+        rng = Random.MersenneTwister(77)
+        obs = vcat(randn(rng, 100) .* 0.01, randn(rng, 100) .* 0.05)
+
+        states = viterbi(obs, model)
+
+        @test length(states) == length(obs)
+        @test all(s -> s in model.states, states)
+        @test eltype(states) == Int64
+    end
+
+    @testset "Walk-forward regimes" begin
+        rng = Random.MersenneTwister(88)
+        obs = vcat(randn(rng, 300) .* 0.01, randn(rng, 100) .* 0.05)
+        window = 100; n_states = 3;
+
+        regimes = walk_forward_regimes(obs, window, n_states; max_iter=10)
+
+        @test length(regimes) == length(obs) - window
+        @test all(s -> 1 <= s <= n_states, regimes)
+        @test eltype(regimes) == Int64
+    end
+
     @testset "VWAP calculation" begin
         df = DataFrame(
             high = [101.0, 102.0, 100.5],

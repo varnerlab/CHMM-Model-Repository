@@ -41,3 +41,70 @@ function plot_acf_comparison(observed::Vector, simulated::Vector, title_text::St
 
     return p
 end
+
+
+"""
+    plot_regime_overlay(dates, prices, states, ticker; title_text="")
+
+Plots price time series with regime-colored background shading.
+
+### Arguments
+- `dates::Vector`: Date index for x-axis.
+- `prices::Vector{Float64}`: Price series (e.g., close prices).
+- `states::Vector{Int64}`: Decoded hidden state sequence.
+- `ticker::String`: Ticker label for axis/title.
+- `title_text::String`: Optional custom title.
+
+### Returns
+- `Plots.Plot`: The generated plot object.
+"""
+function plot_regime_overlay(dates::Vector, prices::Vector{Float64}, states::Vector{Int64}, ticker::String; title_text::String="")
+
+    n_states = length(unique(states))
+    palette = cgrad(:RdYlGn, n_states, categorical=true)
+
+    if isempty(title_text)
+        title_text = "$(ticker) — Regime Overlay (K=$(n_states))"
+    end
+
+    p = plot(dates, prices, label=ticker, lw=1.5, c=:black, title=title_text, titlefontsize=10, legend=:topleft)
+
+    # shade by regime
+    for i in 1:length(dates)
+        s = states[i]
+        vspan!(p, [dates[max(1,i)], dates[min(length(dates),i)]], alpha=0.15, c=palette[s], label="")
+    end
+
+    ylabel!(p, "$(ticker) Level")
+
+    return p
+end
+
+
+"""
+    plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String)
+
+Plots the Gaussian emission PDF for each hidden state in the model.
+
+### Returns
+- `Plots.Plot`
+"""
+function plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String)
+
+    K = length(model.states)
+    x = range(-0.30, 0.30, length=1000)
+
+    p = plot(title="Emission Distributions — $(ticker) (K=$(K))", titlefontsize=10,
+             xlabel="Daily Log Return", ylabel="Probability Density", legend=:topright)
+
+    palette = cgrad(:RdYlGn, K, categorical=true)
+
+    for s in model.states
+        d = model.emission[s]
+        μ_s = round(mean(d), digits=5)
+        σ_s = round(std(d), digits=5)
+        plot!(p, x, pdf.(d, x), label="State $(s) (μ=$(μ_s), σ=$(σ_s))", lw=2, c=palette[s], fillalpha=0.15, fill=true)
+    end
+
+    return p
+end

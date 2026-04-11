@@ -2,7 +2,13 @@
 # run_all_analysis.jl
 #
 # Generates ALL figures and analysis for the continuous HMM paper.
+# Supports both equity (SPY) and volatility index (VIX) asset classes.
 # Runs the full pipeline for K ∈ {3, 6, 9, 11, 13} hidden states.
+#
+# Usage:
+#   ASSET_CLASS = :equity       # SPY (default)
+#   ASSET_CLASS = :volatility   # VIX
+#   include("run_all_analysis.jl")
 #
 # Output: results/<ticker>/K<N>/  with figures (.svg, .pdf) and metrics (.txt)
 # ========================================================================================= #
@@ -18,8 +24,15 @@ Pkg.activate(".");
 
 include("Include.jl");
 
+# --- ASSET CLASS SELECTION ---
+# Set ASSET_CLASS before including this file, or default to :equity
+if !@isdefined(ASSET_CLASS)
+    const ASSET_CLASS = :equity;
+end
+
 # --- CONFIGURATION ---
-const TICKER = "SPY";
+const TICKER = (ASSET_CLASS == :volatility) ? "VIX" : "SPY";
+const RETURN_LABEL = (ASSET_CLASS == :volatility) ? "$TICKER Log Return (annualized)" : "Excess Growth Rate";
 const K_VALUES = [3, 6, 9, 11, 13];
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
@@ -36,32 +49,47 @@ const λ_GRID = [10, 30, 55, 70, 85, 100, 130, 160];
 # Output directory
 const RESULTS_DIR = joinpath(_ROOT, "results");
 
+println("  Asset class: $(ASSET_CLASS) | Ticker: $(TICKER)");
+
 # ========================================================================================= #
 # LOAD DATA
 # ========================================================================================= #
 println("\n[1/6] Loading data...")
 
-train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
-maximum_number_trading_days = nrow(train_dataset["AAPL"]);
+if ASSET_CLASS == :volatility
+    # Volatility index: single-ticker dataset (VIX)
+    train_dataset = MyVolatilityDataSet() |> x -> x["dataset"];
+    R_is = log_growth_matrix(train_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+    n_steps = length(R_is);
 
-dataset = Dict{String,DataFrame}();
-for (t, data) ∈ train_dataset
-    if nrow(data) == maximum_number_trading_days
-        dataset[t] = data;
+    oos_dataset = MyOutOfSampleVolatilityDataSet() |> x -> x["dataset"];
+    R_oos = log_growth_matrix(oos_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+    n_steps_oos = length(R_oos);
+
+    println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs")
+else
+    # Equity: multi-ticker portfolio (SPY, AAPL, etc.)
+    train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
+    maximum_number_trading_days = nrow(train_dataset["AAPL"]);
+
+    dataset = Dict{String,DataFrame}();
+    for (t, data) ∈ train_dataset
+        if nrow(data) == maximum_number_trading_days
+            dataset[t] = data;
+        end
     end
+    list_of_all_tickers = keys(dataset) |> collect |> sort;
+    all_firms_R = log_growth_matrix(dataset, list_of_all_tickers; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+    ticker_idx = findfirst(x -> x == TICKER, list_of_all_tickers);
+    R_is = all_firms_R[:, ticker_idx];
+    n_steps = length(R_is);
+
+    oos_dataset_raw = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
+    R_oos = log_growth_matrix(oos_dataset_raw, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+    n_steps_oos = length(R_oos);
+
+    println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs | Tickers: $(length(list_of_all_tickers))")
 end
-list_of_all_tickers = keys(dataset) |> collect |> sort;
-all_firms_R = log_growth_matrix(dataset, list_of_all_tickers; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-ticker_idx = findfirst(x -> x == TICKER, list_of_all_tickers);
-R_is = all_firms_R[:, ticker_idx];
-n_steps = length(R_is);
-
-# OoS data
-oos_dataset_raw = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
-R_oos = log_growth_matrix(oos_dataset_raw, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-n_steps_oos = length(R_oos);
-
-println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs | Tickers: $(length(list_of_all_tickers))")
 
 # ========================================================================================= #
 # FIGURE 1: STYLIZED FACTS (only once — independent of K)
@@ -108,21 +136,20 @@ end
 d_gauss = Normal(μ_gauss, σ_gauss);
 μ_lap = median(R_is); b_lap = mean(abs.(R_is .- μ_lap));
 d_laplace = Laplace(μ_lap, b_lap);
-x_grid = range(-800, 800, length=1000);
+x_grid = range(minimum(R_is)*1.2, maximum(R_is)*1.2, length=1000);
 
 # Panel (a): Distribution
 p1 = histogram(R_is, normalize=true, bins=150, alpha=0.4, color=:gray, label="Observed",
-    title="(a) Marginal Distribution", titlefontsize=10, xlabel="Excess Growth Rate", ylabel="Density");
+    title="(a) Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Density");
 plot!(p1, x_grid, pdf.(d_gauss, x_grid), lw=2, color=:blue, label="Gaussian", ls=:dash);
 plot!(p1, x_grid, pdf.(d_laplace, x_grid), lw=2, color=:red, label="Laplace");
-xlims!(p1, -800, 800);
 
 # Panel (b): Q-Q
 sorted_R = sort(R_is); n_r = length(sorted_R);
 theo_q = [quantile(d_gauss, (i-0.5)/n_r) for i in 1:n_r];
 p2 = scatter(theo_q, sorted_R, ms=1, alpha=0.5, color=:steelblue, label="",
     title="(b) Normal Q-Q Plot", titlefontsize=10, xlabel="Theoretical", ylabel="Sample");
-plot!(p2, [-600,600], [-600,600], lw=2, color=:red, ls=:dash, label="45°");
+plot!(p2, [minimum(theo_q), maximum(theo_q)], [minimum(theo_q), maximum(theo_q)], lw=2, color=:red, ls=:dash, label="45°");
 
 # Panel (c): Returns ACF
 τ = 1:(L-1); ci = 2.576/sqrt(n_r);
@@ -201,13 +228,12 @@ for K in K_VALUES
     # ------------------------------------------------------------------- #
     colors_k = cgrad(:RdYlBu, K, categorical=true);
     p_emit = plot(title="Emission Distributions ($TICKER, K=$K)", titlefontsize=10,
-        xlabel="Excess Growth Rate", ylabel="Density", legend=:topright);
+        xlabel=RETURN_LABEL, ylabel="Density", legend=:topright);
     histogram!(p_emit, R_is, normalize=true, bins=150, alpha=0.3, color=:gray, label="Observed");
     for s in 1:K
         d = base_model.emission[s];
         plot!(p_emit, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="S$s", alpha=0.8);
     end
-    xlims!(p_emit, -800, 800);
     savefig(p_emit, joinpath(out_dir, "Fig-Emission-PDFs.svg"));
     savefig(p_emit, joinpath(out_dir, "Fig-Emission-PDFs.pdf"));
 
@@ -228,8 +254,10 @@ for K in K_VALUES
     p_res = bar(1:K, res_times, title="Natural Residence Time — K=$K", titlefontsize=10,
         xlabel="State", ylabel="Steps", legend=:topright, color=:steelblue, alpha=0.7);
     if K >= 6
-        bar!(p_res, 1:3, res_times[1:3], color=:red, alpha=0.5, label="Crash");
-        bar!(p_res, (K-2):K, res_times[(K-2):K], color=:teal, alpha=0.5, label="Boom");
+        crash_label = (ASSET_CLASS == :volatility) ? "Low Vol" : "Crash";
+        boom_label = (ASSET_CLASS == :volatility) ? "High Vol" : "Boom";
+        bar!(p_res, 1:3, res_times[1:3], color=:red, alpha=0.5, label=crash_label);
+        bar!(p_res, (K-2):K, res_times[(K-2):K], color=:teal, alpha=0.5, label=boom_label);
     end
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.svg"));
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.pdf"));
@@ -453,11 +481,10 @@ for K in K_VALUES
 
     # (a) Density
     p3a = plot(title="(a) Density (KS: NJ=$(m_nj_is.ks_rate)%, WJ=$(m_wj_is.ks_rate)%)",
-        titlefontsize=9, xlabel="Excess Growth Rate", ylabel="Density");
+        titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Density");
     histogram!(p3a, R_is, normalize=true, bins=150, alpha=0.3, color=:gray, label="Observed");
     density!(p3a, decoded_nj[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-NJ");
     density!(p3a, decoded_wj[:,1], lw=2, color=:red, alpha=0.7, label="CHMM-WJ");
-    xlims!(p3a, -800, 800);
 
     # (b) ACF(|G|)
     acf_obs_is = autocor(abs.(R_is), 1:L);
@@ -503,7 +530,7 @@ for K in K_VALUES
     vline!(p4a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
 
     # (b) Density fan chart
-    p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel="Excess Growth Rate", ylabel="Density");
+    p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Density");
     for i in 1:min(50, N_PATHS)
         density!(p4b, oos_decoded_wj[:,i], color=:navy, alpha=0.05, label="");
     end
@@ -532,10 +559,11 @@ for K in K_VALUES
     # FIGURE: Example Trajectories
     # ------------------------------------------------------------------- #
     idx = rand(1:N_PATHS);
-    p_traj = plot(R_is[1:500], lw=1, color=:red, alpha=0.6, label="Observed",
-        title="Return Trajectory (first 500 steps) — K=$K", titlefontsize=10,
-        xlabel="Trading Day", ylabel="Excess Growth Rate");
-    plot!(p_traj, decoded_wj[1:500, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-WJ (path $idx)");
+    traj_len = min(500, n_steps);
+    p_traj = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed",
+        title="Return Trajectory (first $traj_len steps) — K=$K", titlefontsize=10,
+        xlabel="Trading Day", ylabel=RETURN_LABEL);
+    plot!(p_traj, decoded_wj[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-WJ (path $idx)");
     savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.svg"));
     savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.pdf"));
 

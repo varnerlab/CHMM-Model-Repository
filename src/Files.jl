@@ -48,4 +48,33 @@ Loads the original (unsplit) dataset. Currently identical to the training set.
 """
 MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2"));
 
+"""
+    MyVolatilityDataSet() -> Dict{String,Any}
+
+Loads the VIX training dataset containing volatility index OHLCV data.
+
+### Coverage
+- **Period**: ~20 years up to December 31, 2024
+- **Ticker**: VIX
+- **Columns**: `date`, `open`, `high`, `low`, `close`, `volume`
+
+### Returns
+- A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
+"""
+MyVolatilityDataSet() = _jld2(joinpath(_PATH_TO_DATA, "Volatility-Daily-OHLC-Train.jld2"));
+
+"""
+    MyOutOfSampleVolatilityDataSet() -> Dict{String,Any}
+
+Loads the VIX out-of-sample test dataset.
+
+### Coverage
+- **Period**: January 2, 2025 onward
+- **Ticker**: VIX
+
+### Returns
+- A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
+"""
+MyOutOfSampleVolatilityDataSet() = _jld2(joinpath(_PATH_TO_DATA, "Volatility-Daily-OHLC-Test.jld2"));
+
 # ----------------------------------------------------------------------------- #
