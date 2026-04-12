@@ -254,3 +254,110 @@ function build_turing_model(::LaplaceModel, data)
 end
 
 # --------------------------------------------------------------------------------------------- #
+
+
+# --- PRICING MODEL BUILDERS -------------------------------------------------- #
+
+"""
+    build(::Type{MyEuropeanOptionContract}, data::NamedTuple) -> MyEuropeanOptionContract
+
+Builds a European option contract.
+
+### NamedTuple keys
+- `S0::Float64`: Spot price
+- `K::Float64`: Strike price
+- `T::Float64`: Time to expiration (years)
+- `r::Float64`: Risk-free rate
+- `is_call::Bool`: true for call, false for put (default: true)
+"""
+function build(model::Type{MyEuropeanOptionContract}, data::NamedTuple)::MyEuropeanOptionContract
+
+    m = model();
+    m.S0 = data.S0;
+    m.K = data.K;
+    m.T = data.T;
+    m.r = data.r;
+    m.is_call = haskey(data, :is_call) ? data.is_call : true;
+
+    return m;
+end
+
+
+"""
+    build(::Type{MyCHMMPricingModel}, data::NamedTuple) -> MyCHMMPricingModel
+
+Builds a CHMM-based Monte Carlo pricer. Computes the volatility map by mapping
+VIX price levels per regime to equity volatility: σ_s = median(VIX_close | state=s) / 100.
+
+### NamedTuple keys
+- `hmm::AbstractMarkovModel`: Trained CHMM (no-jump or with-jump)
+- `vix_prices::Vector{Float64}`: VIX close prices aligned with vix_states
+- `vix_states::Vector{Int64}`: Viterbi-decoded state sequence for VIX prices
+- `n_paths::Int64`: Number of MC paths (default: 10000)
+- `n_steps_per_year::Int64`: Discretization (default: 252)
+"""
+function build(model::Type{MyCHMMPricingModel}, data::NamedTuple)::MyCHMMPricingModel
+
+    m = model();
+    hmm = data.hmm;
+    m.hmm = hmm;
+
+    # Build volatility map: median VIX level per regime → equity vol
+    vix_prices = data.vix_prices;
+    vix_states = data.vix_states;
+    volatility_map = Dict{Int64, Float64}();
+    for s in hmm.states
+        mask = findall(x -> x == s, vix_states);
+        if length(mask) > 0
+            volatility_map[s] = median(vix_prices[mask]) / 100.0;
+        else
+            volatility_map[s] = 0.20; # fallback
+        end
+    end
+    m.volatility_map = volatility_map;
+
+    # Compute stationary distribution from transition matrix (power method)
+    K = length(hmm.states);
+    T_mat = zeros(K, K);
+    for i in 1:K
+        T_mat[i, :] = hmm.transition[i].p;
+    end
+    π_stat = (T_mat^1000)[1, :];
+    m.start_distribution = Categorical(π_stat);
+
+    m.n_paths = haskey(data, :n_paths) ? data.n_paths : 10000;
+    m.n_steps_per_year = haskey(data, :n_steps_per_year) ? data.n_steps_per_year : 252;
+
+    return m;
+end
+
+
+"""
+    build(::Type{MyHestonPricingModel}, data::NamedTuple) -> MyHestonPricingModel
+
+Builds a Heston stochastic volatility Monte Carlo pricer.
+
+### NamedTuple keys
+- `v0::Float64`: Initial variance
+- `kappa::Float64`: Mean reversion speed
+- `theta::Float64`: Long-run variance
+- `xi::Float64`: Vol-of-vol
+- `rho::Float64`: Price-vol correlation
+- `n_paths::Int64`: Number of MC paths (default: 10000)
+- `n_steps_per_year::Int64`: Discretization (default: 252)
+"""
+function build(model::Type{MyHestonPricingModel}, data::NamedTuple)::MyHestonPricingModel
+
+    m = model();
+    m.v0 = data.v0;
+    m.kappa = data.kappa;
+    m.theta = data.theta;
+    m.xi = data.xi;
+    m.rho = data.rho;
+    m.n_paths = haskey(data, :n_paths) ? data.n_paths : 10000;
+    m.n_steps_per_year = haskey(data, :n_steps_per_year) ? data.n_steps_per_year : 252;
+
+    return m;
+end
+
+# ----------------------------------------------------------------------------- #

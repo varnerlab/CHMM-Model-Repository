@@ -113,3 +113,66 @@ function plot_emission_pdfs(model::MyContinuousHiddenMarkovModel, ticker::String
 
     return p
 end
+
+
+# --- PRICING VISUALIZATION --------------------------------------------------- #
+
+"""
+    plot_implied_vol_surface(strikes, expiries, iv_matrix, title_text) -> Plots.Plot
+
+Heatmap of the implied volatility surface (strikes × expiries).
+"""
+function plot_implied_vol_surface(strikes::Array{Float64,1}, expiries::Array{Float64,1},
+    iv_matrix::Array{Float64,2}, title_text::String)
+
+    strike_labels = [string(round(k, digits=0)) for k in strikes];
+    expiry_labels = [string(round(t, digits=2)) for t in expiries];
+
+    p = heatmap(expiry_labels, strike_labels, iv_matrix .* 100,
+        title=title_text, titlefontsize=10,
+        xlabel="Expiry (years)", ylabel="Strike",
+        color=:viridis, colorbar_title="Implied Vol (%)",
+        size=(600, 450));
+
+    return p;
+end
+
+
+"""
+    plot_pricing_comparison(chmm_result, heston_result, bs_price, title_text) -> Plots.Plot
+
+Bar chart comparing option prices across CHMM, Heston, and Black-Scholes with error bars.
+"""
+function plot_pricing_comparison(chmm_result::MyPricingResult, heston_result::MyPricingResult,
+    bs_price::Float64, title_text::String)
+
+    labels = ["CHMM", "Heston", "Black-Scholes"];
+    prices = [chmm_result.price, heston_result.price, bs_price];
+    errors = [1.96 * chmm_result.std_error, 1.96 * heston_result.std_error, 0.0];
+
+    p = bar(labels, prices, yerr=errors, title=title_text, titlefontsize=10,
+        ylabel="Option Price (\$)", legend=false,
+        color=[:steelblue, :darkorange, :gray], alpha=0.8,
+        bar_width=0.6, size=(500, 400));
+
+    return p;
+end
+
+
+"""
+    plot_mc_convergence(result::MyPricingResult, title_text::String) -> Plots.Plot
+
+Running average of discounted payoffs vs. path count, showing Monte Carlo convergence.
+"""
+function plot_mc_convergence(result::MyPricingResult, title_text::String)
+
+    n = result.n_paths;
+    running_mean = cumsum(result.payoffs) ./ (1:n);
+
+    p = plot(1:n, running_mean, lw=2, color=:navy, label="Running Mean",
+        title=title_text, titlefontsize=10,
+        xlabel="Number of Paths", ylabel="Price Estimate (\$)");
+    hline!(p, [result.price], lw=1.5, color=:red, ls=:dash, label="Final: \$$(round(result.price, digits=4))");
+
+    return p;
+end
