@@ -3,9 +3,14 @@
 This file provides context for AI-assisted development on this codebase.
 
 ## Project Summary
-Continuous Hidden Markov Models with Gaussian emissions for financial time series simulation. Trained via Baum-Welch (EM). At small K, the CHMM alone reproduces all three canonical stylized facts (heavy tails, negligible linear ACF, persistent volatility clustering) to some extent.
+This project compares three approaches to modeling financial time series:
+1. **Continuous HMM (Baum-Welch, no jumps)** — the new contribution. Gaussian emissions trained via EM.
+2. **Discrete HMM with Poisson jumps** — the baseline from the prior paper (JumpHMM.jl). Regime teleportation.
+3. **GARCH(1,1)** — the classical benchmark for conditional variance modeling.
 
-Includes option pricing via CHMM regime-switching volatility (using VIX regimes) and Heston stochastic volatility benchmark.
+The study demonstrates that the continuous HMM at small K reproduces all three stylized facts (heavy tails, negligible linear ACF, persistent volatility clustering) without requiring jump mechanisms.
+
+Additionally, the framework models VIX/VXX volatility measures and applies CHMM regime-switching volatility to option pricing.
 
 ## Module Load Order (Critical)
 Source files must be loaded in this exact order (defined in `Include.jl`):
@@ -21,7 +26,11 @@ Rearranging this order will cause `UndefVarError` at load time.
 ## Type Hierarchy
 ```
 AbstractMarkovModel
-  |-- MyContinuousHiddenMarkovModel   (continuous Gaussian, Baum-Welch trained)
+  |-- MyHiddenMarkovModel                  (discrete, baseline)
+  |-- MyHiddenMarkovModelWithJumps         (discrete + Poisson jumps, baseline)
+  |-- MyContinuousHiddenMarkovModel        (continuous Gaussian, new contribution)
+
+MyGARCHModel                               (GARCH(1,1) benchmark)
 
 AbstractDistributionModel
   |-- StudentTModel    (Bayesian Student-t via Turing)
@@ -32,27 +41,32 @@ AbstractPricingModel
   |-- MyHestonPricingModel  (Heston stochastic vol benchmark)
 ```
 
-All model structs are currently `mutable` with empty inner constructors. The `build()` factory pattern populates fields after construction.
+All mutable model structs use empty inner constructors. The `build()` factory pattern populates fields after construction.
 
 ## Key Design Decisions
 
-### Baum-Welch (EM) for Parameter Learning
-This project trains continuous emission parameters (means, standard deviations) and transition matrices from raw returns via the Baum-Welch algorithm.
+### Three-Model Comparison
+- **Discrete HMM + Jumps**: From JumpHMM.jl. Discretizes returns into bins, frequency-counts transitions, adds Poisson regime teleportation.
+- **Continuous HMM**: Trains Gaussian emission parameters and transition matrices directly from raw returns via Baum-Welch. No jumps needed.
+- **GARCH(1,1)**: σ²_t = ω + α*r²_{t-1} + β*σ²_{t-1}. Fitted via MLE with Nelder-Mead. Single-regime classical benchmark.
 
-### Quantile-Based Initialization
-EM is sensitive to initialization. We sort observations into K quantile chunks and use each chunk's mean/std as initial emission parameters. This prevents degenerate solutions.
+### Baum-Welch (EM) for Parameter Learning
+Quantile-based initialization, log-space forward-backward, convergence monitoring.
 
 ### Log-Space Numerics
-All forward-backward computations use `_logsumexp_vec()` to prevent floating-point underflow. Never convert to probability space during the E-step.
+All forward-backward computations use `_logsumexp_vec()` to prevent floating-point underflow.
 
-### No Jump Mechanisms
-This study focuses on the continuous HMM alone. At small K, the CHMM reproduces all stylized facts to some extent without requiring jump processes. All jump-related code (Poisson teleportation, discrete HMMs) has been removed.
+### Jump Mechanism (Discrete Model Only)
+- Jump probability `epsilon` checked at each time step
+- Jump duration drawn from `Poisson(lambda)`
+- During jumps, coin flip (52/48) selects crash states (1:3) or boom states (N-2:N)
+- Used ONLY in the discrete baseline for comparison — not in the continuous model
 
-### Option Pricing via VIX Regimes
-The CHMM pricer trains a separate HMM on VIX data, decodes regimes via Viterbi, and maps each regime's median VIX level to equity volatility (σ_s = median(VIX|state=s) / 100). This drives regime-switching GBM paths for Monte Carlo option pricing.
+### VIX/VXX Volatility Modeling
+The CHMM is applied to VIX returns to learn volatility regimes. Median VIX level per regime maps to equity volatility for option pricing.
 
 ### Functor Interface
-Models are callable: `model(start_state, n_steps)` dispatches to `_simulate()`. This keeps the public API clean.
+HMM models are callable: `model(start_state, n_steps)` dispatches to `_simulate()`.
 
 ## Commands
 
@@ -65,10 +79,6 @@ include("Include.jl")
 ```julia
 using Pkg; Pkg.test()
 ```
-Or directly:
-```julia
-include("test/runtests.jl")
-```
 
 ### Run full analysis pipeline
 ```julia
@@ -77,12 +87,14 @@ include("run_all_analysis.jl")
 
 ## Conventions
 
-- **Naming**: Types use `My` prefix (e.g., `MyContinuousHiddenMarkovModel`). Factory methods are `build()` with type dispatch. Private methods start with `_`.
-- **Data format**: All datasets are JLD2 files. DataFrames have columns: `date`, `open`, `high`, `low`, `close`, `volume`, `volume_weighted_average_price`.
-- **Returns convention**: Annualized excess log returns: `G_t = (1/dt) * ln(P_t / P_{t-1}) - r_f`, with `dt = 1/252` (daily) and `r_f = 0` by default.
-- **Semicolons**: Julia semicolons at end of lines are used throughout for consistency with professor Varner's style.
+- **Naming**: Types use `My` prefix. Factory methods are `build()` with type dispatch. Private methods start with `_`.
+- **Data format**: JLD2 files. DataFrames: `date`, `open`, `high`, `low`, `close`, `volume`, `volume_weighted_average_price`.
+- **Returns convention**: Annualized excess log returns: `G_t = (1/dt) * ln(P_t / P_{t-1}) - r_f`, with `dt = 1/252` and `r_f = 0`.
+- **Semicolons**: Julia semicolons at end of lines for consistency with professor Varner's style.
 - **Figures**: Generated SVGs go in `figs/`, named as `Fig-{TICKER}-{Type}-{Detail}.svg`.
 
 ## What NOT to Change Without Discussion
-- The Baum-Welch convergence tolerance (`tol=1e-4`) and default iterations (`max_iter=30`) -- these are tuned for the datasets
-- The `_logsumexp_vec` implementation -- numerical stability depends on this exact formulation
+- The Baum-Welch convergence tolerance (`tol=1e-4`) and default iterations (`max_iter=30`)
+- The jump coin-flip bias (52/48) in the discrete model — calibrated to empirical crash/boom asymmetry
+- Tail state ranges (bottom 3, top 3) in the discrete model
+- The `_logsumexp_vec` implementation — numerical stability depends on this exact formulation

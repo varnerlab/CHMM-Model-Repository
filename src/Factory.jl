@@ -1,3 +1,86 @@
+# --- DISCRETE MODEL BUILDERS (Baseline Comparison) --------------------------- #
+
+"""
+    build(model::Type{MyHiddenMarkovModel}, data::NamedTuple) -> MyHiddenMarkovModel
+
+Builds a discrete HMM from provided transition and emission matrices.
+
+### NamedTuple keys
+- `states::Array{Int64,1}`: State indices
+- `T::Array{Float64,2}`: Transition matrix [K x K]
+- `E::Array{Float64,2}`: Emission matrix [K x M]
+"""
+function build(model::Type{MyHiddenMarkovModel}, data::NamedTuple)::MyHiddenMarkovModel
+
+    m = model();
+    transition = Dict{Int64, Categorical}();
+    emission = Dict{Int64, Categorical}();
+
+    states = data.states;
+    T = data.T;
+    E = data.E;
+
+    for s ∈ states
+        transition[s] = Categorical(T[s,:]);
+        emission[s] = Categorical(E[s,:]);
+    end
+
+    m.transition = transition;
+    m.emission = emission;
+    m.states = states;
+
+    return m;
+end
+
+
+"""
+    build(model::Type{MyHiddenMarkovModelWithJumps}, data::NamedTuple) -> MyHiddenMarkovModelWithJumps
+
+Builds a discrete HMM with Poisson jump process (baseline from discrete paper).
+
+### NamedTuple keys
+- `states::Array{Int64,1}`: State indices
+- `T::Array{Float64,2}`: Transition matrix [K x K]
+- `E::Array{Float64,2}`: Emission matrix [K x M]
+- `ϵ::Float64`: Jump probability
+- `λ::Float64`: Jump duration rate (Poisson parameter)
+"""
+function build(model::Type{MyHiddenMarkovModelWithJumps}, data::NamedTuple)::MyHiddenMarkovModelWithJumps
+
+    m = model();
+    transition = Dict{Int64, Categorical}();
+    inverse_transition = Dict{Int64, Categorical}();
+    emission = Dict{Int64, Categorical}();
+    ϵ = data.ϵ;
+    λ = data.λ;
+
+    states = data.states;
+    T = data.T;
+    E = data.E;
+
+    for s ∈ states
+        transition[s] = Categorical(T[s,:]);
+        emission[s] = Categorical(E[s,:]);
+    end
+
+    for s ∈ states
+        F = sum(1 .- T[s,:]);
+        d = (1/F)*(1 .- T[s,:]);
+        inverse_transition[s] = Categorical(d);
+    end
+
+    m.transition = transition;
+    m.inverse_transition = inverse_transition;
+    m.emission = emission;
+    m.states = states;
+    m.ϵ = ϵ;
+    m.λ = λ;
+    m.jump_distribution = Poisson(λ);
+
+    return m;
+end
+
+
 # --- CONTINUOUS MODEL BUILDERS ----------------------------------------------- #
 
 """
@@ -48,6 +131,36 @@ function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::My
     
     return m
 end
+
+
+# --- GARCH MODEL BUILDER ----------------------------------------------------- #
+
+"""
+    build(model::Type{MyGARCHModel}, data::NamedTuple) -> MyGARCHModel
+
+Fits a GARCH(1,1) model via maximum likelihood estimation.
+σ²_t = ω + α * r²_{t-1} + β * σ²_{t-1}
+
+### NamedTuple keys
+- `observations::Vector{Float64}`: Return series (same scale as HMM data)
+"""
+function build(model::Type{MyGARCHModel}, data::NamedTuple)::MyGARCHModel
+
+    obs = data.observations;
+    ω, α, β, μ, σ2_hist, ll = _fit_garch11(obs);
+
+    m = model();
+    m.ω = ω;
+    m.α = α;
+    m.β = β;
+    m.μ = μ;
+    m.σ2_history = σ2_hist;
+    m.log_likelihood = ll;
+
+    return m;
+end
+
+# ----------------------------------------------------------------------------- #
 
 
 # --- BAYESIAN MODEL BUILDERS ------------------------------------------------- #

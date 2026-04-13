@@ -48,6 +48,36 @@
         @test all(s -> s in model.states, chain)
     end
 
+    @testset "Simulation - discrete jump HMM" begin
+        K = 7
+        T_mat = zeros(K, K) .+ 1/K
+        E_mat = zeros(K, K) .+ 1/K
+        model = build(MyHiddenMarkovModelWithJumps, (
+            states = collect(1:K), T = T_mat, E = E_mat,
+            ϵ = 0.02, λ = 3.0
+        ))
+        chain = model(1, 500)
+
+        @test length(chain) == 500
+        @test chain[1] == 1
+        @test all(s -> s in model.states, chain)
+    end
+
+    @testset "GARCH(1,1) fitting and simulation" begin
+        rng = Random.MersenneTwister(42)
+        obs = randn(rng, 500) .* 0.03
+
+        model = build(MyGARCHModel, (observations = obs,))
+
+        @test model.ω > 0
+        @test (model.α + model.β) < 1.0
+
+        # Simulate from fitted model
+        sim = simulate_garch(model, 252)
+        @test length(sim) == 252
+        @test all(isfinite, sim)
+    end
+
     @testset "log_growth_matrix - raw vector" begin
         prices = [100.0, 101.0, 99.5, 102.0, 100.5]
         R = log_growth_matrix(prices; Δt=1/252, risk_free_rate=0.0)

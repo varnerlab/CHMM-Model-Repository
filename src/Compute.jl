@@ -5,6 +5,71 @@ function _logsumexp_vec(x::Array{Float64,1})::Float64
     return m + log(sum(exp.(x .- m)));
 end
 
+# -- Discrete Simulations (Baseline Comparison) --
+
+"""
+    _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64) -> Array{Int64,1}
+
+Simulates a single path of hidden states for the Discrete HMM.
+"""
+function _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
+
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
+
+    for i ∈ 2:steps
+        chain[i] = rand(m.transition[chain[i-1]]);
+    end
+
+    return chain;
+end
+
+"""
+    _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64) -> Array{Int64,1}
+
+Simulates a single path of hidden states for the Discrete HMM with Poisson jumps
+(regime teleportation). Baseline model from the discrete paper.
+"""
+function _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64)::Array{Int64,1}
+
+    chain = Array{Int64,1}(undef, steps);
+    tmp_chain = Dict{Int64,Int64}();
+    tmp_chain[1] = start;
+    counter = 2;
+
+    while (counter ≤ steps)
+
+        if (rand() < m.ϵ)
+
+            number_of_jumps = rand(m.jump_distribution);
+            number_of_states = length(m.states);
+            bottom_states = [1,2,3];
+            top_states = [number_of_states-2,number_of_states-1,number_of_states];
+
+            for _ ∈ 1:number_of_jumps
+                if (counter ≤ steps)
+                    if (rand() < 0.52)
+                        tmp_chain[counter] = rand(bottom_states);
+                    else
+                        tmp_chain[counter] = rand(top_states);
+                    end
+                    counter += 1;
+                end
+            end
+        else
+            current_state = tmp_chain[counter-1];
+            tmp_chain[counter] = rand(m.transition[current_state]);
+            counter += 1;
+        end
+    end
+
+    for i ∈ 1:steps
+        chain[i] = tmp_chain[i];
+    end
+
+    return chain;
+end
+
 # -- Continuous Simulations --
 
 """
@@ -340,6 +405,174 @@ Functor call to simulate a path for the Continuous Gaussian HMM.
 """
 (m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
 
+# Discrete Models (Baseline)
+"""
+    (m::MyHiddenMarkovModel)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Discrete HMM.
+"""
+(m::MyHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+"""
+    (m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) -> Array{Int64,1}
+
+Functor call to simulate a path for the Discrete Jump HMM.
+"""
+(m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+
+# ========================================================================================= #
+# GARCH(1,1) — Fitting and Simulation
+# ========================================================================================= #
+
+"""
+    _garch11_loglikelihood(params, obs) -> Float64
+
+Negative log-likelihood for GARCH(1,1). Used internally by the MLE optimizer.
+σ²_t = ω + α * (r_{t-1} - μ)² + β * σ²_{t-1}
+"""
+function _garch11_loglikelihood(params::Vector{Float64}, obs::Vector{Float64})::Float64
+
+    ω = params[1]; α = params[2]; β = params[3]; μ = params[4];
+    N = length(obs);
+
+    # Stationarity and positivity constraints — return large penalty if violated
+    if ω ≤ 0 || α < 0 || β < 0 || (α + β) ≥ 1.0
+        return 1e10;
+    end
+
+    σ2 = ω / (1.0 - α - β); # unconditional variance as initial value
+    ll = 0.0;
+
+    for t in 1:N
+        r = obs[t] - μ;
+        ll += -0.5 * (log(2π) + log(σ2) + r^2 / σ2);
+        if t < N
+            σ2 = ω + α * r^2 + β * σ2;
+            σ2 = max(σ2, 1e-12); # floor
+        end
+    end
+
+    return -ll; # negative because we minimize
+end
+
+"""
+    _fit_garch11(obs::Vector{Float64}) -> Tuple
+
+Fits GARCH(1,1) via grid-initialized Nelder-Mead optimization.
+Returns (ω, α, β, μ, σ2_history, log_likelihood).
+"""
+function _fit_garch11(obs::Vector{Float64})
+
+    N = length(obs);
+    μ_init = mean(obs);
+    var_init = var(obs);
+
+    # Grid search for good initial parameters
+    best_nll = Inf;
+    best_params = [var_init * 0.05, 0.05, 0.90, μ_init];
+
+    for α_try in [0.02, 0.05, 0.10, 0.15]
+        for β_try in [0.70, 0.80, 0.85, 0.90]
+            if α_try + β_try < 0.999
+                ω_try = var_init * (1.0 - α_try - β_try);
+                p = [ω_try, α_try, β_try, μ_init];
+                nll = _garch11_loglikelihood(p, obs);
+                if nll < best_nll
+                    best_nll = nll;
+                    best_params = copy(p);
+                end
+            end
+        end
+    end
+
+    # Nelder-Mead optimization (simplex method — no gradient needed)
+    params = copy(best_params);
+    simplex = [copy(params) for _ in 1:(length(params)+1)];
+    for i in 2:length(simplex)
+        simplex[i][i-1] *= 1.2; # perturb each dimension
+    end
+
+    for _ in 1:2000
+        # Evaluate
+        vals = [_garch11_loglikelihood(s, obs) for s in simplex];
+        order = sortperm(vals);
+        simplex = simplex[order];
+        vals = vals[order];
+
+        # Check convergence
+        if abs(vals[end] - vals[1]) < 1e-8
+            break;
+        end
+
+        n = length(params);
+        # Centroid (excluding worst)
+        centroid = sum(simplex[1:n]) ./ n;
+
+        # Reflection
+        reflected = centroid .+ (centroid .- simplex[end]);
+        f_r = _garch11_loglikelihood(reflected, obs);
+
+        if f_r < vals[1]
+            # Expansion
+            expanded = centroid .+ 2.0 .* (reflected .- centroid);
+            f_e = _garch11_loglikelihood(expanded, obs);
+            simplex[end] = f_e < f_r ? expanded : reflected;
+        elseif f_r < vals[n]
+            simplex[end] = reflected;
+        else
+            # Contraction
+            contracted = centroid .+ 0.5 .* (simplex[end] .- centroid);
+            f_c = _garch11_loglikelihood(contracted, obs);
+            if f_c < vals[end]
+                simplex[end] = contracted;
+            else
+                # Shrink
+                for i in 2:length(simplex)
+                    simplex[i] = simplex[1] .+ 0.5 .* (simplex[i] .- simplex[1]);
+                end
+            end
+        end
+    end
+
+    # Best result
+    vals = [_garch11_loglikelihood(s, obs) for s in simplex];
+    best = simplex[argmin(vals)];
+    ω, α, β, μ = best[1], best[2], best[3], best[4];
+
+    # Reconstruct σ² history
+    σ2_hist = zeros(N);
+    σ2_hist[1] = ω / max(1.0 - α - β, 1e-6);
+    for t in 2:N
+        r = obs[t-1] - μ;
+        σ2_hist[t] = ω + α * r^2 + β * σ2_hist[t-1];
+        σ2_hist[t] = max(σ2_hist[t], 1e-12);
+    end
+
+    ll = -_garch11_loglikelihood(best, obs);
+
+    return (ω, α, β, μ, σ2_hist, ll);
+end
+
+
+"""
+    simulate_garch(model::MyGARCHModel, n_steps::Int64) -> Vector{Float64}
+
+Simulates a return series from a fitted GARCH(1,1) model.
+"""
+function simulate_garch(model::MyGARCHModel, n_steps::Int64)::Vector{Float64}
+
+    returns = zeros(n_steps);
+    σ2 = model.ω / max(1.0 - model.α - model.β, 1e-6); # start at unconditional variance
+
+    for t in 1:n_steps
+        returns[t] = model.μ + sqrt(σ2) * randn();
+        σ2 = model.ω + model.α * (returns[t] - model.μ)^2 + model.β * σ2;
+        σ2 = max(σ2, 1e-12);
+    end
+
+    return returns;
+end
 
 
 

@@ -311,18 +311,32 @@ for K in K_VALUES
         L_use = min(L_val, n_o - 1);
         acf_obs_val = autocor(abs.(observed), 1:L_use);
 
-        ks_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; w1_s = 0.0; hell_s = 0.0;
+        ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0;
+        w1_s = 0.0; hell_s = 0.0;
         ks_pvals = Float64[];
+
+        # Coverage: for each of 99 empirical quantiles, check if within [5th,95th] sim envelope
+        obs_quantile_probs = range(0.01, 0.99, length=99);
+        obs_quantiles = quantile(observed, obs_quantile_probs);
+        sim_quantile_matrix = zeros(99, np);
 
         for i in 1:np
             sim = sim_archive[:, i];
+
+            # KS test
             pval = pvalue(ApproximateTwoSampleKSTest(observed, sim));
             push!(ks_pvals, pval);
             if pval > 0.05; ks_pass += 1; end
 
+            # AD test
+            ad_pval = pvalue(KSampleADTest(observed, sim));
+            if ad_pval > 0.05; ad_pass += 1; end
+
+            # Kurtosis
             μ_s = mean(sim); σ_s = std(sim);
             kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
 
+            # ACF-MAE
             acf_sim_val = autocor(abs.(sim), 1:L_use);
             acf_mae_s += mean(abs.(acf_obs_val .- acf_sim_val));
 
@@ -340,14 +354,30 @@ for K in K_VALUES
             h_o = fit(Histogram, observed, edges).weights ./ n_o;
             h_s = fit(Histogram, sim, edges).weights ./ length(sim);
             hell_s += sqrt(sum((sqrt.(h_o) .- sqrt.(h_s)).^2)) / sqrt(2);
+
+            # Quantiles for coverage
+            sim_quantile_matrix[:, i] = quantile(sim, obs_quantile_probs);
         end
 
+        # Coverage: fraction of 99 observed quantiles within [5th, 95th] percentile of sim quantiles
+        coverage_count = 0;
+        for q in 1:99
+            lo_env = quantile(sim_quantile_matrix[q, :], 0.05);
+            hi_env = quantile(sim_quantile_matrix[q, :], 0.95);
+            if obs_quantiles[q] >= lo_env && obs_quantiles[q] <= hi_env
+                coverage_count += 1;
+            end
+        end
+        coverage = round(100.0 * coverage_count / 99, digits=1);
+
         return (ks_rate=round(100*ks_pass/np, digits=1),
+                ad_rate=round(100*ad_pass/np, digits=1),
                 kurtosis_obs=round(kurt_obs_val, digits=2),
                 kurtosis_sim=round(kurt_s/np, digits=2),
                 acf_mae=round(acf_mae_s/np, digits=4),
                 wasserstein=round(w1_s/np, digits=3),
                 hellinger=round(hell_s/np, digits=4),
+                coverage=coverage,
                 ks_pvals=ks_pvals)
     end
 
@@ -356,11 +386,13 @@ for K in K_VALUES
 
     # Store for summary
     push!(summary_rows, (K=K,
-        ks_is=m_is.ks_rate, ks_oos=m_oos.ks_rate,
+        ks_is=m_is.ks_rate, ad_is=m_is.ad_rate,
+        ks_oos=m_oos.ks_rate, ad_oos=m_oos.ad_rate,
         kurt_obs=m_is.kurtosis_obs, kurt_sim_is=m_is.kurtosis_sim,
         acf_mae_is=m_is.acf_mae,
         w1_is=m_is.wasserstein, w1_oos=m_oos.wasserstein,
-        hell_is=m_is.hellinger, hell_oos=m_oos.hellinger))
+        hell_is=m_is.hellinger, hell_oos=m_oos.hellinger,
+        cov_is=m_is.coverage, cov_oos=m_oos.coverage))
 
     # Save per-K metrics
     open(joinpath(out_dir, "Metrics.txt"), "w") do io
@@ -370,11 +402,13 @@ for K in K_VALUES
         println(io, "                  | CHMM (IS)    | CHMM (OoS)")
         println(io, "-"^55)
         println(io, "KS pass rate (%) | $(lpad(m_is.ks_rate,12)) | $(lpad(m_oos.ks_rate,12))")
+        println(io, "AD pass rate (%) | $(lpad(m_is.ad_rate,12)) | $(lpad(m_oos.ad_rate,12))")
         println(io, "Excess kurtosis  | $(lpad(m_is.kurtosis_sim,12)) | $(lpad(m_oos.kurtosis_sim,12))")
         println(io, "  (observed)     | $(lpad(m_is.kurtosis_obs,12)) | $(lpad(m_oos.kurtosis_obs,12))")
         println(io, "ACF-MAE          | $(lpad(m_is.acf_mae,12)) |")
         println(io, "Wasserstein-1    | $(lpad(m_is.wasserstein,12)) | $(lpad(m_oos.wasserstein,12))")
         println(io, "Hellinger        | $(lpad(m_is.hellinger,12)) | $(lpad(m_oos.hellinger,12))")
+        println(io, "Coverage (%)     | $(lpad(m_is.coverage,12)) | $(lpad(m_oos.coverage,12))")
     end
 
     # ------------------------------------------------------------------- #
@@ -494,24 +528,24 @@ summary_dir = joinpath(RESULTS_DIR, TICKER);
 open(joinpath(summary_dir, "Table-T1-State-Resolution-Sensitivity.txt"), "w") do io
     println(io, "Table T1: State Resolution Sensitivity — $TICKER")
     println(io, "$(N_PATHS) simulated paths, α=0.05")
-    println(io, "="^100)
-    println(io, "  K  | KS IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS)  | W1(OoS) | H(IS)  | H(OoS)")
-    println(io, "-"^100)
+    println(io, "="^130)
+    println(io, "  K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS) | H(IS)  | Cov IS(%) | Cov OoS(%)")
+    println(io, "-"^130)
     for r in summary_rows
-        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,6)) | $(lpad(r.w1_oos,6)) | $(lpad(r.hell_is,5)) | $(lpad(r.hell_oos,5))")
+        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8)) | $(lpad(r.cov_oos,8))")
     end
-    println(io, "="^100)
+    println(io, "="^130)
 end
 
 # Also print to console
 println("\nTable T1: State Resolution Sensitivity")
-println("="^90)
-println("  K  | KS IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS)  | H(IS)")
-println("-"^90)
+println("="^110)
+println("  K  | KS IS(%) | AD IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS) | H(IS)  | Cov IS(%)")
+println("-"^110)
 for r in summary_rows
-    println("  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,6)) | $(lpad(r.hell_is,5))")
+    println("  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8))")
 end
-println("="^90)
+println("="^110)
 
 # ========================================================================================= #
 # DONE

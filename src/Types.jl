@@ -4,6 +4,62 @@ abstract type AbstractDistributionModel end
 # ----------------------------------------------------------------------------- #
 
 
+# --- DISCRETE MODELS (Baseline Comparison) ----------------------------------- #
+
+"""
+    mutable struct MyHiddenMarkovModel <: AbstractMarkovModel
+
+Discrete HMM with categorical transition and emission distributions.
+Used as the base for the discrete jump model (baseline comparison).
+
+### Required fields
+- `states::Array{Int64,1}`: The states of the model
+- `transition::Dict{Int64, Categorical}`: Transition distributions per state
+- `emission::Dict{Int64, Categorical}`: Emission distributions per state
+"""
+mutable struct MyHiddenMarkovModel <: AbstractMarkovModel
+
+    # data -
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission::Dict{Int64, Categorical}
+
+    # constructor -
+    MyHiddenMarkovModel() = new();
+end
+
+
+"""
+    mutable struct MyHiddenMarkovModelWithJumps <: AbstractMarkovModel
+
+Discrete HMM augmented with Poisson jump process (regime teleportation).
+This is the baseline model from the discrete paper for comparison.
+
+### Required fields
+- `states::Array{Int64,1}`: The states of the model
+- `transition::Dict{Int64, Categorical}`: Transition distributions per state
+- `inverse_transition::Dict{Int64, Categorical}`: Inverse transition (high-low reversed)
+- `emission::Dict{Int64, Categorical}`: Emission distributions per state
+- `ϵ::Float64`: Jump probability
+- `λ::Float64`: Jump duration parameter (Poisson rate)
+- `jump_distribution::Poisson`: Jump duration distribution
+"""
+mutable struct MyHiddenMarkovModelWithJumps <: AbstractMarkovModel
+
+    # data -
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    inverse_transition::Dict{Int64, Categorical}; # high-low probability states reversed
+    emission::Dict{Int64, Categorical}
+    ϵ::Float64; # jump probability
+    λ::Float64; # jump distribution parameter
+    jump_distribution::Poisson; # jump distribution
+
+    # constructor -
+    MyHiddenMarkovModelWithJumps() = new();
+end
+
+
 # --- CONTINUOUS MODELS ------------------------------------------------------- #
 
 """
@@ -33,6 +89,36 @@ mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
     # constructor
     MyContinuousHiddenMarkovModel() = new();
 end
+
+
+# --- GARCH MODEL ------------------------------------------------------------- #
+
+"""
+    mutable struct MyGARCHModel
+
+GARCH(1,1) model for conditional variance modeling.
+σ²_t = ω + α * r²_{t-1} + β * σ²_{t-1}
+
+### Required fields
+- `ω::Float64`: Constant (intercept), must be > 0
+- `α::Float64`: ARCH coefficient (shock impact), must be ≥ 0
+- `β::Float64`: GARCH coefficient (persistence), must be ≥ 0
+- `μ::Float64`: Mean of the return process
+- `σ2_history::Array{Float64,1}`: Fitted conditional variance series
+- `log_likelihood::Float64`: Log-likelihood at MLE solution
+"""
+mutable struct MyGARCHModel
+
+    ω::Float64;
+    α::Float64;
+    β::Float64;
+    μ::Float64;
+    σ2_history::Array{Float64,1};
+    log_likelihood::Float64;
+
+    MyGARCHModel() = new();
+end
+# ----------------------------------------------------------------------------- #
 
 
 # --- DISTRIBUTION MODELS (Bayesian Inference) -------------------------------- #
