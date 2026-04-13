@@ -46,18 +46,6 @@ The algorithm terminates when:
 
 The full log-likelihood history is stored in `model.log_likelihood_history`.
 
-## Discrete HMM (Legacy)
-
-For discrete models, transition and emission matrices are provided directly:
-
-```julia
-model = build(MyHiddenMarkovModel, (
-    states = collect(1:K),
-    T = transition_matrix,  # K x K
-    E = emission_matrix     # K x K
-))
-```
-
 ## Bayesian Distribution Fitting
 
 For per-regime distribution fitting beyond Gaussians:

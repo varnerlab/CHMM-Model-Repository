@@ -5,6 +5,9 @@
 # Supports both equity (SPY) and volatility index (VIX) asset classes.
 # Runs the full pipeline for K ∈ {3, 6, 9, 11, 13} hidden states.
 #
+# This study focuses on continuous HMM (no jump mechanisms). At small K,
+# the CHMM alone reproduces all stylized facts to some extent.
+#
 # Usage:
 #   ASSET_CLASS = :equity       # SPY (default)
 #   ASSET_CLASS = :volatility   # VIX
@@ -25,7 +28,6 @@ Pkg.activate(".");
 include("Include.jl");
 
 # --- ASSET CLASS SELECTION ---
-# Set ASSET_CLASS before including this file, or default to :equity
 if !@isdefined(ASSET_CLASS)
     const ASSET_CLASS = :equity;
 end
@@ -38,13 +40,7 @@ const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const MAX_ITER = 60;
 const N_PATHS = 1000;
-const N_PATHS_GRID = 200;
 const L = 252;            # ACF max lag
-const W_K = 0.20;         # kurtosis penalty weight
-
-# Grid search parameters
-const ε_GRID = [1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 2.5e-2];
-const λ_GRID = [10, 30, 55, 70, 85, 100, 130, 160];
 
 # Output directory
 const RESULTS_DIR = joinpath(_ROOT, "results");
@@ -54,10 +50,9 @@ println("  Asset class: $(ASSET_CLASS) | Ticker: $(TICKER)");
 # ========================================================================================= #
 # LOAD DATA
 # ========================================================================================= #
-println("\n[1/6] Loading data...")
+println("\n[1/4] Loading data...")
 
 if ASSET_CLASS == :volatility
-    # Volatility index: single-ticker dataset (VIX)
     train_dataset = MyVolatilityDataSet() |> x -> x["dataset"];
     R_is = log_growth_matrix(train_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
     n_steps = length(R_is);
@@ -68,7 +63,6 @@ if ASSET_CLASS == :volatility
 
     println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs")
 else
-    # Equity: multi-ticker portfolio (SPY, AAPL, etc.)
     train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
     maximum_number_trading_days = nrow(train_dataset["AAPL"]);
 
@@ -94,7 +88,7 @@ end
 # ========================================================================================= #
 # FIGURE 1: STYLIZED FACTS (only once — independent of K)
 # ========================================================================================= #
-println("\n[2/6] Generating Figure 1: Stylized Facts...")
+println("\n[2/4] Generating Figure 1: Stylized Facts...")
 
 fig1_dir = joinpath(RESULTS_DIR, TICKER, "stylized_facts");
 mkpath(fig1_dir);
@@ -137,7 +131,7 @@ d_gauss = Normal(μ_gauss, σ_gauss);
 μ_lap = median(R_is); b_lap = mean(abs.(R_is .- μ_lap));
 d_laplace = Laplace(μ_lap, b_lap);
 
-# Percentile-based axis limits (0.5th–99.5th with 20% padding)
+# Percentile-based axis limits
 x_lo_raw = quantile(R_is, 0.005); x_hi_raw = quantile(R_is, 0.995);
 x_pad = 0.20 * (x_hi_raw - x_lo_raw);
 x_lo = x_lo_raw - x_pad; x_hi = x_hi_raw + x_pad;
@@ -183,7 +177,7 @@ println("  Saved Figure 1 + Table 1")
 # PER-K ANALYSIS LOOP
 # ========================================================================================= #
 
-# Observed targets for grid search
+# Observed targets
 target_acf = autocor(abs.(R_is), 1:L);
 obs_μ = mean(R_is); obs_σ = std(R_is);
 target_kurtosis = sum(((R_is .- obs_μ) ./ obs_σ).^4) / n_steps - 3.0;
@@ -193,7 +187,7 @@ summary_rows = [];
 
 for K in K_VALUES
     println("\n" * "="^70)
-    println("[3/6] Processing K = $K states...")
+    println("[3/4] Processing K = $K states...")
     println("="^70)
 
     out_dir = joinpath(RESULTS_DIR, TICKER, "K$(K)");
@@ -204,18 +198,18 @@ for K in K_VALUES
     # ------------------------------------------------------------------- #
     println("  Training Baum-Welch (K=$K, max_iter=$MAX_ITER)...")
 
-    base_model = build(MyContinuousHiddenMarkovModel, (
+    model = build(MyContinuousHiddenMarkovModel, (
         observations = R_is,
         number_of_states = K,
         max_iter = MAX_ITER
     ));
 
-    println("  Converged in $(length(base_model.log_likelihood_history)) iterations")
+    println("  Converged in $(length(model.log_likelihood_history)) iterations")
 
     # Transition matrix + stationary distribution
     T_mat = zeros(K, K);
     for i in 1:K
-        T_mat[i, :] = probs(base_model.transition[i]);
+        T_mat[i, :] = probs(model.transition[i]);
     end
     π_stat = (T_mat^1000)[1, :];
     start_dist = Categorical(π_stat);
@@ -223,7 +217,7 @@ for K in K_VALUES
     # ------------------------------------------------------------------- #
     # FIGURE: Convergence
     # ------------------------------------------------------------------- #
-    p_conv = plot(base_model.log_likelihood_history,
+    p_conv = plot(model.log_likelihood_history,
         title="Baum-Welch Convergence ($TICKER, K=$K)", titlefontsize=10,
         xlabel="Iteration", ylabel="Log-Likelihood",
         legend=false, lw=2, color=:navy, marker=:circle, ms=3);
@@ -238,7 +232,7 @@ for K in K_VALUES
         xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", legend=:topright);
     histogram!(p_emit, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
     for s in 1:K
-        d = base_model.emission[s];
+        d = model.emission[s];
         plot!(p_emit, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="S$s", alpha=0.8);
     end
     xlims!(p_emit, x_lo, x_hi);
@@ -260,13 +254,7 @@ for K in K_VALUES
     # ------------------------------------------------------------------- #
     res_times = [1.0 / (1.0 - T_mat[k,k]) for k in 1:K];
     p_res = bar(1:K, res_times, title="Natural Residence Time — K=$K", titlefontsize=10,
-        xlabel="State", ylabel="Steps", legend=:topright, color=:steelblue, alpha=0.7);
-    if K >= 6
-        crash_label = (ASSET_CLASS == :volatility) ? "Low Vol" : "Crash";
-        boom_label = (ASSET_CLASS == :volatility) ? "High Vol" : "Boom";
-        bar!(p_res, 1:3, res_times[1:3], color=:red, alpha=0.5, label=crash_label);
-        bar!(p_res, (K-2):K, res_times[(K-2):K], color=:teal, alpha=0.5, label=boom_label);
-    end
+        xlabel="State", ylabel="Steps", legend=false, color=:steelblue, alpha=0.7);
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.svg"));
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.pdf"));
 
@@ -285,121 +273,33 @@ for K in K_VALUES
         println(io, "State | Mean (μ)     | Std Dev (σ)")
         println(io, "-"^50)
         for s in 1:K
-            d = base_model.emission[s];
+            d = model.emission[s];
             println(io, "  $(lpad(s,2))  | $(lpad(round(mean(d),digits=2),12)) | $(lpad(round(std(d),digits=2),12))")
         end
     end
 
     # ------------------------------------------------------------------- #
-    # STEP 2: GRID SEARCH FOR JUMP PARAMETERS
+    # STEP 2: SIMULATE N_PATHS PATHS (CHMM only)
     # ------------------------------------------------------------------- #
-    println("  Grid search for (ε, λ)...")
+    println("  Simulating $N_PATHS paths...")
 
-    obj_matrix = zeros(length(ε_GRID), length(λ_GRID));
-    best_J = Inf; best_ε = ε_GRID[1]; best_λ = λ_GRID[1];
-
-    for (ei, ε) in enumerate(ε_GRID)
-        for (li, λ) in enumerate(λ_GRID)
-            jm = build(MyContinuousHiddenMarkovModelWithJumps, (
-                base_model=base_model, epsilon=ε, lambda=Float64(λ)));
-
-            acf_sum = zeros(L); kurt_sum = 0.0;
-            for p in 1:N_PATHS_GRID
-                s0 = rand(start_dist);
-                states = jm(s0, n_steps);
-                returns = [rand(jm.emission[s]) for s in states];
-                acf_sum .+= autocor(abs.(returns), 1:L);
-                μ_r = mean(returns); σ_r = std(returns);
-                kurt_sum += sum(((returns .- μ_r) ./ σ_r).^4) / length(returns) - 3.0;
-            end
-
-            acf_sim = acf_sum ./ N_PATHS_GRID;
-            kurt_sim = kurt_sum / N_PATHS_GRID;
-            J = sum((target_acf .- acf_sim).^2) + W_K * (target_kurtosis - kurt_sim)^2;
-            obj_matrix[ei, li] = J;
-
-            if J < best_J; best_J = J; best_ε = ε; best_λ = λ; end
-        end
-    end
-
-    println("  Optimal: ε*=$best_ε, λ*=$best_λ")
-
-    # Build optimal jump model
-    jump_model = build(MyContinuousHiddenMarkovModelWithJumps, (
-        base_model=base_model, epsilon=best_ε, lambda=Float64(best_λ)));
-
-    # ------------------------------------------------------------------- #
-    # FIGURE: Grid Search Heatmap
-    # ------------------------------------------------------------------- #
-    ε_labels = [string(round(e, sigdigits=2)) for e in ε_GRID];
-    λ_labels = [string(Int(l)) for l in λ_GRID];
-
-    p_heat = heatmap(λ_labels, ε_labels, log10.(obj_matrix),
-        title="Grid Search J(ε,λ) — K=$K", titlefontsize=10,
-        xlabel="λ", ylabel="ε", color=:viridis, size=(600,450));
-    opt_li = findfirst(x->x==best_λ, λ_GRID);
-    opt_ei = findfirst(x->x==best_ε, ε_GRID);
-    scatter!(p_heat, [opt_li], [opt_ei], ms=12, color=:red, markershape=:star5, label="Optimal");
-    savefig(p_heat, joinpath(out_dir, "Fig-Grid-Search.svg"));
-    savefig(p_heat, joinpath(out_dir, "Fig-Grid-Search.pdf"));
-
-    # ------------------------------------------------------------------- #
-    # FIGURE: ACF at Optimal Parameters
-    # ------------------------------------------------------------------- #
-    n_val = 500;
-    acf_archive = zeros(L, n_val);
-    for p in 1:n_val
-        s0 = rand(start_dist);
-        states = jump_model(s0, n_steps);
-        returns = [rand(jump_model.emission[s]) for s in states];
-        acf_archive[:, p] = autocor(abs.(returns), 1:L);
-    end
-    acf_mean = mean(acf_archive, dims=2)[:];
-    acf_p10 = [quantile(acf_archive[t,:], 0.10) for t in 1:L];
-    acf_p90 = [quantile(acf_archive[t,:], 0.90) for t in 1:L];
-
-    p_acf_opt = plot(1:L, target_acf, lw=2, color=:red, ls=:dash, label="Observed",
-        title="ACF(|Gₜ|) at Optimal — K=$K (ε=$best_ε, λ=$best_λ)", titlefontsize=9,
-        xlabel="Lag", ylabel="ACF(|Gₜ|)");
-    plot!(p_acf_opt, 1:L, acf_mean, lw=2, color=:navy, label="Simulated (mean)");
-    plot!(p_acf_opt, 1:L, acf_p10, fillrange=acf_p90, alpha=0.2, color=:navy, label="10-90th pctl");
-    savefig(p_acf_opt, joinpath(out_dir, "Fig-ACF-Optimal.svg"));
-    savefig(p_acf_opt, joinpath(out_dir, "Fig-ACF-Optimal.pdf"));
-
-    # ------------------------------------------------------------------- #
-    # STEP 3: SIMULATE 1000 PATHS (NJ + WJ)
-    # ------------------------------------------------------------------- #
-    println("  Simulating $N_PATHS paths (NJ + WJ)...")
-
-    decoded_nj = Array{Float64,2}(undef, n_steps, N_PATHS);
-    decoded_wj = Array{Float64,2}(undef, n_steps, N_PATHS);
-    oos_decoded_nj = Array{Float64,2}(undef, n_steps_oos, N_PATHS);
-    oos_decoded_wj = Array{Float64,2}(undef, n_steps_oos, N_PATHS);
+    decoded_is = Array{Float64,2}(undef, n_steps, N_PATHS);
+    decoded_oos = Array{Float64,2}(undef, n_steps_oos, N_PATHS);
 
     for i in 1:N_PATHS
-        # IS - NJ
+        # IS
         s0 = rand(start_dist);
-        states = base_model(s0, n_steps);
-        for j in 1:n_steps; decoded_nj[j,i] = rand(base_model.emission[states[j]]); end
+        states = model(s0, n_steps);
+        for j in 1:n_steps; decoded_is[j,i] = rand(model.emission[states[j]]); end
 
-        # IS - WJ
+        # OoS
         s0 = rand(start_dist);
-        states = jump_model(s0, n_steps);
-        for j in 1:n_steps; decoded_wj[j,i] = rand(jump_model.emission[states[j]]); end
-
-        # OoS - NJ
-        s0 = rand(start_dist);
-        states = base_model(s0, n_steps_oos);
-        for j in 1:n_steps_oos; oos_decoded_nj[j,i] = rand(base_model.emission[states[j]]); end
-
-        # OoS - WJ
-        s0 = rand(start_dist);
-        states = jump_model(s0, n_steps_oos);
-        for j in 1:n_steps_oos; oos_decoded_wj[j,i] = rand(jump_model.emission[states[j]]); end
+        states = model(s0, n_steps_oos);
+        for j in 1:n_steps_oos; decoded_oos[j,i] = rand(model.emission[states[j]]); end
     end
 
     # ------------------------------------------------------------------- #
-    # STEP 4: COMPUTE METRICS
+    # STEP 3: COMPUTE METRICS
     # ------------------------------------------------------------------- #
     println("  Computing validation metrics...")
 
@@ -451,35 +351,30 @@ for K in K_VALUES
                 ks_pvals=ks_pvals)
     end
 
-    m_nj_is = eval_metrics(R_is, decoded_nj, L);
-    m_wj_is = eval_metrics(R_is, decoded_wj, L);
-    m_nj_oos = eval_metrics(R_oos, oos_decoded_nj, L);
-    m_wj_oos = eval_metrics(R_oos, oos_decoded_wj, L);
+    m_is = eval_metrics(R_is, decoded_is, L);
+    m_oos = eval_metrics(R_oos, decoded_oos, L);
 
     # Store for summary
-    push!(summary_rows, (K=K, ε=best_ε, λ=best_λ,
-        nj_ks_is=m_nj_is.ks_rate, wj_ks_is=m_wj_is.ks_rate,
-        nj_ks_oos=m_nj_oos.ks_rate, wj_ks_oos=m_wj_oos.ks_rate,
-        nj_kurt_is=m_nj_is.kurtosis_sim, wj_kurt_is=m_wj_is.kurtosis_sim,
-        nj_acf_mae=m_nj_is.acf_mae, wj_acf_mae=m_wj_is.acf_mae,
-        nj_w1_is=m_nj_is.wasserstein, wj_w1_is=m_wj_is.wasserstein,
-        nj_hell_is=m_nj_is.hellinger, wj_hell_is=m_wj_is.hellinger,
-        kurt_obs=m_nj_is.kurtosis_obs))
+    push!(summary_rows, (K=K,
+        ks_is=m_is.ks_rate, ks_oos=m_oos.ks_rate,
+        kurt_obs=m_is.kurtosis_obs, kurt_sim_is=m_is.kurtosis_sim,
+        acf_mae_is=m_is.acf_mae,
+        w1_is=m_is.wasserstein, w1_oos=m_oos.wasserstein,
+        hell_is=m_is.hellinger, hell_oos=m_oos.hellinger))
 
     # Save per-K metrics
     open(joinpath(out_dir, "Metrics.txt"), "w") do io
         println(io, "Validation Metrics — $TICKER, K=$K")
-        println(io, "Optimal: ε*=$best_ε, λ*=$best_λ")
         println(io, "="^65)
         println(io, "")
-        println(io, "                  | CHMM-NJ (IS) | CHMM-WJ (IS) | CHMM-NJ (OoS) | CHMM-WJ (OoS)")
-        println(io, "-"^80)
-        println(io, "KS pass rate (%) | $(lpad(m_nj_is.ks_rate,12)) | $(lpad(m_wj_is.ks_rate,12)) | $(lpad(m_nj_oos.ks_rate,13)) | $(lpad(m_wj_oos.ks_rate,13))")
-        println(io, "Excess kurtosis  | $(lpad(m_nj_is.kurtosis_sim,12)) | $(lpad(m_wj_is.kurtosis_sim,12)) | $(lpad(m_nj_oos.kurtosis_sim,13)) | $(lpad(m_wj_oos.kurtosis_sim,13))")
-        println(io, "  (observed)     | $(lpad(m_nj_is.kurtosis_obs,12)) |              | $(lpad(m_nj_oos.kurtosis_obs,13)) |")
-        println(io, "ACF-MAE          | $(lpad(m_nj_is.acf_mae,12)) | $(lpad(m_wj_is.acf_mae,12)) |               |")
-        println(io, "Wasserstein-1    | $(lpad(m_nj_is.wasserstein,12)) | $(lpad(m_wj_is.wasserstein,12)) | $(lpad(m_nj_oos.wasserstein,13)) | $(lpad(m_wj_oos.wasserstein,13))")
-        println(io, "Hellinger        | $(lpad(m_nj_is.hellinger,12)) | $(lpad(m_wj_is.hellinger,12)) | $(lpad(m_nj_oos.hellinger,13)) | $(lpad(m_wj_oos.hellinger,13))")
+        println(io, "                  | CHMM (IS)    | CHMM (OoS)")
+        println(io, "-"^55)
+        println(io, "KS pass rate (%) | $(lpad(m_is.ks_rate,12)) | $(lpad(m_oos.ks_rate,12))")
+        println(io, "Excess kurtosis  | $(lpad(m_is.kurtosis_sim,12)) | $(lpad(m_oos.kurtosis_sim,12))")
+        println(io, "  (observed)     | $(lpad(m_is.kurtosis_obs,12)) | $(lpad(m_oos.kurtosis_obs,12))")
+        println(io, "ACF-MAE          | $(lpad(m_is.acf_mae,12)) |")
+        println(io, "Wasserstein-1    | $(lpad(m_is.wasserstein,12)) | $(lpad(m_oos.wasserstein,12))")
+        println(io, "Hellinger        | $(lpad(m_is.hellinger,12)) | $(lpad(m_oos.hellinger,12))")
     end
 
     # ------------------------------------------------------------------- #
@@ -488,40 +383,34 @@ for K in K_VALUES
     println("  Generating Figure 3: IS comparison...")
 
     # (a) Density
-    p3a = plot(title="(a) Density (KS: NJ=$(m_nj_is.ks_rate)%, WJ=$(m_wj_is.ks_rate)%)",
+    p3a = plot(title="(a) Density (KS pass: $(m_is.ks_rate)%)",
         titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
     histogram!(p3a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
-    density!(p3a, decoded_nj[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-NJ");
-    density!(p3a, decoded_wj[:,1], lw=2, color=:red, alpha=0.7, label="CHMM-WJ");
+    density!(p3a, decoded_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM");
     xlims!(p3a, x_lo, x_hi);
 
     # (b) ACF(|G|)
     acf_obs_is = autocor(abs.(R_is), 1:L);
     n_acf_sample = min(200, N_PATHS);
-    acf_nj_arch = hcat([autocor(abs.(decoded_nj[:,i]), 1:L) for i in 1:n_acf_sample]...);
-    acf_wj_arch = hcat([autocor(abs.(decoded_wj[:,i]), 1:L) for i in 1:n_acf_sample]...);
-    acf_nj_m = mean(acf_nj_arch, dims=2)[:];
-    acf_wj_m = mean(acf_wj_arch, dims=2)[:];
-    acf_wj_10 = [quantile(acf_wj_arch[t,:], 0.10) for t in 1:L];
-    acf_wj_90 = [quantile(acf_wj_arch[t,:], 0.90) for t in 1:L];
+    acf_arch = hcat([autocor(abs.(decoded_is[:,i]), 1:L) for i in 1:n_acf_sample]...);
+    acf_m = mean(acf_arch, dims=2)[:];
+    acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
+    acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
     p3b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
         title="(b) ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p3b, 1:L, acf_nj_m, lw=2, color=:blue, ls=:dot, label="NJ (mean)");
-    plot!(p3b, 1:L, acf_wj_m, lw=2, color=:navy, label="WJ (mean)");
-    plot!(p3b, 1:L, acf_wj_10, fillrange=acf_wj_90, alpha=0.15, color=:navy, label="WJ 10-90th");
+    plot!(p3b, 1:L, acf_m, lw=2, color=:navy, label="CHMM (mean)");
+    plot!(p3b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
 
     # (c) Q-Q
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
-    q_nj = quantile(vec(decoded_nj), probs_qq);
-    q_wj = quantile(vec(decoded_wj), probs_qq);
+    q_sim = quantile(vec(decoded_is), probs_qq);
 
     p3c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
         title="(c) Tail Q-Q (0.1st-99.9th)", titlefontsize=9,
         xlabel="Observed Quantiles", ylabel="Simulated Quantiles");
-    scatter!(p3c, q_obs, q_nj, ms=3, alpha=0.6, color=:blue, label="NJ");
-    scatter!(p3c, q_obs, q_wj, ms=3, alpha=0.6, color=:red, label="WJ");
+    scatter!(p3c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM");
 
     fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400),
         plot_title="Figure 3: IS Comparison — $TICKER, K=$K", plot_titlefontsize=12);
@@ -534,14 +423,14 @@ for K in K_VALUES
     println("  Generating Figure 4: OoS validation...")
 
     # (a) KS p-values
-    p4a = histogram(m_wj_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
-        label="CHMM-WJ", title="(a) OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
+    p4a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
+        label="CHMM", title="(a) OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
     vline!(p4a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
 
-    # (b) Density fan chart (discrete paper style: light simulated, bold observed)
+    # (b) Density fan chart
     p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
     for i in 1:min(50, N_PATHS)
-        density!(p4b, oos_decoded_wj[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
+        density!(p4b, decoded_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
     end
     density!(p4b, R_oos, lw=3, color=:red, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
@@ -552,14 +441,14 @@ for K in K_VALUES
     τ_oos = 1:min(L, n_steps_oos-1);
     acf_oos_obs = autocor(abs.(R_oos), τ_oos);
     n_acf_oos = min(200, N_PATHS);
-    acf_oos_arch = hcat([autocor(abs.(oos_decoded_wj[:,i]), τ_oos) for i in 1:n_acf_oos]...);
+    acf_oos_arch = hcat([autocor(abs.(decoded_oos[:,i]), τ_oos) for i in 1:n_acf_oos]...);
     acf_oos_m = mean(acf_oos_arch, dims=2)[:];
     acf_oos_10 = [quantile(acf_oos_arch[t,:], 0.10) for t in 1:length(τ_oos)];
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
     p4c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
         title="(c) OoS ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p4c, τ_oos, acf_oos_m, lw=2, color=:navy, label="WJ (mean)");
+    plot!(p4c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p4c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
 
     fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400),
@@ -575,20 +464,18 @@ for K in K_VALUES
     p_traj = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed",
         title="Return Trajectory (first $traj_len steps) — K=$K", titlefontsize=10,
         xlabel="Trading Day", ylabel=RETURN_LABEL);
-    plot!(p_traj, decoded_wj[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-WJ (path $idx)");
+    plot!(p_traj, decoded_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM (path $idx)");
     savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.svg"));
     savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.pdf"));
 
     # ------------------------------------------------------------------- #
-    # FIGURE: ACF Comparison (NJ single path vs WJ single path)
+    # FIGURE: ACF Comparison (single path)
     # ------------------------------------------------------------------- #
     idx_acf = rand(1:N_PATHS);
-    p_acf_nj = plot_acf_comparison(R_is, decoded_nj[:, idx_acf], "Returns ACF — NJ, K=$K", idx_acf; L=L);
-    p_acf_wj = plot_acf_comparison(R_is, decoded_wj[:, idx_acf], "Returns ACF — WJ, K=$K", idx_acf; L=L);
-    p_acf_nj_abs = plot_acf_comparison(R_is, decoded_nj[:, idx_acf], "|Returns| ACF — NJ, K=$K", idx_acf; is_absolute=true, L=L);
-    p_acf_wj_abs = plot_acf_comparison(R_is, decoded_wj[:, idx_acf], "|Returns| ACF — WJ, K=$K", idx_acf; is_absolute=true, L=L);
+    p_acf_ret = plot_acf_comparison(R_is, decoded_is[:, idx_acf], "Returns ACF — K=$K", idx_acf; L=L);
+    p_acf_abs = plot_acf_comparison(R_is, decoded_is[:, idx_acf], "|Returns| ACF — K=$K", idx_acf; is_absolute=true, L=L);
 
-    fig_acf = plot(p_acf_nj, p_acf_wj, p_acf_nj_abs, p_acf_wj_abs, layout=(2,2), size=(1200,700),
+    fig_acf = plot(p_acf_ret, p_acf_abs, layout=(1,2), size=(1000,400),
         plot_title="ACF Comparison — $TICKER, K=$K", plot_titlefontsize=12);
     savefig(fig_acf, joinpath(out_dir, "Fig-ACF-Comparison.svg"));
     savefig(fig_acf, joinpath(out_dir, "Fig-ACF-Comparison.pdf"));
@@ -597,34 +484,34 @@ for K in K_VALUES
 end
 
 # ========================================================================================= #
-# SUMMARY TABLE (Table T1 equivalent — State Resolution Sensitivity)
+# SUMMARY TABLE (State Resolution Sensitivity)
 # ========================================================================================= #
 println("\n" * "="^70)
-println("[4/6] Writing Summary Table (State Resolution Sensitivity)...")
+println("[4/4] Writing Summary Table (State Resolution Sensitivity)...")
 println("="^70)
 
 summary_dir = joinpath(RESULTS_DIR, TICKER);
 open(joinpath(summary_dir, "Table-T1-State-Resolution-Sensitivity.txt"), "w") do io
     println(io, "Table T1: State Resolution Sensitivity — $TICKER")
     println(io, "$(N_PATHS) simulated paths, α=0.05")
-    println(io, "="^120)
-    println(io, "  K  | ε*     | λ*   | KS IS(NJ) | KS IS(WJ) | KS OoS(NJ) | KS OoS(WJ) | Kurt(obs) | Kurt(NJ) | Kurt(WJ) | ACF-MAE(NJ) | ACF-MAE(WJ) | W1(NJ)  | W1(WJ)  | H(NJ)  | H(WJ)")
-    println(io, "-"^120)
+    println(io, "="^100)
+    println(io, "  K  | KS IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS)  | W1(OoS) | H(IS)  | H(OoS)")
+    println(io, "-"^100)
     for r in summary_rows
-        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ε,6)) | $(lpad(Int(r.λ),4)) | $(lpad(r.nj_ks_is,9)) | $(lpad(r.wj_ks_is,9)) | $(lpad(r.nj_ks_oos,10)) | $(lpad(r.wj_ks_oos,10)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.nj_kurt_is,7)) | $(lpad(r.wj_kurt_is,7)) | $(lpad(r.nj_acf_mae,10)) | $(lpad(r.wj_acf_mae,10)) | $(lpad(r.nj_w1_is,6)) | $(lpad(r.wj_w1_is,6)) | $(lpad(r.nj_hell_is,5)) | $(lpad(r.wj_hell_is,5))")
+        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,6)) | $(lpad(r.w1_oos,6)) | $(lpad(r.hell_is,5)) | $(lpad(r.hell_oos,5))")
     end
-    println(io, "="^120)
+    println(io, "="^100)
 end
 
 # Also print to console
 println("\nTable T1: State Resolution Sensitivity")
-println("="^100)
-println("  K  | ε*     | λ*   | KS IS(NJ)% | KS IS(WJ)% | KS OoS(NJ)% | KS OoS(WJ)% | ACF-MAE(NJ) | ACF-MAE(WJ)")
-println("-"^100)
+println("="^90)
+println("  K  | KS IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS)  | H(IS)")
+println("-"^90)
 for r in summary_rows
-    println("  $(lpad(r.K,2)) | $(lpad(r.ε,6)) | $(lpad(Int(r.λ),4)) |   $(lpad(r.nj_ks_is,8)) |   $(lpad(r.wj_ks_is,8)) |    $(lpad(r.nj_ks_oos,8))  |    $(lpad(r.wj_ks_oos,8))  |   $(lpad(r.nj_acf_mae,9)) |   $(lpad(r.wj_acf_mae,9))")
+    println("  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,6)) | $(lpad(r.hell_is,5))")
 end
-println("="^100)
+println("="^90)
 
 # ========================================================================================= #
 # DONE
@@ -639,8 +526,6 @@ println("  - Fig-Emission-PDFs (.svg/.pdf)")
 println("  - Fig-Transition-Matrix (.svg/.pdf)")
 println("  - Fig-Residence-Times (.svg/.pdf)")
 println("  - Fig-Stationary-Distribution (.svg/.pdf)")
-println("  - Fig-Grid-Search (.svg/.pdf)")
-println("  - Fig-ACF-Optimal (.svg/.pdf)")
 println("  - Fig-3-IS-Comparison (.svg/.pdf)")
 println("  - Fig-4-OoS-Validation (.svg/.pdf)")
 println("  - Fig-Trajectory-Example (.svg/.pdf)")

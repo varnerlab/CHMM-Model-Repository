@@ -1,9 +1,11 @@
-# CLAUDE.md -- Development Guidelines for ContinuousJumpHMM
+# CLAUDE.md -- Development Guidelines for ContinuousHMM
 
 This file provides context for AI-assisted development on this codebase.
 
 ## Project Summary
-Continuous Hidden Markov Models with Poisson jump processes for financial time series simulation. Extends the discrete [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl) to continuous Gaussian emissions trained via Baum-Welch (EM).
+Continuous Hidden Markov Models with Gaussian emissions for financial time series simulation. Trained via Baum-Welch (EM). At small K, the CHMM alone reproduces all three canonical stylized facts (heavy tails, negligible linear ACF, persistent volatility clustering) to some extent.
+
+Includes option pricing via CHMM regime-switching volatility (using VIX regimes) and Heston stochastic volatility benchmark.
 
 ## Module Load Order (Critical)
 Source files must be loaded in this exact order (defined in `Include.jl`):
@@ -11,21 +13,23 @@ Source files must be loaded in this exact order (defined in `Include.jl`):
 2. `Files.jl` -- data loading (depends on path constants from `Include.jl`)
 3. `Factory.jl` -- model constructors (depends on Types)
 4. `Compute.jl` -- algorithms and simulation (depends on Types, uses Factory via `build`)
-5. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
+5. `Pricing.jl` -- option pricing engines (depends on Types, Compute)
+6. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
 
 Rearranging this order will cause `UndefVarError` at load time.
 
 ## Type Hierarchy
 ```
 AbstractMarkovModel
-  |-- MyHiddenMarkovModel                        (discrete, legacy)
-  |-- MyHiddenMarkovModelWithJumps               (discrete + jumps, legacy)
-  |-- MyContinuousHiddenMarkovModel              (continuous Gaussian, active)
-  |-- MyContinuousHiddenMarkovModelWithJumps     (continuous + jumps, active)
+  |-- MyContinuousHiddenMarkovModel   (continuous Gaussian, Baum-Welch trained)
 
 AbstractDistributionModel
   |-- StudentTModel    (Bayesian Student-t via Turing)
   |-- LaplaceModel     (Bayesian Laplace via Turing)
+
+AbstractPricingModel
+  |-- MyCHMMPricingModel    (regime-switching MC via VIX-trained CHMM)
+  |-- MyHestonPricingModel  (Heston stochastic vol benchmark)
 ```
 
 All model structs are currently `mutable` with empty inner constructors. The `build()` factory pattern populates fields after construction.
@@ -33,7 +37,7 @@ All model structs are currently `mutable` with empty inner constructors. The `bu
 ## Key Design Decisions
 
 ### Baum-Welch (EM) for Parameter Learning
-Unlike JumpHMM.jl which uses direct frequency counting on discretized observations, this project trains continuous emission parameters (means, standard deviations) and transition matrices from raw returns via the Baum-Welch algorithm. This is the core methodological contribution.
+This project trains continuous emission parameters (means, standard deviations) and transition matrices from raw returns via the Baum-Welch algorithm.
 
 ### Quantile-Based Initialization
 EM is sensitive to initialization. We sort observations into K quantile chunks and use each chunk's mean/std as initial emission parameters. This prevents degenerate solutions.
@@ -41,11 +45,11 @@ EM is sensitive to initialization. We sort observations into K quantile chunks a
 ### Log-Space Numerics
 All forward-backward computations use `_logsumexp_vec()` to prevent floating-point underflow. Never convert to probability space during the E-step.
 
-### Jump Mechanism (Regime Teleportation)
-- Jump probability `epsilon` is checked at each time step
-- Jump duration drawn from `Poisson(lambda)`
-- During jumps, coin flip (52/48) selects crash states (1:3) or boom states (N-2:N)
-- The coin flip happens **inside** the duration loop to produce volatility without directional bias
+### No Jump Mechanisms
+This study focuses on the continuous HMM alone. At small K, the CHMM reproduces all stylized facts to some extent without requiring jump processes. All jump-related code (Poisson teleportation, discrete HMMs) has been removed.
+
+### Option Pricing via VIX Regimes
+The CHMM pricer trains a separate HMM on VIX data, decodes regimes via Viterbi, and maps each regime's median VIX level to equity volatility (σ_s = median(VIX|state=s) / 100). This drives regime-switching GBM paths for Monte Carlo option pricing.
 
 ### Functor Interface
 Models are callable: `model(start_state, n_steps)` dispatches to `_simulate()`. This keeps the public API clean.
@@ -66,9 +70,9 @@ Or directly:
 include("test/runtests.jl")
 ```
 
-### Build documentation
+### Run full analysis pipeline
 ```julia
-include("docs/make.jl")
+include("run_all_analysis.jl")
 ```
 
 ## Conventions
@@ -81,6 +85,4 @@ include("docs/make.jl")
 
 ## What NOT to Change Without Discussion
 - The Baum-Welch convergence tolerance (`tol=1e-4`) and default iterations (`max_iter=30`) -- these are tuned for the datasets
-- The jump coin-flip bias (52/48) -- calibrated to empirical crash/boom asymmetry
-- Tail state ranges (bottom 3, top 3) -- hardcoded but consistent with the paper's methodology
 - The `_logsumexp_vec` implementation -- numerical stability depends on this exact formulation

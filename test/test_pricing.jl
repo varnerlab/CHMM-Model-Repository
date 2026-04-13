@@ -75,35 +75,6 @@
         @test length(result.payoffs) == 500
     end
 
-    @testset "CHMM pricer works with jump model" begin
-        rng = Random.MersenneTwister(42)
-        obs = vcat(randn(rng, 200) .* 0.01, randn(rng, 200) .* 0.05)
-        base_hmm = build(MyContinuousHiddenMarkovModel, (
-            observations = shuffle(rng, obs),
-            number_of_states = 7,
-            max_iter = 15
-        ))
-        jump_hmm = build(MyContinuousHiddenMarkovModelWithJumps, (
-            base_model = base_hmm, epsilon = 0.02, lambda = 3.0
-        ))
-
-        vix_prices = 15.0 .+ 5.0 .* randn(rng, 400)
-        vix_prices = max.(vix_prices, 5.0)
-        vix_states = viterbi(shuffle(rng, obs), base_hmm)
-
-        pricer = build(MyCHMMPricingModel, (
-            hmm = jump_hmm,
-            vix_prices = vix_prices,
-            vix_states = vix_states,
-            n_paths = 200
-        ))
-        contract = _make_contract()
-
-        result = price(pricer, contract)
-        @test result.price > 0.0
-        @test result.n_paths == 200
-    end
-
     @testset "Heston pricer returns valid result" begin
         pricer = _make_heston_pricer(n_paths=500)
         contract = _make_contract()

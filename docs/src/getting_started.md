@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks through the complete workflow: loading data, training a model, adding jumps, simulating paths, and validating results.
+This guide walks through the complete workflow: loading data, training a CHMM, simulating paths, and validating results.
 
 ## Prerequisites
 
@@ -51,9 +51,9 @@ Returns are annualized by default (`Dt = 1/252`) with zero risk-free rate.
 ## Step 4: Train a Continuous HMM
 
 ```julia
-base_model = build(MyContinuousHiddenMarkovModel, (
+model = build(MyContinuousHiddenMarkovModel, (
     observations = R,
-    number_of_states = 13,
+    number_of_states = 6,
     max_iter = 60
 ))
 ```
@@ -61,7 +61,7 @@ base_model = build(MyContinuousHiddenMarkovModel, (
 The Baum-Welch algorithm runs until convergence (`tol = 1e-4`) or `max_iter` iterations. Check convergence:
 
 ```julia
-plot(base_model.log_likelihood_history,
+plot(model.log_likelihood_history,
     xlabel = "Iteration", ylabel = "Log-Likelihood",
     title = "Baum-Welch Convergence")
 ```
@@ -69,39 +69,35 @@ plot(base_model.log_likelihood_history,
 Inspect learned regimes:
 
 ```julia
-for s in 1:13
-    d = base_model.emission[s]
+for s in model.states
+    d = model.emission[s]
     println("State $s: mean = $(round(mean(d), digits=4)), std = $(round(std(d), digits=4))")
 end
 ```
 
-## Step 5: Add Jump Dynamics
+## Step 5: Simulate Paths
 
 ```julia
-model = build(MyContinuousHiddenMarkovModelWithJumps, (
-    base_model = base_model,
-    epsilon = 0.01,   # jump probability per step
-    lambda = 3.0      # mean jump duration
-))
-```
+# Compute stationary distribution for initial state sampling
+K = length(model.states)
+T_mat = zeros(K, K)
+for i in 1:K; T_mat[i, :] = probs(model.transition[i]); end
+π_stat = (T_mat^1000)[1, :]
+start_dist = Categorical(π_stat)
 
-## Step 6: Simulate Paths
-
-```julia
 n_paths = 1000
 n_steps = 252  # one trading year
 
-# Simulate state chains
-state_chains = [model(1, n_steps) for _ in 1:n_paths]
-
-# Convert state chains to returns
-simulated_returns = [
-    [rand(model.emission[s]) for s in chain]
-    for chain in state_chains
-]
+# Simulate state chains and convert to returns
+simulated_returns = Vector{Vector{Float64}}(undef, n_paths)
+for i in 1:n_paths
+    s0 = rand(start_dist)
+    states = model(s0, n_steps)
+    simulated_returns[i] = [rand(model.emission[s]) for s in states]
+end
 ```
 
-## Step 7: Validate
+## Step 6: Validate
 
 ```julia
 # Pick a random simulated path for comparison

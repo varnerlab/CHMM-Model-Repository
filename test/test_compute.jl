@@ -14,15 +14,6 @@
         ))
     end
 
-    function _make_jump_model(; n_states=7, seed=42)
-        base = _make_test_model(n_states=n_states, seed=seed)
-        return build(MyContinuousHiddenMarkovModelWithJumps, (
-            base_model = base,
-            epsilon = 0.02,
-            lambda = 3.0
-        ))
-    end
-
     @testset "Baum-Welch convergence" begin
         rng = Random.MersenneTwister(123)
         obs = randn(rng, 300) .* 0.02
@@ -53,15 +44,6 @@
         chain = model(1, 100)
 
         @test length(chain) == 100
-        @test chain[1] == 1
-        @test all(s -> s in model.states, chain)
-    end
-
-    @testset "Simulation - continuous jump HMM" begin
-        model = _make_jump_model()
-        chain = model(1, 500)
-
-        @test length(chain) == 500
         @test chain[1] == 1
         @test all(s -> s in model.states, chain)
     end

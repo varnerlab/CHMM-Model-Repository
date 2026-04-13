@@ -5,79 +5,7 @@ function _logsumexp_vec(x::Array{Float64,1})::Float64
     return m + log(sum(exp.(x .- m)));
 end
 
-# -- Discrete Simulations (Legacy) --
-
-"""
-    _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64) -> Array{Int64,1}
-
-Private method: Simulates a single path of hidden states for the Discrete HMM.
-"""
-function _simulate(m::MyHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
-
-    # initialize -
-    chain = Array{Int64,1}(undef, steps);
-    chain[1] = start;
-
-    # main loop -
-    for i ∈ 2:steps
-        chain[i] = rand(m.transition[chain[i-1]]);
-    end
-
-    return chain;
-end
-
-"""
-    _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64) -> Array{Int64,1}
-
-Private method: Simulates a single path of hidden states for the Discrete HMM with Jumps.
-"""
-function _simulate(m::MyHiddenMarkovModelWithJumps, start::Int64, steps::Int64)::Array{Int64,1}
-
-    # initialize -
-    chain = Array{Int64,1}(undef, steps);
-    tmp_chain = Dict{Int64,Int64}();
-    tmp_chain[1] = start;
-    counter = 2;
-
-    # main -
-    while (counter ≤ steps)
-        
-        if (rand() < m.ϵ)
-
-            # jump: find the next state.
-            number_of_jumps = rand(m.jump_distribution);
-            number_of_states = length(m.states);
-            bottom_states = [1,2,3]; # super bad
-            top_states = [number_of_states-2,number_of_states-1,number_of_states]; # super good
- 
-            for _ ∈ 1:number_of_jumps
-                if (counter ≤ steps)
-                    if (rand() < 0.52)
-                        tmp_chain[counter] = rand(bottom_states);
-                    else
-                        tmp_chain[counter] = rand(top_states);
-                    end
-                    counter += 1;
-                end
-            end
-        else
-            # normal transition -
-            current_state = tmp_chain[counter-1];
-            tmp_chain[counter] = rand(m.transition[current_state]);
-            counter += 1;
-        end
-    end
-
-    # fill the chain -
-    for i ∈ 1:steps
-        chain[i] = tmp_chain[i];
-    end
-
-    # return -
-    return chain;
-end
-
-# -- Continuous Simulations (New) --
+# -- Continuous Simulations --
 
 """
     _simulate(m::MyContinuousHiddenMarkovModel, start::Int64, steps::Int64) -> Array{Int64,1}
@@ -95,58 +23,6 @@ function _simulate(m::MyContinuousHiddenMarkovModel, start::Int64, steps::Int64)
     for t in 2:steps
         # Transition using the learned transition matrix (stored as Dict of Categoricals)
         chain[t] = rand(m.transition[chain[t-1]]);
-    end
-
-    return chain;
-end
-
-"""
-    _simulate(m::MyContinuousHiddenMarkovModelWithJumps, start::Int64, steps::Int64) -> Array{Int64,1}
-
-Private method: Simulates a path for the Continuous Jump HMM (Regime Teleportation).
-Forces the system into extreme tail states (Crash/Boom) when a jump event occurs.
-"""
-function _simulate(m::MyContinuousHiddenMarkovModelWithJumps, start::Int64, steps::Int64)::Array{Int64,1}
-
-    # initialize -
-    chain = Array{Int64,1}(undef, steps);
-    chain[1] = start;
-    
-    n_states = length(m.states);
-    # Define Tail States (Assumes states are sorted by return magnitude)
-    crash_states = 1:3;
-    boom_states = (n_states-2):n_states;
-
-    counter = 2;
-
-    # main loop -
-    while (counter <= steps)
-        
-        # Check for Jump Event
-        if (rand() < m.ϵ)
-            
-            # 1. How long does the jump last?
-            duration = rand(m.jump_distribution);
-            
-            # 2. Teleport loop (Regime Persistence)
-            for _ in 1:duration
-                if (counter <= steps)
-                    
-                    # CORRECTION: Flip the coin INSIDE the loop.
-                    # This ensures we get volatility (magnitude) without directional bias (trend).
-                    target_pool = (rand() < 0.52) ? crash_states : boom_states;
-
-                    # Override normal transition: pick randomly from the selected tail pool
-                    chain[counter] = rand(target_pool);
-                    counter += 1;
-                end
-            end
-        else
-            # Normal Markov Transition
-            current_state = chain[counter-1];
-            chain[counter] = rand(m.transition[current_state]);
-            counter += 1;
-        end
     end
 
     return chain;
@@ -457,35 +333,12 @@ end
 
 # --- FUNCTORS (Simulation Interface) ----------------------------------------- #
 
-# Discrete Models
-"""
-    (m::MyHiddenMarkovModel)(start::Int64, steps::Int64) -> Array{Int64,1}
-
-Functor call to simulate a path for the Discrete HMM.
-"""
-(m::MyHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
-
-"""
-    (m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) -> Array{Int64,1}
-
-Functor call to simulate a path for the Discrete Jump HMM.
-"""
-(m::MyHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
-
-# Continuous Models
 """
     (m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) -> Array{Int64,1}
 
 Functor call to simulate a path for the Continuous Gaussian HMM.
 """
 (m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
-
-"""
-    (m::MyContinuousHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) -> Array{Int64,1}
-
-Functor call to simulate a path for the Continuous Jump HMM (Teleportation).
-"""
-(m::MyContinuousHiddenMarkovModelWithJumps)(start::Int64, steps::Int64) = _simulate(m, start, steps);
 
 
 
