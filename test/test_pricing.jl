@@ -24,14 +24,6 @@
         ))
     end
 
-    function _make_heston_pricer(; n_paths=1000)
-        return build(MyHestonPricingModel, (
-            v0 = 0.04, kappa = 2.0, theta = 0.04,
-            xi = 0.3, rho = -0.7,
-            n_paths = n_paths, n_steps_per_year = 252
-        ))
-    end
-
     function _make_contract(; S0=100.0, K=100.0, T=1.0, r=0.05, is_call=true)
         return build(MyEuropeanOptionContract, (
             S0=S0, K=K, T=T, r=r, is_call=is_call))
@@ -75,18 +67,6 @@
         @test length(result.payoffs) == 500
     end
 
-    @testset "Heston pricer returns valid result" begin
-        pricer = _make_heston_pricer(n_paths=500)
-        contract = _make_contract()
-
-        result = price(pricer, contract)
-
-        @test result.price > 0.0
-        @test result.std_error > 0.0
-        @test result.n_paths == 500
-        @test length(result.payoffs) == 500
-    end
-
     @testset "Implied volatility inversion" begin
         contract = _make_contract()
         σ_true = 0.20
@@ -98,30 +78,14 @@
         @test σ_recovered ≈ σ_true atol=1e-5
     end
 
-    @testset "MC convergence: more paths reduce std error" begin
-        pricer_small = _make_heston_pricer(n_paths=100)
-        pricer_large = _make_heston_pricer(n_paths=5000)
+    @testset "CHMM MC convergence: more paths reduce std error" begin
+        pricer_small = _make_chmm_pricer(n_paths=100, seed=101)
+        pricer_large = _make_chmm_pricer(n_paths=5000, seed=101)
         contract = _make_contract()
 
         result_small = price(pricer_small, contract)
         result_large = price(pricer_large, contract)
 
         @test result_large.std_error < result_small.std_error
-    end
-
-    @testset "Visualization: pricing plots" begin
-        chmm_pricer = _make_chmm_pricer(n_paths=100)
-        heston_pricer = _make_heston_pricer(n_paths=100)
-        contract = _make_contract()
-
-        r_chmm = price(chmm_pricer, contract)
-        r_heston = price(heston_pricer, contract)
-        bs_val = black_scholes(contract, 0.20)
-
-        p1 = plot_pricing_comparison(r_chmm, r_heston, bs_val, "Test Comparison")
-        @test p1 isa Plots.Plot
-
-        p2 = plot_mc_convergence(r_chmm, "Test Convergence")
-        @test p2 isa Plots.Plot
     end
 end

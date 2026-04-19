@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# Pricing.jl — Option Pricing via CHMM Regime-Switching Volatility and Heston Benchmark
+# Pricing.jl: Option Pricing via CHMM Regime-Switching Volatility
 # ========================================================================================= #
 
 
@@ -57,34 +57,6 @@ function _simulate_chmm_price_path(model::MyCHMMPricingModel, contract::MyEurope
 end
 
 
-"""
-    _simulate_heston_price_path(model::MyHestonPricingModel, contract::MyEuropeanOptionContract) -> Float64
-
-Private: Simulates one Heston price path using Euler-Maruyama with full truncation.
-Returns the terminal price S(T).
-"""
-function _simulate_heston_price_path(model::MyHestonPricingModel, contract::MyEuropeanOptionContract)::Float64
-
-    n_steps = ceil(Int, contract.T * model.n_steps_per_year);
-    dt = contract.T / n_steps;
-
-    S = contract.S0;
-    v = model.v0;
-
-    for _ in 1:n_steps
-        Z1 = randn();
-        Z_indep = randn();
-        Z2 = model.rho * Z1 + sqrt(1.0 - model.rho^2) * Z_indep;
-
-        v_plus = max(v, 0.0); # full truncation
-        S = S * exp((contract.r - v_plus / 2) * dt + sqrt(v_plus * dt) * Z1);
-        v = v + model.kappa * (model.theta - v_plus) * dt + model.xi * sqrt(v_plus * dt) * Z2;
-    end
-
-    return S;
-end
-
-
 # --- PUBLIC: PRICING FUNCTIONS ----------------------------------------------- #
 
 """
@@ -99,36 +71,6 @@ function price(model::MyCHMMPricingModel, contract::MyEuropeanOptionContract)::M
 
     for i in 1:model.n_paths
         S_T = _simulate_chmm_price_path(model, contract);
-
-        if contract.is_call
-            payoffs[i] = max(S_T - contract.K, 0.0);
-        else
-            payoffs[i] = max(contract.K - S_T, 0.0);
-        end
-    end
-
-    # Discount to present value
-    discount = exp(-contract.r * contract.T);
-    discounted = payoffs .* discount;
-
-    p = mean(discounted);
-    se = std(discounted) / sqrt(model.n_paths);
-
-    return MyPricingResult(p, se, model.n_paths, discounted);
-end
-
-
-"""
-    price(model::MyHestonPricingModel, contract::MyEuropeanOptionContract) -> MyPricingResult
-
-Prices a European option using Heston stochastic volatility Monte Carlo.
-"""
-function price(model::MyHestonPricingModel, contract::MyEuropeanOptionContract)::MyPricingResult
-
-    payoffs = zeros(model.n_paths);
-
-    for i in 1:model.n_paths
-        S_T = _simulate_heston_price_path(model, contract);
 
         if contract.is_call
             payoffs[i] = max(S_T - contract.K, 0.0);

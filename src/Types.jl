@@ -192,36 +192,6 @@ mutable struct MyCHMMPricingModel <: AbstractPricingModel
 end
 
 """
-    mutable struct MyHestonPricingModel <: AbstractPricingModel
-
-Monte Carlo option pricer using the Heston stochastic volatility model.
-dS = rS dt + √v S dW₁
-dv = κ(θ − v)dt + ξ√v dW₂
-corr(dW₁, dW₂) = ρ
-
-### Required fields
-- `v0::Float64`: Initial variance
-- `kappa::Float64`: Mean reversion speed
-- `theta::Float64`: Long-run variance
-- `xi::Float64`: Vol-of-vol
-- `rho::Float64`: Correlation between price and variance Brownians
-- `n_paths::Int64`: Number of Monte Carlo paths
-- `n_steps_per_year::Int64`: Time discretization
-"""
-mutable struct MyHestonPricingModel <: AbstractPricingModel
-
-    v0::Float64;
-    kappa::Float64;
-    theta::Float64;
-    xi::Float64;
-    rho::Float64;
-    n_paths::Int64;
-    n_steps_per_year::Int64;
-
-    MyHestonPricingModel() = new();
-end
-
-"""
     struct MyPricingResult
 
 Immutable container for Monte Carlo pricing output.
@@ -237,5 +207,78 @@ struct MyPricingResult
     std_error::Float64;
     n_paths::Int64;
     payoffs::Array{Float64,1};
+end
+# ----------------------------------------------------------------------------- #
+
+
+# --- CROSS-ASSET DEPENDENCE MODELS ------------------------------------------- #
+abstract type AbstractDependenceModel end
+
+"""
+    mutable struct MySingleIndexModel <: AbstractDependenceModel
+
+Single Index Model (Sharpe 1963). Propagates a univariate market engine path
+to a full asset universe via the factor regression
+
+    G_{i,t} = α_i + β_i G_{M,t} + η_{i,t},
+
+where α_i and β_i are OLS estimates on in-sample data and η_{i,t} is resampled
+from the empirical residual distribution.
+
+### Fields
+- `tickers::Vector{String}`: Asset tickers in column order
+- `alphas::Vector{Float64}`: Fitted intercepts
+- `betas::Vector{Float64}`: Fitted betas
+- `residuals::Matrix{Float64}`: T × d matrix of in-sample residuals
+- `r2::Vector{Float64}`: Per-asset R² for the factor regression
+"""
+mutable struct MySingleIndexModel <: AbstractDependenceModel
+    tickers::Vector{String};
+    alphas::Vector{Float64};
+    betas::Vector{Float64};
+    residuals::Matrix{Float64};
+    r2::Vector{Float64};
+    MySingleIndexModel() = new();
+end
+
+"""
+    mutable struct MyGaussianCopulaModel <: AbstractDependenceModel
+
+Gaussian copula fitted to pseudo-uniform PIT-transformed observations.
+Dependence structure is captured by a correlation matrix Σ estimated from
+Kendall's τ via ρ = sin(πτ/2).
+
+### Fields
+- `tickers::Vector{String}`: Asset tickers
+- `Sigma::Matrix{Float64}`: d × d correlation matrix
+- `marginals::Vector{AbstractMarkovModel}`: Per-asset CHMM marginals
+"""
+mutable struct MyGaussianCopulaModel <: AbstractDependenceModel
+    tickers::Vector{String};
+    Sigma::Matrix{Float64};
+    marginals::Vector{AbstractMarkovModel};
+    MyGaussianCopulaModel() = new();
+end
+
+"""
+    mutable struct MyStudentTCopulaModel <: AbstractDependenceModel
+
+Student-t copula with correlation matrix Σ and ν degrees of freedom.
+ν is selected by profile maximum-likelihood over a discrete grid.
+Unlike the Gaussian copula, the Student-t copula admits non-zero symmetric
+tail dependence λ_U = λ_L > 0.
+
+### Fields
+- `tickers::Vector{String}`: Asset tickers
+- `Sigma::Matrix{Float64}`: d × d correlation matrix
+- `nu::Float64`: Degrees of freedom
+- `marginals::Vector{AbstractMarkovModel}`: Per-asset CHMM marginals
+"""
+mutable struct MyStudentTCopulaModel <: AbstractDependenceModel
+    tickers::Vector{String};
+    Sigma::Matrix{Float64};
+    nu::Float64;
+    marginals::Vector{AbstractMarkovModel};
+    MyStudentTCopulaModel() = new();
 end
 # ----------------------------------------------------------------------------- #

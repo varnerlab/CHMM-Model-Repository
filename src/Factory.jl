@@ -303,32 +303,4 @@ function build(model::Type{MyCHMMPricingModel}, data::NamedTuple)::MyCHMMPricing
 end
 
 
-"""
-    build(::Type{MyHestonPricingModel}, data::NamedTuple) -> MyHestonPricingModel
-
-Builds a Heston stochastic volatility Monte Carlo pricer.
-
-### NamedTuple keys
-- `v0::Float64`: Initial variance
-- `kappa::Float64`: Mean reversion speed
-- `theta::Float64`: Long-run variance
-- `xi::Float64`: Vol-of-vol
-- `rho::Float64`: Price-vol correlation
-- `n_paths::Int64`: Number of MC paths (default: 10000)
-- `n_steps_per_year::Int64`: Discretization (default: 252)
-"""
-function build(model::Type{MyHestonPricingModel}, data::NamedTuple)::MyHestonPricingModel
-
-    m = model();
-    m.v0 = data.v0;
-    m.kappa = data.kappa;
-    m.theta = data.theta;
-    m.xi = data.xi;
-    m.rho = data.rho;
-    m.n_paths = haskey(data, :n_paths) ? data.n_paths : 10000;
-    m.n_steps_per_year = haskey(data, :n_steps_per_year) ? data.n_steps_per_year : 252;
-
-    return m;
-end
-
 # ----------------------------------------------------------------------------- #

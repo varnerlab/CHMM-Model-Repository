@@ -139,20 +139,22 @@ end
 
 
 """
-    plot_pricing_comparison(chmm_result, heston_result, bs_price, title_text) -> Plots.Plot
+    plot_pricing_comparison(chmm_result, bs_price, title_text) -> Plots.Plot
 
-Bar chart comparing option prices across CHMM, Heston, and Black-Scholes with error bars.
+Bar chart comparing the CHMM regime-switching Monte Carlo price against the
+Black-Scholes analytical benchmark, with 95% confidence intervals on the MC
+estimate.
 """
-function plot_pricing_comparison(chmm_result::MyPricingResult, heston_result::MyPricingResult,
+function plot_pricing_comparison(chmm_result::MyPricingResult,
     bs_price::Float64, title_text::String)
 
-    labels = ["CHMM", "Heston", "Black-Scholes"];
-    prices = [chmm_result.price, heston_result.price, bs_price];
-    errors = [1.96 * chmm_result.std_error, 1.96 * heston_result.std_error, 0.0];
+    labels = ["CHMM", "Black-Scholes"];
+    prices = [chmm_result.price, bs_price];
+    errors = [1.96 * chmm_result.std_error, 0.0];
 
     p = bar(labels, prices, yerr=errors, title=title_text, titlefontsize=10,
         ylabel="Option Price (\$)", legend=false,
-        color=[:steelblue, :darkorange, :gray], alpha=0.8,
+        color=[:steelblue, :gray], alpha=0.8,
         bar_width=0.6, size=(500, 400));
 
     return p;
