@@ -66,7 +66,7 @@
 Ryden et al. proved standard HMMs can't reproduce slow ACF decay. If our continuous model at certain K values partially reproduces it (even without jumps), this would be a genuinely new finding. Quantify ACF-MAE as a function of K and compare against the Ryden et al. theoretical bound.
 
 ### 4.2 State-resolution analysis (K sensitivity)
-Ryden et al. used only 2-3 states. Our K in {3,6,9,11,13} sweep is more comprehensive. If we find a "sweet spot" K where ACF-MAE is minimized, that's a practical contribution: the right number of Gaussian regimes can approximate volatility clustering without needing semi-Markov extensions.
+Ryden et al. used only 2-3 states. Our K in {3,6,9,12,15,18,21} sweep is more comprehensive. The sweet spot at K=18 (best KS/AD/Wasserstein) shows a moderate Gaussian-mixture regime count can approximate volatility clustering without needing semi-Markov extensions; the best ACF-MAE actually sits at K=3, revealing a clear distributional-fidelity / volatility-clustering trade-off worth reporting.
 
 ### 4.3 The Baum-Welch vs frequency-counting comparison
 No paper has directly compared Baum-Welch continuous HMM against discrete frequency-counting HMM (with and without jumps) on the same data with the same metrics. Our discrete paper is the baseline. Showing that continuous Baum-Welch achieves comparable or better fidelity without jumps is the core novelty claim.

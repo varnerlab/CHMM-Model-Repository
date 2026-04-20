@@ -19,7 +19,7 @@ include("Include.jl");
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const N_PATHS = 200;
-const K = 13;
+const K = 18;
 const MAX_ITER = 60;
 const ASSETS = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 const MARKET = "SPY";

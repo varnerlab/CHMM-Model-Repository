@@ -3,7 +3,7 @@
 #
 # Generates:
 #   1. Table 2: Baseline comparisons for SPY (Bootstrap, Gaussian, Laplace, GARCH, CHMM)
-#   2. Table T2: Cross-asset generalization for NVDA, JNJ, JPM at K=13
+#   2. Table T2: Cross-asset generalization for SPY/NVDA/JNJ/JPM/AAPL/QQQ at K=18
 #
 # Mirrors the discrete paper's Table 2 and Table T2 structure exactly,
 # with Anderson-Darling test and quantile coverage added.
@@ -20,9 +20,14 @@ const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const N_PATHS = 1000;
 const L = 252;
-const K = 13;
+const K = 18;
 const MAX_ITER = 60;
 const RESULTS_DIR = joinpath(@__DIR__, "results");
+
+# Discrete baseline hyper-parameters (from prior paper arXiv:2603.10202)
+const EPSILON_JUMP = 0.01;
+const LAMBDA_JUMP = 3.0;
+const DISCRETE_K = 13;      # bin count from prior paper
 
 # ========================================================================================= #
 # LOAD DATA
@@ -166,7 +171,85 @@ end
 m_lap_is = eval_full(R_is, lap_is);
 m_lap_oos = eval_full(R_oos, lap_oos);
 
-# --- 4. GARCH(1,1) ---
+# --- 4a. Discrete HMM (NJ) — frequency-counted bins, no jumps ---
+println("  Discrete HMM (no jumps)...")
+qprobs = range(0.0, 1.0, length=DISCRETE_K+1) |> collect;
+bin_edges = quantile(R_is, qprobs);
+function _assign_bin(x, edges)
+    Kb = length(edges) - 1;
+    for k in 1:Kb
+        if k == Kb || x < edges[k+1]; return k; end
+    end
+    return Kb;
+end;
+bin_idx = [_assign_bin(r, bin_edges) for r in R_is];
+bin_centers = zeros(DISCRETE_K);
+for k in 1:DISCRETE_K
+    mk = findall(==(k), bin_idx);
+    bin_centers[k] = isempty(mk) ? 0.0 : mean(R_is[mk]);
+end
+T_counts = zeros(DISCRETE_K, DISCRETE_K);
+for t in 2:length(bin_idx); T_counts[bin_idx[t-1], bin_idx[t]] += 1.0; end
+T_disc = copy(T_counts);
+for i in 1:DISCRETE_K
+    rs = sum(T_disc[i, :]);
+    T_disc[i, :] = rs > 0 ? T_disc[i, :] ./ rs : fill(1.0/DISCRETE_K, DISCRETE_K);
+end
+E_disc = zeros(DISCRETE_K, DISCRETE_K);
+floor_ = 0.001;
+for i in 1:DISCRETE_K
+    for j in 1:DISCRETE_K; E_disc[i,j] = (i==j) ? 1.0 : floor_; end
+    E_disc[i, :] ./= sum(E_disc[i, :]);
+end
+π_disc = (T_disc^1000)[1, :];
+sd_disc = Categorical(π_disc);
+
+model_nj = build(MyHiddenMarkovModel, (
+    states=collect(1:DISCRETE_K), T=T_disc, E=E_disc));
+disc_is = Array{Float64,2}(undef, n_is, N_PATHS);
+disc_oos = Array{Float64,2}(undef, n_oos, N_PATHS);
+for i in 1:N_PATHS
+    s0 = rand(sd_disc);
+    ch = model_nj(s0, n_is);
+    for t in 1:n_is
+        eb = rand(model_nj.emission[ch[t]]);
+        disc_is[t, i] = bin_centers[eb];
+    end
+    s0 = rand(sd_disc);
+    ch = model_nj(s0, n_oos);
+    for t in 1:n_oos
+        eb = rand(model_nj.emission[ch[t]]);
+        disc_oos[t, i] = bin_centers[eb];
+    end
+end
+m_disc_is = eval_full(R_is, disc_is);
+m_disc_oos = eval_full(R_oos, disc_oos);
+
+# --- 4b. Discrete HMM + Poisson jumps (WJ) — from prior paper ---
+println("  Discrete HMM + Poisson jumps...")
+model_wj = build(MyHiddenMarkovModelWithJumps, (
+    states=collect(1:DISCRETE_K), T=T_disc, E=E_disc,
+    ϵ=EPSILON_JUMP, λ=LAMBDA_JUMP));
+wj_is = Array{Float64,2}(undef, n_is, N_PATHS);
+wj_oos = Array{Float64,2}(undef, n_oos, N_PATHS);
+for i in 1:N_PATHS
+    s0 = rand(sd_disc);
+    ch = model_wj(s0, n_is);
+    for t in 1:n_is
+        eb = rand(model_wj.emission[ch[t]]);
+        wj_is[t, i] = bin_centers[eb];
+    end
+    s0 = rand(sd_disc);
+    ch = model_wj(s0, n_oos);
+    for t in 1:n_oos
+        eb = rand(model_wj.emission[ch[t]]);
+        wj_oos[t, i] = bin_centers[eb];
+    end
+end
+m_wj_is = eval_full(R_is, wj_is);
+m_wj_oos = eval_full(R_oos, wj_oos);
+
+# --- 5. GARCH(1,1) ---
 println("  GARCH(1,1)...")
 garch_model = build(MyGARCHModel, (observations=R_is,));
 garch_is = Array{Float64,2}(undef, n_is, N_PATHS);
@@ -178,7 +261,7 @@ end
 m_garch_is = eval_full(R_is, garch_is);
 m_garch_oos = eval_full(R_oos, garch_oos);
 
-# --- 5. CHMM (K=13, no jumps) ---
+# --- 6. CHMM (no jumps) ---
 println("  CHMM (K=$K)...")
 chmm = build(MyContinuousHiddenMarkovModel, (
     observations=R_is, number_of_states=K, max_iter=MAX_ITER));
@@ -210,8 +293,10 @@ for (name, m_is_val, m_oos_val) in [
     ("Bootstrap", m_boot_is, m_boot_oos),
     ("Gaussian", m_gauss_is, m_gauss_oos),
     ("Laplace", m_lap_is, m_lap_oos),
+    ("Discrete NJ", m_disc_is, m_disc_oos),
+    ("Discrete WJ", m_wj_is, m_wj_oos),
     ("GARCH(1,1)", m_garch_is, m_garch_oos),
-    ("CHMM", m_chmm_is, m_chmm_oos)]
+    ("CHMM (K=$K)", m_chmm_is, m_chmm_oos)]
     println("$(rpad(name,14)) | $(lpad(m_is_val.ks,7)) | $(lpad(m_is_val.ad,7)) | $(lpad(m_oos_val.ks,8))  | $(lpad(m_is_val.kurt,6)) | $(m_is_val.acf_mae) | $(m_is_val.w1) | $(m_is_val.hell) | $(m_is_val.cov)")
 end
 println("="^130)
@@ -221,20 +306,24 @@ println("Observed kurtosis: IS=$(round(kurt_obs_is,digits=2))")
 mkpath(joinpath(RESULTS_DIR, TICKER));
 open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
     println(io, "Table 2: Model Comparison — $TICKER ($N_PATHS paths, α=0.05)")
-    println(io, "="^140)
+    println(io, "Discrete HMM (NJ / WJ) uses K=$(DISCRETE_K) bins; WJ: ε=$(EPSILON_JUMP), λ=$(LAMBDA_JUMP) (prior paper).")
+    println(io, "CHMM: continuous Gaussian emissions, Baum-Welch, K=$K (no jumps).")
+    println(io, "="^150)
     println(io, "")
     println(io, "                | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)")
-    println(io, "-"^140)
+    println(io, "-"^150)
     println(io, "Observed        |           |           |            |            | $(lpad(round(kurt_obs_is,digits=2),6)) |          |          |        |        |           |")
     for (name, m_is_val, m_oos_val) in [
         ("Bootstrap", m_boot_is, m_boot_oos),
         ("Gaussian", m_gauss_is, m_gauss_oos),
         ("Laplace", m_lap_is, m_lap_oos),
+        ("Discrete NJ", m_disc_is, m_disc_oos),
+        ("Discrete WJ", m_wj_is, m_wj_oos),
         ("GARCH(1,1)", m_garch_is, m_garch_oos),
-        ("CHMM", m_chmm_is, m_chmm_oos)]
+        ("CHMM (K=$K)", m_chmm_is, m_chmm_oos)]
         println(io, "$(rpad(name,15)) | $(lpad(m_is_val.ks,8)) | $(lpad(m_is_val.ad,8)) | $(lpad(m_oos_val.ks,9))  | $(lpad(m_oos_val.ad,9))  | $(lpad(m_is_val.kurt,6)) | $(lpad(m_oos_val.kurt,7))  | $(lpad(m_is_val.acf_mae,7)) | $(lpad(m_is_val.w1,5))  | $(m_is_val.hell) | $(lpad(m_is_val.cov,8))  | $(lpad(m_oos_val.cov,8))")
     end
-    println(io, "="^140)
+    println(io, "="^150)
 end
 
 # ========================================================================================= #
@@ -244,7 +333,7 @@ println("\n" * "="^70)
 println("PART 2: Cross-Asset Generalization (K=$K)")
 println("="^70)
 
-cross_tickers = ["NVDA", "JNJ", "JPM"];
+cross_tickers = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 
 open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Cross-Asset.txt"), "w") do io
     println(io, "Table T2: Cross-Asset Generalization — CHMM (K=$K, $N_PATHS paths, α=0.05)")

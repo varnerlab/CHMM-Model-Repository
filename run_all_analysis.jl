@@ -3,7 +3,7 @@
 #
 # Generates ALL figures and analysis for the continuous HMM paper.
 # Supports both equity (SPY) and volatility index (VIX) asset classes.
-# Runs the full pipeline for K ∈ {3, 6, 9, 11, 13} hidden states.
+# Runs the full pipeline for K ∈ {3, 6, 9, 12, 15, 18, 21} hidden states.
 #
 # This study focuses on continuous HMM (no jump mechanisms). At small K,
 # the CHMM alone reproduces all stylized facts to some extent.
@@ -18,7 +18,7 @@
 
 println("="^70)
 println("  Continuous HMM — Full Analysis Pipeline")
-println("  States: K ∈ {3, 6, 9, 11, 13}")
+println("  States: K ∈ {3, 6, 9, 12, 15, 18, 21}")
 println("="^70)
 
 # --- SETUP ---
@@ -35,7 +35,7 @@ end
 # --- CONFIGURATION ---
 const TICKER = (ASSET_CLASS == :volatility) ? "VIX" : "SPY";
 const RETURN_LABEL = (ASSET_CLASS == :volatility) ? "$TICKER Log Return (annualized)" : "Excess Growth Rate";
-const K_VALUES = [3, 6, 9, 11, 13];
+const K_VALUES = [3, 6, 9, 12, 15, 18, 21];
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const MAX_ITER = 60;
