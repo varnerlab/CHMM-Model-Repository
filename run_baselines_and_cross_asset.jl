@@ -261,28 +261,54 @@ end
 m_garch_is = eval_full(R_is, garch_is);
 m_garch_oos = eval_full(R_oos, garch_oos);
 
-# --- 6. CHMM (no jumps) ---
-println("  CHMM (K=$K)...")
+# --- Helper to simulate 1000 paths from a trained continuous HMM ---
+function _simulate_chmm_paths(model, start_dist, n_is, n_oos, n_paths)
+    sim_is = Array{Float64,2}(undef, n_is, n_paths);
+    sim_oos = Array{Float64,2}(undef, n_oos, n_paths);
+    for i in 1:n_paths
+        s0 = rand(start_dist);
+        st = model(s0, n_is);
+        for j in 1:n_is; sim_is[j,i] = rand(model.emission[st[j]]); end
+        s0 = rand(start_dist);
+        st = model(s0, n_oos);
+        for j in 1:n_oos; sim_oos[j,i] = rand(model.emission[st[j]]); end
+    end
+    return sim_is, sim_oos;
+end
+
+function _stationary_start_dist(model, K)
+    T_mat = zeros(K, K);
+    for i in 1:K; T_mat[i, :] = probs(model.transition[i]); end
+    π_stat = (T_mat^1000)[1, :];
+    return Categorical(π_stat);
+end
+
+# --- 6. CHMM-Gaussian (no jumps) ---
+println("  CHMM-Gaussian (K=$K)...")
 chmm = build(MyContinuousHiddenMarkovModel, (
     observations=R_is, number_of_states=K, max_iter=MAX_ITER));
-
-T_mat = zeros(K, K);
-for i in 1:K; T_mat[i, :] = probs(chmm.transition[i]); end
-π_stat = (T_mat^1000)[1, :];
-start_dist = Categorical(π_stat);
-
-chmm_is = Array{Float64,2}(undef, n_is, N_PATHS);
-chmm_oos = Array{Float64,2}(undef, n_oos, N_PATHS);
-for i in 1:N_PATHS
-    s0 = rand(start_dist);
-    states = chmm(s0, n_is);
-    for j in 1:n_is; chmm_is[j,i] = rand(chmm.emission[states[j]]); end
-    s0 = rand(start_dist);
-    states = chmm(s0, n_oos);
-    for j in 1:n_oos; chmm_oos[j,i] = rand(chmm.emission[states[j]]); end
-end
+start_dist = _stationary_start_dist(chmm, K);
+chmm_is, chmm_oos = _simulate_chmm_paths(chmm, start_dist, n_is, n_oos, N_PATHS);
 m_chmm_is = eval_full(R_is, chmm_is);
 m_chmm_oos = eval_full(R_oos, chmm_oos);
+
+# --- 7. CHMM-Student-t (no jumps) ---
+println("  CHMM-Student-t (K=$K)...")
+chmm_t = build(MyStudentTHiddenMarkovModel, (
+    observations=R_is, number_of_states=K, max_iter=MAX_ITER));
+start_dist_t = _stationary_start_dist(chmm_t, K);
+chmm_t_is, chmm_t_oos = _simulate_chmm_paths(chmm_t, start_dist_t, n_is, n_oos, N_PATHS);
+m_chmm_t_is = eval_full(R_is, chmm_t_is);
+m_chmm_t_oos = eval_full(R_oos, chmm_t_oos);
+
+# --- 8. CHMM-Laplace (no jumps) ---
+println("  CHMM-Laplace (K=$K)...")
+chmm_l = build(MyLaplaceHiddenMarkovModel, (
+    observations=R_is, number_of_states=K, max_iter=MAX_ITER));
+start_dist_l = _stationary_start_dist(chmm_l, K);
+chmm_l_is, chmm_l_oos = _simulate_chmm_paths(chmm_l, start_dist_l, n_is, n_oos, N_PATHS);
+m_chmm_l_is = eval_full(R_is, chmm_l_is);
+m_chmm_l_oos = eval_full(R_oos, chmm_l_oos);
 
 # Print Table 2
 println("\nTable 2: Model Comparison — $TICKER ($N_PATHS paths, α=0.05)")
@@ -296,7 +322,9 @@ for (name, m_is_val, m_oos_val) in [
     ("Discrete NJ", m_disc_is, m_disc_oos),
     ("Discrete WJ", m_wj_is, m_wj_oos),
     ("GARCH(1,1)", m_garch_is, m_garch_oos),
-    ("CHMM (K=$K)", m_chmm_is, m_chmm_oos)]
+    ("CHMM-N (K=$K)", m_chmm_is, m_chmm_oos),
+    ("CHMM-t (K=$K)", m_chmm_t_is, m_chmm_t_oos),
+    ("CHMM-L (K=$K)", m_chmm_l_is, m_chmm_l_oos)]
     println("$(rpad(name,14)) | $(lpad(m_is_val.ks,7)) | $(lpad(m_is_val.ad,7)) | $(lpad(m_oos_val.ks,8))  | $(lpad(m_is_val.kurt,6)) | $(m_is_val.acf_mae) | $(m_is_val.w1) | $(m_is_val.hell) | $(m_is_val.cov)")
 end
 println("="^130)
@@ -305,9 +333,11 @@ println("Observed kurtosis: IS=$(round(kurt_obs_is,digits=2))")
 # Save Table 2
 mkpath(joinpath(RESULTS_DIR, TICKER));
 open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
-    println(io, "Table 2: Model Comparison — $TICKER ($N_PATHS paths, α=0.05)")
+    println(io, "Table 2: Model Comparison ($TICKER, $N_PATHS paths, α=0.05)")
     println(io, "Discrete HMM (NJ / WJ) uses K=$(DISCRETE_K) bins; WJ: ε=$(EPSILON_JUMP), λ=$(LAMBDA_JUMP) (prior paper).")
-    println(io, "CHMM: continuous Gaussian emissions, Baum-Welch, K=$K (no jumps).")
+    println(io, "CHMM-N: continuous Gaussian emissions (Baum-Welch, K=$K, no jumps).")
+    println(io, "CHMM-t: continuous Student-t emissions with per-state ν (ECM, K=$K, no jumps).")
+    println(io, "CHMM-L: continuous Laplace emissions with weighted-median M-step (EM, K=$K, no jumps).")
     println(io, "="^150)
     println(io, "")
     println(io, "                | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)")
@@ -320,7 +350,9 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
         ("Discrete NJ", m_disc_is, m_disc_oos),
         ("Discrete WJ", m_wj_is, m_wj_oos),
         ("GARCH(1,1)", m_garch_is, m_garch_oos),
-        ("CHMM (K=$K)", m_chmm_is, m_chmm_oos)]
+        ("CHMM-N (K=$K)", m_chmm_is, m_chmm_oos),
+        ("CHMM-t (K=$K)", m_chmm_t_is, m_chmm_t_oos),
+        ("CHMM-L (K=$K)", m_chmm_l_is, m_chmm_l_oos)]
         println(io, "$(rpad(name,15)) | $(lpad(m_is_val.ks,8)) | $(lpad(m_is_val.ad,8)) | $(lpad(m_oos_val.ks,9))  | $(lpad(m_oos_val.ad,9))  | $(lpad(m_is_val.kurt,6)) | $(lpad(m_oos_val.kurt,7))  | $(lpad(m_is_val.acf_mae,7)) | $(lpad(m_is_val.w1,5))  | $(m_is_val.hell) | $(lpad(m_is_val.cov,8))  | $(lpad(m_oos_val.cov,8))")
     end
     println(io, "="^150)
@@ -336,10 +368,17 @@ println("="^70)
 cross_tickers = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 
 open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Cross-Asset.txt"), "w") do io
-    println(io, "Table T2: Cross-Asset Generalization — CHMM (K=$K, $N_PATHS paths, α=0.05)")
-    println(io, "="^120)
-    println(io, "Ticker | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)")
-    println(io, "-"^120)
+    println(io, "Table T2: Cross-Asset Generalization (CHMM variants, K=$K, $N_PATHS paths, α=0.05)")
+    println(io, "CHMM-N = Gaussian emissions; CHMM-t = Student-t emissions with per-state ν; CHMM-L = Laplace emissions.")
+    println(io, "="^140)
+    println(io, "Ticker | Emission | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)")
+    println(io, "-"^140)
+
+    emission_types = [
+        ("CHMM-N", MyContinuousHiddenMarkovModel),
+        ("CHMM-t", MyStudentTHiddenMarkovModel),
+        ("CHMM-L", MyLaplaceHiddenMarkovModel),
+    ];
 
     for t in cross_tickers
         println("  Processing $t...")
@@ -355,35 +394,22 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Cross-Asset.txt"), "w") do io
         μ_t = mean(R_t_is); σ_t = std(R_t_is);
         kurt_t_obs = sum(((R_t_is .- μ_t) ./ σ_t).^4) / n_t_is - 3.0;
 
-        # Train CHMM
-        base = build(MyContinuousHiddenMarkovModel, (
-            observations=R_t_is, number_of_states=K, max_iter=MAX_ITER));
+        for (tag, MType) in emission_types
+            println("    $tag...");
+            base = build(MType, (
+                observations=R_t_is, number_of_states=K, max_iter=MAX_ITER));
+            sd_t = _stationary_start_dist(base, K);
+            sim_is, sim_oos = _simulate_chmm_paths(base, sd_t, n_t_is, n_t_oos, N_PATHS);
 
-        T_t = zeros(K, K);
-        for i in 1:K; T_t[i, :] = probs(base.transition[i]); end
-        π_t = (T_t^1000)[1, :];
-        sd_t = Categorical(π_t);
+            m_t_is = eval_full(R_t_is, sim_is);
+            m_t_oos = eval_full(R_t_oos, sim_oos);
 
-        # Simulate
-        sim_is = Array{Float64,2}(undef, n_t_is, N_PATHS);
-        sim_oos = Array{Float64,2}(undef, n_t_oos, N_PATHS);
-        for i in 1:N_PATHS
-            s0 = rand(sd_t);
-            states_is = base(s0, n_t_is);
-            for j in 1:n_t_is; sim_is[j,i] = rand(base.emission[states_is[j]]); end
-            s0 = rand(sd_t);
-            states_oos = base(s0, n_t_oos);
-            for j in 1:n_t_oos; sim_oos[j,i] = rand(base.emission[states_oos[j]]); end
+            line = "$(rpad(t,6)) | $(rpad(tag,8)) | $(lpad(m_t_is.ks,8)) | $(lpad(m_t_is.ad,8)) | $(lpad(m_t_oos.ks,9))  | $(lpad(round(kurt_t_obs,digits=1),7))  | $(lpad(m_t_is.kurt,7))  | $(lpad(m_t_is.acf_mae,7)) | $(lpad(m_t_is.w1,5))  | $(m_t_is.hell) | $(m_t_is.cov)"
+            println("      $line");
+            println(io, line);
         end
-
-        m_t_is = eval_full(R_t_is, sim_is);
-        m_t_oos = eval_full(R_t_oos, sim_oos);
-
-        line = "$(rpad(t,6)) | $(lpad(m_t_is.ks,8)) | $(lpad(m_t_is.ad,8)) | $(lpad(m_t_oos.ks,9))  | $(lpad(round(kurt_t_obs,digits=1),7))  | $(lpad(m_t_is.kurt,7))  | $(lpad(m_t_is.acf_mae,7)) | $(lpad(m_t_is.w1,5))  | $(m_t_is.hell) | $(m_t_is.cov)"
-        println("    $line")
-        println(io, line)
     end
-    println(io, "="^120)
+    println(io, "="^140)
 end
 
 println("\nDone. Results saved to $(joinpath(RESULTS_DIR, TICKER))")

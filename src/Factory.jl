@@ -133,6 +133,81 @@ function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::My
 end
 
 
+"""
+    build(model::Type{MyStudentTHiddenMarkovModel}, data::NamedTuple) -> MyStudentTHiddenMarkovModel
+
+Trains a continuous HMM with per-state Student-t emissions via ECM
+(see `baum_welch_student_t`).
+
+### NamedTuple keys
+- `observations::Vector{Float64}`: return series
+- `number_of_states::Int`: K
+- `max_iter::Int=30` (optional): EM iteration cap
+- `ν_init::Float64=6.0` (optional): initial degrees of freedom per state
+- `ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0)` (optional): bracket for 1D ν search
+"""
+function build(model::Type{MyStudentTHiddenMarkovModel}, data::NamedTuple)::MyStudentTHiddenMarkovModel
+
+    obs = data.observations;
+    n_states = data.number_of_states;
+    max_iterations = haskey(data, :max_iter) ? data.max_iter : 30;
+    ν_init = haskey(data, :ν_init) ? data.ν_init : 6.0;
+    ν_bounds = haskey(data, :ν_bounds) ? data.ν_bounds : (2.1, 50.0);
+
+    T_matrix, μ_vec, σ_vec, ν_vec, π_vec, ll_hist, γ =
+        baum_welch_student_t(obs, n_states;
+                             max_iter=max_iterations, ν_init=ν_init, ν_bounds=ν_bounds);
+
+    m = model();
+    m.states = collect(1:n_states);
+    m.log_likelihood_history = ll_hist;
+    transition = Dict{Int64, Categorical}();
+    emission = Dict{Int64, LocationScale{Float64, Continuous, TDist{Float64}}}();
+    for s in 1:n_states
+        transition[s] = Categorical(T_matrix[s, :]);
+        emission[s] = LocationScale(μ_vec[s], σ_vec[s], TDist(ν_vec[s]));
+    end
+    m.transition = transition;
+    m.emission = emission;
+    return m;
+end
+
+
+"""
+    build(model::Type{MyLaplaceHiddenMarkovModel}, data::NamedTuple) -> MyLaplaceHiddenMarkovModel
+
+Trains a continuous HMM with per-state Laplace emissions via EM
+(see `baum_welch_laplace`).
+
+### NamedTuple keys
+- `observations::Vector{Float64}`: return series
+- `number_of_states::Int`: K
+- `max_iter::Int=30` (optional): EM iteration cap
+"""
+function build(model::Type{MyLaplaceHiddenMarkovModel}, data::NamedTuple)::MyLaplaceHiddenMarkovModel
+
+    obs = data.observations;
+    n_states = data.number_of_states;
+    max_iterations = haskey(data, :max_iter) ? data.max_iter : 30;
+
+    T_matrix, μ_vec, b_vec, π_vec, ll_hist, γ =
+        baum_welch_laplace(obs, n_states; max_iter=max_iterations);
+
+    m = model();
+    m.states = collect(1:n_states);
+    m.log_likelihood_history = ll_hist;
+    transition = Dict{Int64, Categorical}();
+    emission = Dict{Int64, Laplace}();
+    for s in 1:n_states
+        transition[s] = Categorical(T_matrix[s, :]);
+        emission[s] = Laplace(μ_vec[s], b_vec[s]);
+    end
+    m.transition = transition;
+    m.emission = emission;
+    return m;
+end
+
+
 # --- GARCH MODEL BUILDER ----------------------------------------------------- #
 
 """

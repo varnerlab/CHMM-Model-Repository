@@ -76,18 +76,67 @@ The `MyContinuousHiddenMarkovModel` mutable struct represents a hidden Markov mo
 - `MyContinuousHiddenMarkovModel()`: Creates a new instance of the `MyContinuousHiddenMarkovModel` struct.
 """
 mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
-    
+
     # data
     states::Array{Int64,1}
     transition::Dict{Int64, Categorical}
     # Emission here is a Normal distribution, not Categorical
-    emission::Dict{Int64, Normal} 
-    
+    emission::Dict{Int64, Normal}
+
     # We can store the EM history if we want
     log_likelihood_history::Array{Float64,1}
 
     # constructor
     MyContinuousHiddenMarkovModel() = new();
+end
+
+
+"""
+    mutable struct MyStudentTHiddenMarkovModel <: AbstractMarkovModel
+
+Continuous HMM with per-state Student-t emissions. Each state k has a
+location μ_k, a scale σ_k, and degrees-of-freedom ν_k learned by EM (ECM).
+Heavier tails than `MyContinuousHiddenMarkovModel` at the cost of one
+extra parameter per state.
+
+### Required fields
+- `states::Array{Int64,1}`: state labels
+- `transition::Dict{Int64, Categorical}`: transition distributions per state
+- `emission::Dict{Int64, LocationScale}`: scaled-and-shifted TDist per state (μ + σ * TDist(ν))
+- `log_likelihood_history::Array{Float64,1}`: EM log-likelihood trace
+"""
+mutable struct MyStudentTHiddenMarkovModel <: AbstractMarkovModel
+
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission::Dict{Int64, LocationScale{Float64, Continuous, TDist{Float64}}}
+    log_likelihood_history::Array{Float64,1}
+
+    MyStudentTHiddenMarkovModel() = new();
+end
+
+
+"""
+    mutable struct MyLaplaceHiddenMarkovModel <: AbstractMarkovModel
+
+Continuous HMM with per-state Laplace emissions. Each state k has a
+location μ_k (weighted median) and scale b_k (weighted MAD). M-step is
+closed-form once the forward-backward posteriors are available.
+
+### Required fields
+- `states::Array{Int64,1}`: state labels
+- `transition::Dict{Int64, Categorical}`: transition distributions per state
+- `emission::Dict{Int64, Laplace}`: Laplace emissions per state
+- `log_likelihood_history::Array{Float64,1}`: EM log-likelihood trace
+"""
+mutable struct MyLaplaceHiddenMarkovModel <: AbstractMarkovModel
+
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission::Dict{Int64, Laplace}
+    log_likelihood_history::Array{Float64,1}
+
+    MyLaplaceHiddenMarkovModel() = new();
 end
 
 

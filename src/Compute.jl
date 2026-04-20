@@ -396,6 +396,285 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
 end
 
 
+"""
+    baum_welch_student_t(observations, number_of_states; max_iter=30, tol=1e-4,
+                         ν_init=6.0, ν_bounds=(2.1, 50.0)) -> Tuple
+
+ECM (Expectation-Conditional-Maximization) estimation for a continuous HMM
+with per-state Student-t emissions t_ν_k(μ_k, σ_k). The E-step augments the
+standard forward-backward with the latent precision
+u_{t,k} = (ν_k + 1) / (ν_k + ((o_t - μ_k)/σ_k)^2)
+and the M-step updates (μ_k, σ_k) in closed form given u_{t,k}; ν_k is
+updated by a one-dimensional golden-section search on the Q-function over
+ν_bounds, following Peel & McLachlan (2000).
+
+Returns (T, μ, σ, ν, π, ll_history, gamma).
+"""
+function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::Int64;
+    max_iter::Int64=30, tol::Float64=1e-4,
+    ν_init::Float64=6.0, ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0))
+
+    N = length(observations);
+    K = number_of_states;
+
+    # Quantile-based init on μ, σ; uniform init on T, π; shared ν_init per state.
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
+    curr_μ = zeros(K); curr_σ = zeros(K); curr_ν = fill(ν_init, K);
+    for s in 1:K
+        start_idx = (s - 1) * chunk_size + 1;
+        end_idx = (s == K) ? N : (s * chunk_size);
+        data_subset = sorted_data[start_idx:end_idx];
+        curr_μ[s] = mean(data_subset);
+        curr_σ[s] = max(std(data_subset), 1e-6);
+    end
+    curr_T = ones(K, K) ./ K;
+    curr_π = ones(K) ./ K;
+
+    ll_history = Float64[];
+    final_gamma = zeros(N, K);
+    prev_ll = -Inf;
+
+    # Helper: Student-t log-density.
+    _logpdf_t(x, μ, σ, ν) = logpdf(LocationScale(μ, σ, TDist(ν)), x);
+
+    # Helper: Q-function of ν_k (up to constants independent of ν_k).
+    # Q(ν) = Σ_t γ_t(k) * [logpdf_t(o_t; μ_k, σ_k, ν)]
+    function _q_of_nu(ν, γk, o, μ, σ)
+        acc = 0.0; n = length(o);
+        d = LocationScale(μ, σ, TDist(ν));
+        @inbounds for t in 1:n
+            acc += γk[t] * logpdf(d, o[t]);
+        end
+        return acc;
+    end
+
+    # Golden-section search over ν ∈ ν_bounds (maximize Q).
+    function _gss_nu(γk, o, μ, σ, lo, hi; iters=40)
+        φ = (sqrt(5.0) - 1.0) / 2.0;
+        a = lo; b = hi;
+        c = b - φ*(b - a); d = a + φ*(b - a);
+        fc = _q_of_nu(c, γk, o, μ, σ); fd = _q_of_nu(d, γk, o, μ, σ);
+        for _ in 1:iters
+            if fc > fd
+                b = d; d = c; fd = fc;
+                c = b - φ*(b - a); fc = _q_of_nu(c, γk, o, μ, σ);
+            else
+                a = c; c = d; fc = fd;
+                d = a + φ*(b - a); fd = _q_of_nu(d, γk, o, μ, σ);
+            end
+        end
+        return 0.5*(a + b);
+    end
+
+    for iter in 1:max_iter
+
+        # E-STEP: emission log-likelihoods + forward-backward.
+        log_B = zeros(N, K);
+        for t in 1:N, k in 1:K
+            log_B[t, k] = _logpdf_t(observations[t], curr_μ[k], curr_σ[k], curr_ν[k]);
+        end
+
+        log_alpha = zeros(N, K);
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
+        for t in 2:N, j in 1:K
+            log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
+        end
+
+        log_beta = zeros(N, K);
+        for t in N-1:-1:1, i in 1:K
+            log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
+            log_beta[t, i] = _logsumexp_vec(log_terms);
+        end
+
+        γ = zeros(N, K);
+        for t in 1:N
+            γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
+                           _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
+        end
+
+        expected_transitions = zeros(K, K);
+        for t in 1:N-1
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]);
+            for i in 1:K, j in 1:K
+                log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom;
+                expected_transitions[i, j] += exp(log_xi);
+            end
+        end
+
+        # Latent precisions: u_{t,k} = (ν_k + 1) / (ν_k + ((o_t - μ_k)/σ_k)^2)
+        u = zeros(N, K);
+        for t in 1:N, k in 1:K
+            δ2 = ((observations[t] - curr_μ[k]) / curr_σ[k])^2;
+            u[t, k] = (curr_ν[k] + 1.0) / (curr_ν[k] + δ2);
+        end
+
+        # M-STEP (CM): μ_k, σ_k first given u, then ν_k via GSS.
+        new_π = γ[1, :]; curr_π = new_π;
+
+        for k in 1:K
+            wu = γ[:, k] .* u[:, k];
+            Σwu = sum(wu);
+            Σγ = sum(γ[:, k]);
+            if Σwu > 0
+                curr_μ[k] = sum(wu .* observations) / Σwu;
+            end
+            if Σγ > 0
+                σ2 = sum(wu .* (observations .- curr_μ[k]).^2) / Σγ;
+                curr_σ[k] = max(sqrt(max(σ2, 1e-12)), 1e-6);
+            end
+            γk = γ[:, k];
+            if Σγ > 0
+                curr_ν[k] = _gss_nu(γk, observations, curr_μ[k], curr_σ[k],
+                                    ν_bounds[1], ν_bounds[2]);
+            end
+        end
+
+        for i in 1:K
+            r_sum = sum(expected_transitions[i, :]);
+            if r_sum > 0
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
+            end
+        end
+
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        push!(ll_history, current_ll);
+        final_gamma = γ;
+        if abs(current_ll - prev_ll) < tol
+            break;
+        end
+        prev_ll = current_ll;
+    end
+
+    return (curr_T, curr_μ, curr_σ, curr_ν, curr_π, ll_history, final_gamma);
+end
+
+
+"""
+    _weighted_median(x, w) -> Float64
+
+Weighted median of observations `x` with weights `w ≥ 0`. Returns the value
+at which the cumulative weight first crosses half of the total. Ties are
+broken by linear interpolation between adjacent order statistics.
+"""
+function _weighted_median(x::AbstractVector{<:Real}, w::AbstractVector{<:Real})::Float64
+    n = length(x);
+    if n == 0; return 0.0; end
+    total = sum(w);
+    if total <= 0; return median(x); end
+    idx = sortperm(x);
+    cum = 0.0; half = total / 2.0;
+    for i in 1:n
+        cum += w[idx[i]];
+        if cum >= half
+            if i == 1; return Float64(x[idx[1]]); end
+            # linear interpolation between i-1 and i
+            prev_cum = cum - w[idx[i]];
+            frac = (half - prev_cum) / max(w[idx[i]], 1e-12);
+            return Float64(x[idx[i-1]]) + frac * Float64(x[idx[i]] - x[idx[i-1]]);
+        end
+    end
+    return Float64(x[idx[end]]);
+end
+
+
+"""
+    baum_welch_laplace(observations, number_of_states; max_iter=30, tol=1e-4) -> Tuple
+
+EM estimation for a continuous HMM with per-state Laplace emissions
+Laplace(μ_k, b_k). The E-step is the standard log-space forward-backward
+with Laplace log-densities; the M-step uses weighted-median location and
+weighted mean-absolute-deviation scale, which are the weighted-MLE
+estimators of the Laplace parameters.
+
+Returns (T, μ, b, π, ll_history, gamma).
+"""
+function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::Int64;
+    max_iter::Int64=30, tol::Float64=1e-4)
+
+    N = length(observations);
+    K = number_of_states;
+
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
+    curr_μ = zeros(K); curr_b = zeros(K);
+    for s in 1:K
+        start_idx = (s - 1) * chunk_size + 1;
+        end_idx = (s == K) ? N : (s * chunk_size);
+        data_subset = sorted_data[start_idx:end_idx];
+        curr_μ[s] = median(data_subset);
+        curr_b[s] = max(mean(abs.(data_subset .- curr_μ[s])), 1e-6);
+    end
+    curr_T = ones(K, K) ./ K;
+    curr_π = ones(K) ./ K;
+
+    ll_history = Float64[];
+    final_gamma = zeros(N, K);
+    prev_ll = -Inf;
+
+    for iter in 1:max_iter
+
+        log_B = zeros(N, K);
+        for t in 1:N, k in 1:K
+            log_B[t, k] = logpdf(Laplace(curr_μ[k], curr_b[k]), observations[t]);
+        end
+
+        log_alpha = zeros(N, K);
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
+        for t in 2:N, j in 1:K
+            log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
+        end
+
+        log_beta = zeros(N, K);
+        for t in N-1:-1:1, i in 1:K
+            log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
+            log_beta[t, i] = _logsumexp_vec(log_terms);
+        end
+
+        γ = zeros(N, K);
+        for t in 1:N
+            γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
+                           _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
+        end
+
+        expected_transitions = zeros(K, K);
+        for t in 1:N-1
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]);
+            for i in 1:K, j in 1:K
+                log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom;
+                expected_transitions[i, j] += exp(log_xi);
+            end
+        end
+
+        curr_π = γ[1, :];
+        for k in 1:K
+            wk = γ[:, k];
+            Σw = sum(wk);
+            if Σw > 0
+                curr_μ[k] = _weighted_median(observations, wk);
+                curr_b[k] = max(sum(wk .* abs.(observations .- curr_μ[k])) / Σw, 1e-6);
+            end
+        end
+        for i in 1:K
+            r_sum = sum(expected_transitions[i, :]);
+            if r_sum > 0
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
+            end
+        end
+
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        push!(ll_history, current_ll);
+        final_gamma = γ;
+        if abs(current_ll - prev_ll) < tol
+            break;
+        end
+        prev_ll = current_ll;
+    end
+
+    return (curr_T, curr_μ, curr_b, curr_π, ll_history, final_gamma);
+end
+
+
 # --- FUNCTORS (Simulation Interface) ----------------------------------------- #
 
 """
@@ -404,6 +683,27 @@ end
 Functor call to simulate a path for the Continuous Gaussian HMM.
 """
 (m::MyContinuousHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+
+function _simulate(m::MyStudentTHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
+    for t in 2:steps
+        chain[t] = rand(m.transition[chain[t-1]]);
+    end
+    return chain;
+end
+
+function _simulate(m::MyLaplaceHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
+    for t in 2:steps
+        chain[t] = rand(m.transition[chain[t-1]]);
+    end
+    return chain;
+end
+
+(m::MyStudentTHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+(m::MyLaplaceHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
 
 # Discrete Models (Baseline)
 """
