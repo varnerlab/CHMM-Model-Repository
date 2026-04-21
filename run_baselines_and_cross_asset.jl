@@ -1,12 +1,15 @@
 # ========================================================================================= #
 # run_baselines_and_cross_asset.jl
 #
-# Generates:
-#   1. Table 2: Baseline comparisons for SPY (Bootstrap, Gaussian, Laplace, GARCH, CHMM)
-#   2. Table T2: Cross-asset generalization for SPY/NVDA/JNJ/JPM/AAPL/QQQ at K=18
+# Pipeline A (single-index trained): each ticker is fit with its own CHMM, independently.
+# No cross-asset dependence is introduced here. See run_cross_asset_sim_copula.jl for the
+# Pipeline B (cross-asset dependence, Table T3) counterpart.
 #
-# Mirrors the discrete paper's Table 2 and Table T2 structure exactly,
-# with Anderson-Darling test and quantile coverage added.
+# Generates:
+#   1. Table 2 (SPY only): seven-way baseline comparison
+#      -> results/SPY/Table-2-Baselines.txt
+#   2. Table T2 (six tickers, three emission families): per-ticker marginal fidelity
+#      -> results/SPY/Table-T2-Per-Ticker-Emission-Families.txt
 #
 # Usage:
 #   include("run_baselines_and_cross_asset.jl")
@@ -333,11 +336,17 @@ println("Observed kurtosis: IS=$(round(kurt_obs_is,digits=2))")
 # Save Table 2
 mkpath(joinpath(RESULTS_DIR, TICKER));
 open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
-    println(io, "Table 2: Model Comparison ($TICKER, $N_PATHS paths, α=0.05)")
-    println(io, "Discrete HMM (NJ / WJ) uses K=$(DISCRETE_K) bins; WJ: ε=$(EPSILON_JUMP), λ=$(LAMBDA_JUMP) (prior paper).")
-    println(io, "CHMM-N: continuous Gaussian emissions (Baum-Welch, K=$K, no jumps).")
-    println(io, "CHMM-t: continuous Student-t emissions with per-state ν (ECM, K=$K, no jumps).")
-    println(io, "CHMM-L: continuous Laplace emissions with weighted-median M-step (EM, K=$K, no jumps).")
+    println(io, "="^100)
+    println(io, "TABLE 2. Baseline and CHMM model comparison on $TICKER.")
+    println(io, "         Pipeline A (single-index trained CHMM) on the market index SPY.")
+    println(io, "="^100)
+    println(io, "")
+    println(io, "Pipeline   : A. Single-index trained CHMM; $TICKER fit independently, no cross-asset coupling.")
+    println(io, "Ticker     : $TICKER only (six-ticker generalization is in Table T2).")
+    println(io, "Paths      : $N_PATHS simulated paths per model; alpha = 0.05 for KS / AD.")
+    println(io, "Baselines  : Bootstrap, Gaussian i.i.d., Laplace i.i.d., Discrete HMM (no jumps = NJ,")
+    println(io, "             with jumps = WJ, K=$(DISCRETE_K) bins, epsilon=$(EPSILON_JUMP), lambda=$(LAMBDA_JUMP) from prior paper), GARCH(1,1).")
+    println(io, "CHMM       : CHMM-N (Gaussian), CHMM-t (Student-t per-state nu), CHMM-L (Laplace). K=$K, no jumps.")
     println(io, "="^150)
     println(io, "")
     println(io, "                | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)")
@@ -367,9 +376,27 @@ println("="^70)
 
 cross_tickers = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 
-open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Cross-Asset.txt"), "w") do io
-    println(io, "Table T2: Cross-Asset Generalization (CHMM variants, K=$K, $N_PATHS paths, α=0.05)")
-    println(io, "CHMM-N = Gaussian emissions; CHMM-t = Student-t emissions with per-state ν; CHMM-L = Laplace emissions.")
+open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Per-Ticker-Emission-Families.txt"), "w") do io
+    println(io, "="^100)
+    println(io, "TABLE T2. Per-ticker marginal fidelity across CHMM emission families.")
+    println(io, "          Pipeline A (single-index trained): each ticker fit INDEPENDENTLY, no cross-asset coupling.")
+    println(io, "="^100)
+    println(io, "")
+    println(io, "Pipeline      : A. Single-index trained CHMM (per-ticker independent Baum-Welch fit).")
+    println(io, "Tickers       : SPY, NVDA, JNJ, JPM, AAPL, QQQ (six main-study tickers).")
+    println(io, "K             : $K states (fixed; selected in Table T1a).")
+    println(io, "Emission fams : CHMM-N (Gaussian), CHMM-t (Student-t, per-state nu), CHMM-L (Laplace).")
+    println(io, "Paths / alpha : $N_PATHS simulated paths per (ticker, family); KS and AD thresholded at alpha = 0.05.")
+    println(io, "IS / OoS      : see data loader; OoS window runs 2024-01-04 through 2026-04-17.")
+    println(io, "")
+    println(io, "What this table tests:")
+    println(io, "  Can the CHMM reproduce each ticker's univariate return distribution across three emission")
+    println(io, "  families? Each ticker is its own independent experiment; there is NO dependence modeling here.")
+    println(io, "")
+    println(io, "How this differs from Table T3:")
+    println(io, "  Table T3 (results/cross_asset/Table-T3-Cross-Asset-Dependence.txt) re-uses these per-ticker")
+    println(io, "  CHMM-N marginals and ASKS A DIFFERENT QUESTION: given the marginals, which dependence")
+    println(io, "  mechanism (SIM, Gaussian copula, Student-t copula) best reproduces cross-asset correlations?")
     println(io, "="^140)
     println(io, "Ticker | Emission | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)")
     println(io, "-"^140)

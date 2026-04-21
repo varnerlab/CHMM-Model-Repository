@@ -177,8 +177,10 @@ end
 
 function save_convergence(model, family_tag::String, K::Int, out_dir::String)
     p = plot(model.log_likelihood_history,
-        title="Convergence (CHMM-$family_tag, K=$K)", titlefontsize=10,
-        xlabel="Iteration", ylabel="Log-Likelihood",
+        title="Fig 2 (Pipeline A). Baum-Welch convergence | $TICKER | CHMM-$family_tag, K=$K\n" *
+              "T_IS = $(n_steps) obs | max_iter = $MAX_ITER",
+        titlefontsize=9,
+        xlabel="EM iteration", ylabel="Data log-likelihood",
         legend=false, lw=2, color=:navy, marker=:circle, ms=3);
     savefig(p, joinpath(out_dir, "Fig-Convergence-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Convergence-K$K-$family_tag.pdf"));
@@ -186,12 +188,14 @@ end
 
 function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
     colors_k = cgrad(:RdYlBu, K, categorical=true);
-    p = plot(title="Emission Distributions (CHMM-$family_tag, K=$K)", titlefontsize=10,
-        xlabel="Excess Growth Rate", ylabel="Probability Density (AU)", legend=:topright);
-    histogram!(p, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
+    p = plot(title="Fig 5 (Pipeline A). Per-state emission densities | $TICKER | CHMM-$family_tag, K=$K\n" *
+                  "Gray histogram = observed IS returns (T_IS = $(n_steps)); S1..S$K = fitted state emissions",
+        titlefontsize=9,
+        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)", legend=:topright);
+    histogram!(p, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS");
     for s in 1:K
         d = model.emission[s];
-        plot!(p, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="S$s", alpha=0.8);
+        plot!(p, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="State $s", alpha=0.8);
     end
     xlims!(p, x_lo, x_hi);
     savefig(p, joinpath(out_dir, "Fig-Emission-PDFs-K$K-$family_tag.svg"));
@@ -200,27 +204,31 @@ end
 
 function save_transition_matrix(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     T_log = log10.(T_mat .+ 1e-10);
-    p = heatmap(T_log, title="Transition Matrix log₁₀ (CHMM-$family_tag, K=$K)",
-        titlefontsize=10,
-        xlabel="To State", ylabel="From State", color=:viridis,
+    p = heatmap(T_log,
+        title="Fig 5 (Pipeline A). Transition matrix log10 P(s_{t+1}=j | s_t=i) | $TICKER | CHMM-$family_tag, K=$K",
+        titlefontsize=9,
+        xlabel="To state j", ylabel="From state i", color=:viridis,
         yflip=true, aspect_ratio=:equal, size=(500,450));
     savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.pdf"));
 end
 
 function save_stationary_distribution(π_stat::Vector{Float64}, family_tag::String, K::Int, out_dir::String)
-    p = bar(1:K, π_stat, title="Stationary Distribution (CHMM-$family_tag, K=$K)",
-        titlefontsize=10,
-        xlabel="State", ylabel="Probability", legend=false, color=:steelblue, alpha=0.7);
+    p = bar(1:K, π_stat,
+        title="Stationary distribution pi (= left eigenvector of T) | $TICKER | CHMM-$family_tag, K=$K",
+        titlefontsize=9,
+        xlabel="State index", ylabel="Stationary probability pi_k", legend=false, color=:steelblue, alpha=0.7);
     savefig(p, joinpath(out_dir, "Fig-Stationary-Distribution-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Stationary-Distribution-K$K-$family_tag.pdf"));
 end
 
 function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     res = [1.0 / max(1.0 - T_mat[k,k], 1e-12) for k in 1:K];
-    p = bar(1:K, res, title="Natural Residence Times (CHMM-$family_tag, K=$K)",
-        titlefontsize=10,
-        xlabel="State", ylabel="Steps", legend=false, color=:steelblue, alpha=0.7);
+    p = bar(1:K, res,
+        title="Natural residence time 1/(1 - T_ii) | $TICKER | CHMM-$family_tag, K=$K",
+        titlefontsize=9,
+        xlabel="State index", ylabel="Expected residence time (trading days)",
+        legend=false, color=:steelblue, alpha=0.7);
     savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.pdf"));
 end
@@ -233,40 +241,46 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
-    p_a = plot(title="(a) IS Density (KS: $(m_is.ks)%)",
-        titlefontsize=9, xlabel="Excess Growth Rate", ylabel="Prob. Density (AU)");
-    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
-    density!(p_a, sim_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-$family_tag");
+    p_a = plot(title="(a) IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
+        titlefontsize=8, xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)");
+    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS (T=$(n_steps))");
+    density!(p_a, sim_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-$family_tag, single sim path");
     xlims!(p_a, x_lo, x_hi);
 
-    p_b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
-        title="(b) ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p_b, 1:L, acf_m, lw=2, color=:navy, label="CHMM-$family_tag (mean)");
-    plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
+    p_b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed |G_t|",
+        title="(b) ACF of |G_t| | lag 1..$L (trading days)",
+        titlefontsize=8, xlabel="Lag (trading days)", ylabel="ACF of |G_t|");
+    plot!(p_b, 1:L, acf_m, lw=2, color=:navy, label="CHMM-$family_tag (mean over $n_acf sims)");
+    plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="CHMM-$family_tag 10-90 percentile");
 
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(sim_is), probs_qq);
 
-    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
-        title="(c) Tail Q-Q (0.1st-99.9th)", titlefontsize=9,
-        xlabel="Observed Quantiles", ylabel="Simulated Quantiles");
+    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect fit)",
+        title="(c) Tail Q-Q plot | quantile grid 0.1% .. 99.9%",
+        titlefontsize=8,
+        xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)");
     scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM-$family_tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,400),
-        plot_title="IS Comparison (CHMM-$family_tag, K=$K)", plot_titlefontsize=12);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,420),
+        plot_title="Fig 3 (Pipeline A). IS validation | $TICKER | CHMM-$family_tag, K=$K | $N_PATHS sim paths",
+        plot_titlefontsize=11);
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.pdf"));
 end
 
 function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String, K::Int, out_dir::String)
     p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
-        label="CHMM-$family_tag", title="(a) OoS KS p-values", titlefontsize=9,
-        xlabel="p-value", ylabel="Density");
-    vline!(p_a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
+        label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths)",
+        title="(a) OoS KS p-values | pass rate = $(m_oos.ks)% above alpha=0.05",
+        titlefontsize=8,
+        xlabel="KS p-value against OoS series", ylabel="Density");
+    vline!(p_a, [0.05], lw=2, color=:red, ls=:dash, label="alpha = 0.05 threshold");
 
-    p_b = plot(title="(b) OoS Density Fan", titlefontsize=9,
-        xlabel="Excess Growth Rate", ylabel="Prob. Density (AU)");
+    p_b = plot(title="(b) OoS return density fan | 50 sim paths vs. observed OoS (T=$(n_steps_oos))",
+        titlefontsize=8,
+        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)");
     for i in 1:min(50, N_PATHS)
         density!(p_b, sim_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
     end
@@ -283,13 +297,16 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     acf_oos_10 = [quantile(acf_oos_arch[t,:], 0.10) for t in 1:length(τ_oos)];
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
-    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        title="(c) OoS ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p_c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM-$family_tag (mean)");
-    plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
+    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS |G_t|",
+        title="(c) OoS ACF of |G_t| | lag 1..$(length(τ_oos)) (trading days)",
+        titlefontsize=8, xlabel="Lag (trading days)", ylabel="ACF of |G_t|");
+    plot!(p_c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM-$family_tag (mean over $n_acf sims)");
+    plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="CHMM-$family_tag 10-90 percentile");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,400),
-        plot_title="OoS Validation (CHMM-$family_tag, K=$K)", plot_titlefontsize=12);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,420),
+        plot_title="Fig 4 (Pipeline A). OoS validation | $TICKER | CHMM-$family_tag, K=$K | " *
+                   "T_OoS=$(n_steps_oos) obs, $N_PATHS sim paths",
+        plot_titlefontsize=11);
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.pdf"));
 end
@@ -297,10 +314,11 @@ end
 function save_trajectory(sim_is::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     idx = rand(1:N_PATHS);
     traj_len = min(500, n_steps);
-    p = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed",
-        title="Return Trajectory (CHMM-$family_tag, K=$K)", titlefontsize=10,
-        xlabel="Trading Day", ylabel="Excess Growth Rate");
-    plot!(p, sim_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-$family_tag");
+    p = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed IS",
+        title="Sample return trajectory (first $traj_len IS days) | $TICKER | CHMM-$family_tag, K=$K",
+        titlefontsize=9,
+        xlabel="Trading day (IS index)", ylabel="Annualized excess log return G_t");
+    plot!(p, sim_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-$family_tag (single sim path)");
     savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.pdf"));
 end

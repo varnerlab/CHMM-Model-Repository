@@ -93,16 +93,17 @@ function _price_fan_plot(ticker::String, family_label::String,
     q75 = [quantile(P_paths[i, :], 0.75) for i in 1:(n_steps + 1)];
     q95 = [quantile(P_paths[i, :], 0.95) for i in 1:(n_steps + 1)];
 
-    title_text = "$ticker - CHMM-$family_label price fan (K=$K_MAIN, $(size(P_paths,2)) paths)";
-    p = plot(xs, q50, label="Median", lw=2, c=:blue,
-             title=title_text, titlefontsize=10,
-             xlabel="Trading day (out-of-sample)", ylabel="Price");
-    plot!(p, xs, q05, fillrange=q95, fillalpha=0.15, c=:blue, label="5-95% band", lw=0);
-    plot!(p, xs, q25, fillrange=q75, fillalpha=0.25, c=:blue, label="25-75% band", lw=0);
+    title_text = "Fig 6 (Pipeline A). $ticker OoS price fan | CHMM-$family_label, K=$K_MAIN\n" *
+                 "$(size(P_paths,2)) simulated paths | S0 = last IS VWAP | dt = 1/252";
+    p = plot(xs, q50, label="Simulated median", lw=2, c=:blue,
+             title=title_text, titlefontsize=9,
+             xlabel="Trading day after last IS close (out-of-sample)", ylabel="Price (USD)");
+    plot!(p, xs, q05, fillrange=q95, fillalpha=0.15, c=:blue, label="Simulated 5-95 percentile band", lw=0);
+    plot!(p, xs, q25, fillrange=q75, fillalpha=0.25, c=:blue, label="Simulated 25-75 percentile band", lw=0);
 
     # Overlay observed OoS price track (truncate/pad to min length).
     n_show = min(length(P_obs), n_steps + 1);
-    plot!(p, 0:(n_show - 1), P_obs[1:n_show], label="Observed", lw=2, c=:red);
+    plot!(p, 0:(n_show - 1), P_obs[1:n_show], label="Observed OoS price path", lw=2, c=:red);
 
     return p;
 end
@@ -110,10 +111,12 @@ end
 function _terminal_hist_plot(ticker::String, family_label::String,
                              P_paths::Matrix{Float64}, P_obs_end::Float64)
     terminal = P_paths[end, :];
-    title_text = "$ticker - CHMM-$family_label terminal price (n=$(length(terminal)))";
-    p = histogram(terminal, bins=40, legend=:topright, label="Simulated",
-                  title=title_text, titlefontsize=10,
-                  xlabel="Terminal price", ylabel="Count",
+    n_steps = size(P_paths, 1) - 1;
+    title_text = "Fig 6 (Pipeline A). $ticker terminal-price distribution | CHMM-$family_label, K=$K_MAIN\n" *
+                 "$(length(terminal)) simulated paths at day $n_steps OoS";
+    p = histogram(terminal, bins=40, legend=:topright, label="Simulated terminal prices",
+                  title=title_text, titlefontsize=9,
+                  xlabel="Terminal price at end of OoS window (USD)", ylabel="Count",
                   fillalpha=0.6, c=:steelblue);
     vline!(p, [P_obs_end], lw=2, c=:red, label="Observed terminal");
     vline!(p, [median(terminal)], lw=2, c=:blue, ls=:dash, label="Simulated median");

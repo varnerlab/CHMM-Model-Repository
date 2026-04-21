@@ -1,16 +1,17 @@
 # ========================================================================================= #
 # run_cross_asset_sim_copula.jl
 #
-# Cross-asset extension: SIM and copula-based dependence models over multiple tickers.
-# Each asset's marginal is a fitted CHMM; dependence is injected via:
+# Pipeline B (cross-asset dependence extension). Each asset's marginal comes from a fitted
+# CHMM-N (the same single-index marginals used in Pipeline A / Table T2); dependence is
+# injected via three constructions:
 #   1. Single Index Model (SIM) with SPY as the market factor.
 #   2. Gaussian copula on CHMM marginals (rank reordering).
-#   3. Student-t copula on CHMM marginals (rank reordering).
+#   3. Student-t copula on CHMM marginals (rank reordering), nu selected by profile MLE.
 #
-# Output files (results/<TICKER>/):
-#   - Table-T2-Cross-Asset-SIM-Copula.txt
-#   - Fig-Cross-Asset-Correlation.svg / .pdf
-#   - Fig-Cross-Asset-KS-Dist.svg / .pdf
+# Output files (results/cross_asset/):
+#   - Table-T3-Cross-Asset-Dependence.txt           (Table T3 in the paper)
+#   - Fig-Cross-Asset-Correlation.svg / .pdf        (Fig 7 in the paper)
+#   - Fig-Cross-Asset-KS-Dist.svg / .pdf            (per-asset KS sanity check for T3)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -155,15 +156,37 @@ cor_t_oos = correlation_reproduction(R_oos, t_paths_oos);
 # WRITE TABLE
 # ========================================================================================= #
 mkpath(joinpath(RESULTS_DIR, "cross_asset"));
-outpath = joinpath(RESULTS_DIR, "cross_asset", "Table-T2-Cross-Asset-SIM-Copula.txt");
+outpath = joinpath(RESULTS_DIR, "cross_asset", "Table-T3-Cross-Asset-Dependence.txt");
 open(outpath, "w") do io
-    println(io, "Table T2. Cross-asset extension: SIM and copula dependence models");
-    println(io, "         Marginals: per-asset CHMM (K=$K). Market factor: $MARKET.");
-    println(io, "         n_paths=$N_PATHS, α=0.05, Kendall τ-based correlation.");
-    println(io, "         Student-t copula ν* = $(t_copula.nu) (selected by profile MLE).");
+    println(io, "=" ^ 100);
+    println(io, "TABLE T3. Cross-asset dependence: SIM, Gaussian copula, Student-t copula on CHMM marginals.");
+    println(io, "          Pipeline B (cross-asset extension): marginals come from Pipeline A; dependence is added.");
+    println(io, "=" ^ 100);
+    println(io, "");
+    println(io, "Pipeline      : B. Cross-asset extension on top of Pipeline A marginals.");
+    println(io, "Tickers       : $(join(available, ", "))");
+    println(io, "Marginals     : Per-asset CHMM-N (Gaussian emissions, K = $K), trained independently per ticker");
+    println(io, "                (same fits as the CHMM-N rows of Table T2).");
+    println(io, "Dependence    : Three competing constructions");
+    println(io, "                  SIM              : Single Index Model regressing each non-market ticker on $MARKET.");
+    println(io, "                  Gaussian copula  : rank-reordering with Kendall-tau-based correlation matrix.");
+    println(io, "                  Student-t copula : rank-reordering with profile-MLE nu* = $(t_copula.nu).");
+    println(io, "Market factor : $MARKET (drives the SIM factor path).");
+    println(io, "Paths / alpha : $N_PATHS simulated paths per dependence model; KS thresholded at alpha = 0.05.");
+    println(io, "");
+    println(io, "What this table tests:");
+    println(io, "  Given per-ticker CHMM marginals that already pass univariate fidelity (Table T2), which");
+    println(io, "  dependence mechanism best reproduces the empirical cross-asset correlation matrix?");
+    println(io, "  Two metrics are reported: per-asset KS pass rates (sanity check on marginals after");
+    println(io, "  dependence is injected) and correlation-matrix distance (the core dependence metric).");
+    println(io, "");
+    println(io, "How this differs from Table T2:");
+    println(io, "  Table T2 (results/SPY/Table-T2-Per-Ticker-Emission-Families.txt) evaluates the per-ticker");
+    println(io, "  marginal only, across THREE EMISSION FAMILIES, with NO dependence. Table T3 holds the");
+    println(io, "  emission family fixed (Gaussian) and varies the DEPENDENCE MECHANISM.");
     println(io, "=" ^ 110);
     println(io, "");
-    println(io, "Per-asset KS pass rates (%)");
+    println(io, "1. Per-asset KS pass rates (%)");
     println(io, "-" ^ 110);
     println(io, "Ticker    SIM IS   SIM OoS   Gauss IS   Gauss OoS    t IS      t OoS");
     for j in 1:d
@@ -172,16 +195,16 @@ open(outpath, "w") do io
     println(io, "  Mean     $(lpad(round(mean(ks_sim_is),digits=1),6))   $(lpad(round(mean(ks_sim_oos),digits=1),7))    $(lpad(round(mean(ks_gauss_is),digits=1),7))    $(lpad(round(mean(ks_gauss_oos),digits=1),7))   $(lpad(round(mean(ks_t_is),digits=1),7))    $(lpad(round(mean(ks_t_oos),digits=1),7))");
     println(io, "  Median   $(lpad(round(median(ks_sim_is),digits=1),6))   $(lpad(round(median(ks_sim_oos),digits=1),7))    $(lpad(round(median(ks_gauss_is),digits=1),7))    $(lpad(round(median(ks_gauss_oos),digits=1),7))   $(lpad(round(median(ks_t_is),digits=1),7))    $(lpad(round(median(ks_t_oos),digits=1),7))");
     println(io, "");
-    println(io, "Cross-asset correlation reproduction (‖Σ_sim - Σ_obs‖_F over $N_PATHS paths)");
+    println(io, "2. Cross-asset correlation reproduction (||Sigma_sim - Sigma_obs||_F over $N_PATHS paths)");
     println(io, "-" ^ 110);
     println(io, "Model              Frobenius IS        Off-diag MAE IS   Frobenius OoS       Off-diag MAE OoS");
     println(io, "SIM                $(lpad(round(cor_sim_is.frob_mean,digits=3),8))            $(lpad(round(cor_sim_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_sim_oos.frob_mean,digits=3),8))            $(lpad(round(cor_sim_oos.offdiag_mae,digits=3),8))");
     println(io, "Gaussian copula    $(lpad(round(cor_gauss_is.frob_mean,digits=3),8))            $(lpad(round(cor_gauss_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_gauss_oos.frob_mean,digits=3),8))            $(lpad(round(cor_gauss_oos.offdiag_mae,digits=3),8))");
     println(io, "Student-t copula   $(lpad(round(cor_t_is.frob_mean,digits=3),8))            $(lpad(round(cor_t_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_t_oos.frob_mean,digits=3),8))            $(lpad(round(cor_t_oos.offdiag_mae,digits=3),8))");
     println(io, "");
-    println(io, "SIM regression summary");
+    println(io, "3. SIM regression summary (non-market assets, $MARKET as market factor)");
     println(io, "-" ^ 110);
-    println(io, "Ticker     α̂         β̂        R²");
+    println(io, "Ticker     alpha_hat   beta_hat   R2");
     for (k, j) in enumerate(non_market_idx)
         println(io, "  $(rpad(available[j],8))  $(lpad(round(sim_model.alphas[k],digits=4),7))  $(lpad(round(sim_model.betas[k],digits=3),6))  $(lpad(round(sim_model.r2[k],digits=3),5))");
     end
@@ -212,15 +235,19 @@ try
     Σ_t_avg ./= N_PATHS;
     Σ_sim_avg ./= N_PATHS;
 
-    p1 = heatmap(Σ_obs, title="Observed", c=:RdBu, clims=(-1,1), aspect_ratio=1,
-        xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=10);
-    p2 = heatmap(Σ_sim_avg, title="SIM (mean over $N_PATHS)", c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=10);
-    p3 = heatmap(Σ_gauss_avg, title="Gaussian copula", c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=10);
-    p4 = heatmap(Σ_t_avg, title="Student-t copula (ν=$(Int(t_copula.nu)))", c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=10);
-    fig = plot(p1, p2, p3, p4, layout=(2,2), size=(900, 900));
+    plot_title_corr = "Fig 7 (Table T3, Pipeline B). Cross-asset correlation reproduction | " *
+                      "K=$K marginals, $N_PATHS paths, IS window | top-left is the data";
+    p1 = heatmap(Σ_obs, title="(a) Observed (IS data, T=$n_is)", c=:RdBu, clims=(-1,1), aspect_ratio=1,
+        xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
+    p2 = heatmap(Σ_sim_avg, title="(b) SIM (mean over $N_PATHS sim paths)", c=:RdBu, clims=(-1,1),
+        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
+    p3 = heatmap(Σ_gauss_avg, title="(c) Gaussian copula (mean over $N_PATHS paths)", c=:RdBu, clims=(-1,1),
+        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
+    p4 = heatmap(Σ_t_avg, title="(d) Student-t copula, nu*=$(Int(t_copula.nu)) (mean over $N_PATHS paths)",
+        c=:RdBu, clims=(-1,1),
+        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
+    fig = plot(p1, p2, p3, p4, layout=(2,2), size=(950, 950),
+        plot_title=plot_title_corr, plot_titlefontsize=10);
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.svg"));
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.pdf"));
     println("Saved correlation heatmap.");
@@ -230,10 +257,13 @@ try
     w = 0.25;
     p_is = bar(gx .- w, ks_sim_is, bar_width=w, label="SIM", legend=:bottomright);
     bar!(p_is, gx, ks_gauss_is, bar_width=w, label="Gaussian copula");
-    bar!(p_is, gx .+ w, ks_t_is, bar_width=w, label="Student-t copula (ν=$(Int(t_copula.nu)))");
+    bar!(p_is, gx .+ w, ks_t_is, bar_width=w, label="Student-t copula (nu*=$(Int(t_copula.nu)))");
     xticks!(p_is, gx, available);
-    ylabel!(p_is, "In-sample KS pass rate (%)");
-    title!(p_is, "Per-asset in-sample KS pass rates");
+    ylabel!(p_is, "In-sample KS pass rate (%), alpha=0.05");
+    xlabel!(p_is, "Ticker");
+    title!(p_is, "Table T3 sanity check (Pipeline B): per-asset IS KS after dependence injection\n" *
+                 "$N_PATHS paths | CHMM-N marginals, K=$K | market factor = $MARKET",
+           titlefontsize=9);
     ylims!(p_is, 0, 105);
     savefig(p_is, joinpath(figs_dir, "Fig-Cross-Asset-KS-Dist.svg"));
     savefig(p_is, joinpath(figs_dir, "Fig-Cross-Asset-KS-Dist.pdf"));

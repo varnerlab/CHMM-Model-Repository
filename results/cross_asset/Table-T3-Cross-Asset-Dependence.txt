@@ -1,0 +1,64 @@
+====================================================================================================
+TABLE T3. Cross-asset dependence: SIM, Gaussian copula, Student-t copula on CHMM marginals.
+          Pipeline B (cross-asset extension): marginals come from Pipeline A; dependence is added.
+====================================================================================================
+
+Pipeline      : B. Cross-asset extension on top of Pipeline A marginals.
+Tickers       : SPY, NVDA, JNJ, JPM, AAPL, QQQ (six main-study tickers).
+Marginals     : Per-asset CHMM-N (Gaussian emissions, K = 18), trained independently per ticker
+                (same fits as the CHMM-N rows of Table T2).
+Dependence    : Three competing constructions
+                  SIM              : Single Index Model regressing each non-market ticker on SPY.
+                  Gaussian copula  : rank-reordering with Kendall-tau-based correlation matrix.
+                  Student-t copula : rank-reordering with profile-MLE nu* = 6.0.
+Market factor : SPY (drives the SIM factor path).
+Paths / alpha : 200 simulated paths per dependence model; KS thresholded at alpha = 0.05.
+IS window     : 2014-01-03 through 2024-01-03, T_IS = 2516 trading days.
+OoS window    : 2024-01-04 through 2026-04-17, T_OoS = 572 trading days.
+
+What this table tests:
+  Given per-ticker CHMM marginals that already pass univariate fidelity (Table T2), which
+  dependence mechanism best reproduces the empirical cross-asset correlation matrix?
+  Two metrics are reported: per-asset KS pass rates (sanity check on the marginals after
+  dependence is injected) and correlation-matrix distance (the core dependence metric).
+
+How this differs from Table T2:
+  Table T2 (results/SPY/Table-T2-Per-Ticker-Emission-Families.txt) evaluates the per-ticker
+  marginal only, across THREE EMISSION FAMILIES, with NO dependence. Table T3 holds the
+  emission family fixed (Gaussian) and varies the DEPENDENCE MECHANISM. A reader should read
+  T2 first (marginals) and T3 second (dependence on top of marginals).
+
+Sections below:
+  1. Per-asset KS pass rates (IS and OoS) across SIM, Gaussian copula, Student-t copula.
+  2. Cross-asset correlation reproduction: Frobenius norm and off-diagonal MAE.
+  3. SIM regression summary: fitted alpha, beta, R-squared per non-market asset.
+====================================================================================================
+
+1. Per-asset KS pass rates (%)
+--------------------------------------------------------------------------------------------------------------
+Ticker    SIM IS   SIM OoS   Gauss IS   Gauss OoS    t IS      t OoS
+  SPY        91.5      80.5       94.5       81.0      95.5       86.0
+  NVDA       71.5      86.5       96.0       51.5      93.0       50.5
+  JNJ        88.5      97.0      100.0       95.5     100.0       93.5
+  JPM        31.5      27.0       99.5       53.0      96.5       49.0
+  AAPL       64.0      83.5       99.5       93.5      99.0       94.5
+  QQQ        85.5      87.0       95.5       95.0      93.0       95.0
+  Mean       72.1      76.9       97.5       78.2      96.2       78.1
+  Median     78.5      85.0       97.8       87.2      96.0       89.8
+
+2. Cross-asset correlation reproduction (||Sigma_sim - Sigma_obs||_F over 200 paths)
+--------------------------------------------------------------------------------------------------------------
+Model              Frobenius IS        Off-diag MAE IS   Frobenius OoS       Off-diag MAE OoS
+SIM                   0.527               0.076             1.808               0.261
+Gaussian copula       0.206               0.031             1.461               0.202
+Student-t copula      0.184               0.027             1.499               0.208
+
+3. SIM regression summary (non-market assets, SPY as market factor)
+--------------------------------------------------------------------------------------------------------------
+Ticker     alpha_hat   beta_hat   R2
+  NVDA       0.3207     1.694    0.371
+  JNJ        0.0018     0.576    0.260
+  JPM       -0.0081     1.223    0.507
+  AAPL       0.1113     1.205    0.492
+  QQQ        0.0467     1.122    0.840
+==============================================================================================================

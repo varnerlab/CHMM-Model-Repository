@@ -1,8 +1,21 @@
-Table 2: Model Comparison (SPY, 1000 paths, α=0.05)
-Discrete HMM (NJ / WJ) uses K=13 bins; WJ: ε=0.01, λ=3.0 (prior paper).
-CHMM-N: continuous Gaussian emissions (Baum-Welch, K=18, no jumps).
-CHMM-t: continuous Student-t emissions with per-state ν (ECM, K=18, no jumps).
-CHMM-L: continuous Laplace emissions with weighted-median M-step (EM, K=18, no jumps).
+====================================================================================================
+TABLE 2. Baseline and CHMM model comparison on SPY.
+         Pipeline A (single-index trained CHMM) on the market index SPY.
+====================================================================================================
+
+Pipeline   : A. Single-index trained CHMM; SPY fit independently, no cross-asset coupling.
+Ticker     : SPY only (six-ticker generalization is in Table T2).
+Paths      : 1000 simulated paths per model; alpha = 0.05 for KS / AD.
+Baselines  : Bootstrap, Gaussian i.i.d., Laplace i.i.d., Discrete HMM (no jumps = NJ,
+             with jumps = WJ, K=13 bins, epsilon=0.01, lambda=3.0 from prior paper), GARCH(1,1).
+CHMM       : CHMM-N (Gaussian), CHMM-t (Student-t per-state nu), CHMM-L (Laplace). K=18, no jumps.
+
+How this differs from Table T2 and Table T3:
+  Table 2    : this table. SPY only, compares CHMM against seven standard baselines.
+  Table T2   : results/SPY/Table-T2-Per-Ticker-Emission-Families.txt. Same Pipeline A,
+               extends CHMM-N / t / L to six tickers. No baselines, no dependence.
+  Table T3   : results/cross_asset/Table-T3-Cross-Asset-Dependence.txt. Pipeline B,
+               adds SIM and copula dependence on top of the per-asset CHMM-N marginals.
 ======================================================================================================================================================
 
                 | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)

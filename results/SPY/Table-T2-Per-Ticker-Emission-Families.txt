@@ -1,6 +1,36 @@
-Table T2: Cross-Asset Generalization (CHMM variants, K=18, 1000 paths, α=0.05)
-CHMM-N = Gaussian emissions; CHMM-t = Student-t emissions with per-state ν; CHMM-L = Laplace emissions.
-============================================================================================================================================
+====================================================================================================
+TABLE T2. Per-ticker marginal fidelity across CHMM emission families.
+          Pipeline A (single-index trained): each ticker fit INDEPENDENTLY, no cross-asset coupling.
+====================================================================================================
+
+Pipeline      : A. Single-index trained CHMM (per-ticker independent Baum-Welch fit).
+Tickers       : SPY, NVDA, JNJ, JPM, AAPL, QQQ (six main-study tickers).
+K             : 18 states (fixed; selected in Table T1a).
+Emission fams : CHMM-N (Gaussian), CHMM-t (Student-t, per-state nu), CHMM-L (Laplace).
+Paths / alpha : 1000 simulated paths per (ticker, family); KS and AD thresholded at alpha = 0.05.
+IS window     : 2014-01-03 through 2024-01-03, T_IS = 2516 trading days.
+OoS window    : 2024-01-04 through 2026-04-17, T_OoS = 572 trading days.
+
+What this table tests:
+  Can the CHMM reproduce each ticker's univariate return distribution across three emission
+  families? Each ticker is its own independent experiment; there is NO dependence modeling here.
+
+How this differs from Table T3:
+  Table T3 (results/cross_asset/Table-T3-Cross-Asset-Dependence.txt) re-uses these per-ticker
+  CHMM-N marginals and ASKS A DIFFERENT QUESTION: given the marginals, which dependence
+  mechanism (SIM, Gaussian copula, Student-t copula) best reproduces cross-asset correlations?
+
+Columns:
+  KS IS (%)   : percent of paths whose two-sample KS p-value exceeds 0.05 against IS observed.
+  AD IS (%)   : same but for the Anderson-Darling test (more sensitive to tail mismatch).
+  KS OoS (%)  : same KS test against the 2024-2026 OoS observed series.
+  Kurt Obs    : empirical excess kurtosis of the IS return series for that ticker.
+  Kurt Sim    : simulated excess kurtosis averaged over the 1000 paths.
+  ACF-MAE     : mean absolute error, lag 1..252, between ACF(|G_t|) observed vs. simulated.
+  W1 IS       : Wasserstein-1 distance (IS) averaged over paths.
+  H IS        : Hellinger distance (IS) averaged over paths.
+  Cov IS (%)  : quantile-coverage at 99 probability levels, IS simulated 5-95 envelope.
+====================================================================================================
 Ticker | Emission | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)
 --------------------------------------------------------------------------------------------------------------------------------------------
 SPY    | CHMM-N   |     95.5 |     88.9 |      81.4  |     7.7  |    5.06  |  0.0512 | 0.108  | 0.0803 | 100.0

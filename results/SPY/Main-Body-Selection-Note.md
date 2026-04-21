@@ -23,15 +23,20 @@ Based on the updated K-sweep (K ∈ {3, 6, 9, 12, 15, 18, 21}) reported in `Tabl
 ## Proposed main-body structure (≤ 25 pages)
 
 ### Kept in main body (K = 18 only)
-1. Fig 1 — Stylized Facts (ticker-independent; only SPY version)
-2. Fig 2 — Baum-Welch convergence (`results/SPY/K18/Fig-Convergence`)
-3. Fig 3 — IS comparison panel (`results/SPY/K18/Fig-3-IS-Comparison`)
-4. Fig 4 — OoS validation panel (`results/SPY/K18/Fig-4-OoS-Validation`)
-5. Fig 5 — Emission PDFs + Transition heatmap (combine K18 single-column figure)
-6. Fig 6 — Cross-asset correlation heatmap (`results/cross_asset/Fig-Cross-Asset-Correlation`)
-7. Table 1 — Descriptive statistics (IS / OoS)
-8. Table 2 — Seven-way model comparison (Bootstrap, Gaussian, Laplace, Discrete NJ, **Discrete WJ** [prior paper], GARCH, CHMM K=18)
-9. Table T2 — Cross-asset CHMM + SIM + Gaussian-copula + Student-t-copula for SPY / NVDA / JNJ / JPM / AAPL / QQQ
+
+Every main-body item is explicitly tagged with its generating pipeline so a reader cannot confuse Pipeline A (per-ticker single-index trained CHMM) with Pipeline B (cross-asset SIM / copula dependence on top of Pipeline A marginals).
+
+1. Fig 1 (Pipeline A) -- Stylized Facts, SPY only
+2. Fig 2 (Pipeline A) -- Baum-Welch convergence, SPY, CHMM-N, K=18 (`results/SPY/multi_emission/K18/N/Fig-Convergence-K18-N`)
+3. Fig 3 (Pipeline A) -- IS comparison panel, SPY, CHMM-N, K=18 (`results/SPY/multi_emission/K18/N/Fig-3-IS-Comparison-K18-N`)
+4. Fig 4 (Pipeline A) -- OoS validation panel, SPY, CHMM-N, K=18 (`results/SPY/multi_emission/K18/N/Fig-4-OoS-Validation-K18-N`)
+5. Fig 5 (Pipeline A) -- Emission PDFs + Transition heatmap, SPY, CHMM-N, K=18
+6. Fig 6 (Pipeline A) -- OoS equity price fans, six tickers x three emission families (`results/equity_price_sim/Fig-*-PriceFan-*`)
+7. Fig 7 (Pipeline B) -- Cross-asset correlation heatmap (`results/cross_asset/Fig-Cross-Asset-Correlation`)
+8. Table 1 (data only) -- Descriptive statistics (IS / OoS) for six tickers
+9. Table 2 (Pipeline A) -- SPY model comparison: Bootstrap, Block-BS, Gaussian, Laplace, Discrete NJ, **Discrete WJ** (prior paper), Bin-T NJ, GARCH, GRU, CHMM-N / t / L at K=18 (`results/SPY/Table-2-Baselines.txt`)
+10. Table T2 (Pipeline A) -- Per-ticker marginal fidelity across three emission families (SPY, NVDA, JNJ, JPM, AAPL, QQQ), single-index trained (`results/SPY/Table-T2-Per-Ticker-Emission-Families.txt`)
+11. Table T3 (Pipeline B) -- Cross-asset dependence: SIM vs. Gaussian copula vs. Student-t copula (nu* = 6), on the per-asset CHMM-N marginals from Table T2 (`results/cross_asset/Table-T3-Cross-Asset-Dependence.txt`)
 
 ### Moved to Appendix / Supplementary Material
 - Per-K figures for K ∈ {3, 6, 9, 12, 15, 21}: Fig-Convergence, Fig-Emission-PDFs, Fig-Transition-Matrix, Fig-Residence-Times, Fig-Stationary-Distribution, Fig-3-IS-Comparison, Fig-4-OoS-Validation, Fig-ACF-Comparison, Fig-Trajectory-Example
