@@ -1,24 +1,24 @@
 Per-state nu_k under CHMM-t at K = 18, SPY IS
 ==================================================
-State 1    ν_k = 4.14
-State 2    ν_k = 2.35
+State 1    ν_k = 4.13
+State 2    ν_k = 2.19
 State 3    ν_k = 50.0
-State 4    ν_k = 2.82
+State 4    ν_k = 2.1
 State 5    ν_k = 50.0
 State 6    ν_k = 50.0
 State 7    ν_k = 50.0
 State 8    ν_k = 50.0
 State 9    ν_k = 50.0
-State 10   ν_k = 12.21
+State 10   ν_k = 34.83
 State 11   ν_k = 50.0
 State 12   ν_k = 50.0
-State 13   ν_k = 5.02
+State 13   ν_k = 50.0
 State 14   ν_k = 50.0
 State 15   ν_k = 50.0
 State 16   ν_k = 50.0
-State 17   ν_k = 22.37
+State 17   ν_k = 32.93
 State 18   ν_k = 50.0
 
-Summary: min=2.35 median=50.0 max=50.0
-# at lower bracket (<= 2.2): 0
-# at upper bracket (>= 49): 12
+Summary: min=2.1 median=50.0 max=50.0
+# at lower bracket (<= 2.2): 2
+# at upper bracket (>= 49): 13

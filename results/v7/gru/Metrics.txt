@@ -2,11 +2,11 @@ GRU Generator Seven-Metric Panel (SPY, seed=20260420, 1000 paths)
 =====================================================================================
   Architecture: 1-layer GRU(hidden=32) + Dense(2) Gaussian head
   Training:     20 epochs, Adam(lr=0.001), window=20, NLL loss
-  Final NLL:    0.2101
-  IS: 2766 obs | OoS: 219 obs
-  Observed kurtosis: IS 7.71 | OoS 6.24
+  Final NLL:    0.2005
+  IS: 2516 obs | OoS: 572 obs
+  Observed kurtosis: IS 7.68 | OoS 5.29
 
 Window   | KS     | AD     | Kurt    | ACF-MAE  | W1     | H       | Cov  
 -------------------------------------------------------------------------------------
-IS       | 2.1    | 2.7    | 2.79    | 0.0526   | 0.174  | 0.0906  | 51.5 
-OoS      | 84.2   | 85.1   | 1.72    | 0.0538   | 0.372  | 0.2441  | 78.8 
+IS       | 18.1   | 13.7   | 2.85    | 0.0518   | 0.196  | 0.0966  | 37.4 
+OoS      | 52.5   | 55.0   | 2.21    | 0.05     | 0.293  | 0.1603  | 69.7 

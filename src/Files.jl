@@ -22,7 +22,7 @@ Loads the training dataset containing S&P 500 constituent OHLCV data.
 ### Returns
 - A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
 """
-MyPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2"));
+MyPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "CHMM-SP500-Train-10yr.jld2"));
 
 """
     MyOutOfSamplePortfolioDataSet() -> Dict{String,Any}
@@ -36,7 +36,7 @@ Loads the out-of-sample test dataset for model validation.
 ### Returns
 - A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
 """
-MyOutOfSamplePortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2025-to-11-18-2025.jld2"));
+MyOutOfSamplePortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "CHMM-SP500-OoS-Remainder.jld2"));
 
 """
     MyOriginalPortfolioDataSet() -> Dict{String,Any}
@@ -46,7 +46,7 @@ Loads the original (unsplit) dataset. Currently identical to the training set.
 ### Returns
 - A `Dict` with key `"dataset"` mapping to `Dict{String, DataFrame}` (ticker => OHLCV DataFrame).
 """
-MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "SP500-Daily-OHLC-1-3-2014-to-12-31-2024.jld2"));
+MyOriginalPortfolioDataSet() = _jld2(joinpath(_PATH_TO_DATA, "CHMM-SP500-Train-10yr.jld2"));
 
 """
     MyVolatilityDataSet() -> Dict{String,Any}

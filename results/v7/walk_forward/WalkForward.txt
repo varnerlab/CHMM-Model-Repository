@@ -2,9 +2,9 @@ Walk-forward (quarterly refit) versus fixed-IS CHMM-N on defensives
 ==============================================================================================================
 Ticker/mode            | KS IS   | AD IS   | KS OoS  | AD OoS  | Kurt IS | Kurt OoS | ACF-MAE | W1      | H      
 --------------------------------------------------------------------------------------------------------------
-JNJ fixed-IS           | 99.7    | 99.4    | 70.2    | 61.5    | 5.68    | 4.63    | 0.0319  | 0.083   | 0.0759 
-JNJ walk-forward       | 99.7    | 99.4    | 71.0    | 62.9    | 5.68    | 4.51    | 0.0319  | 0.083   | 0.0759 
-JPM fixed-IS           | 98.7    | 96.2    | 74.9    | 76.5    | 7.97    | 5.08    | 0.0431  | 0.154   | 0.0839 
-JPM walk-forward       | 98.7    | 96.2    | 76.8    | 78.1    | 7.97    | 4.92    | 0.0431  | 0.154   | 0.0839 
+JNJ fixed-IS           | 99.3    | 98.2    | 94.0    | 92.1    | 5.46    | 4.98    | 0.0322  | 0.095   | 0.0786 
+JNJ walk-forward       | 99.3    | 98.2    | 94.9    | 91.3    | 5.46    | 5.14    | 0.0322  | 0.095   | 0.0786 
+JPM fixed-IS           | 96.6    | 94.4    | 49.0    | 48.6    | 7.33    | 6.31    | 0.0449  | 0.165   | 0.0875 
+JPM walk-forward       | 96.6    | 94.4    | 64.3    | 63.6    | 7.33    | 5.96    | 0.0449  | 0.165   | 0.0875 
 
 Walk-forward uses quarterly (63-day) refits of CHMM-N at K = 18; each refit observes the actual OoS returns of the prior quarter.

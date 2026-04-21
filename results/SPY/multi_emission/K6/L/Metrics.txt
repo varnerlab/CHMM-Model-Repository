@@ -1,10 +1,10 @@
 Validation Metrics (CHMM-L, K=6, SPY)
 ======================================================================
-KS IS (%):       90.1   | KS OoS (%):  91.3
-AD IS (%):       85.2   | AD OoS (%):  83.8
-Kurt (IS sim):   5.87  | Obs IS:      7.71
-Kurt (OoS sim):  4.74 | Obs OoS:     6.24
-ACF-MAE:         0.0504
-Wasserstein-1:   0.105
-Hellinger:       0.0786
-Coverage IS (%): 100.0 | OoS: 100.0
+KS IS (%):       88.8   | KS OoS (%):  77.0
+AD IS (%):       83.3   | AD OoS (%):  72.5
+Kurt (IS sim):   5.74  | Obs IS:      7.68
+Kurt (OoS sim):  5.42 | Obs OoS:     5.29
+ACF-MAE:         0.0511
+Wasserstein-1:   0.113
+Hellinger:       0.0823
+Coverage IS (%): 100.0 | OoS: 88.9

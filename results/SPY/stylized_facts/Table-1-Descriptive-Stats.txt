@@ -1,20 +1,20 @@
 Table 1: Descriptive Statistics — SPY
 =================================================================
 
---- IS (2014-2024) (T=2766) ---
-Mean (annualized):    0.11
-Std Dev (annualized): 2.14
-Skewness:             -0.753
-Excess Kurtosis:      7.707
-JB statistic:         7107.4 (critical ≈ 5.99)
-LB on Gₜ (lag 20):    145.3 (critical ≈ 31.4)
-LB on |Gₜ| (lag 20):  3057.9 (critical ≈ 31.4)
+--- IS (2014-2024) (T=2516) ---
+Mean (annualized):    0.09
+Std Dev (annualized): 2.19
+Skewness:             -0.751
+Excess Kurtosis:      7.678
+JB statistic:         6416.6 (critical ≈ 5.99)
+LB on Gₜ (lag 20):    130.2 (critical ≈ 31.4)
+LB on |Gₜ| (lag 20):  2959.3 (critical ≈ 31.4)
 
---- OoS (2025) (T=219) ---
-Mean (annualized):    0.13
-Std Dev (annualized): 2.31
-Skewness:             -1.071
-Excess Kurtosis:      6.242
-JB statistic:         397.4 (critical ≈ 5.99)
-LB on Gₜ (lag 20):    28.1 (critical ≈ 31.4)
-LB on |Gₜ| (lag 20):  150.4 (critical ≈ 31.4)
+--- OoS (2025) (T=572) ---
+Mean (annualized):    0.18
+Std Dev (annualized): 1.98
+Skewness:             -0.733
+Excess Kurtosis:      5.294
+JB statistic:         719.1 (critical ≈ 5.99)
+LB on Gₜ (lag 20):    47.2 (critical ≈ 31.4)
+LB on |Gₜ| (lag 20):  250.6 (critical ≈ 31.4)
