@@ -30,6 +30,7 @@ using Turing;
 using ProgressMeter;
 using SpecialFunctions;
 using Random;
+using Flux;
 
 
 # include my codes -

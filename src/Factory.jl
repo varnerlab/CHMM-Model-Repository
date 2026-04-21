@@ -379,3 +379,39 @@ end
 
 
 # ----------------------------------------------------------------------------- #
+
+# --- GRU GENERATOR BUILDER --------------------------------------------------- #
+
+"""
+    build(model::Type{MyGRUGenerator}, data::NamedTuple) -> MyGRUGenerator
+
+Trains a single-layer GRU + Gaussian-head generator on the provided return
+series via maximum-likelihood (negative log-likelihood) and returns the
+trained model.
+
+### NamedTuple keys
+- `observations::Vector{Float64}` (required): in-sample return series.
+- `epochs::Int=20` (optional): number of full training epochs.
+- `lr::Float64=1e-3` (optional): Adam learning rate.
+- `hidden_dim::Int=32` (optional): GRU hidden-state width.
+- `window::Int=20` (optional): context-window length used during training and simulation.
+- `seed::Int=20260420` (optional): RNG seed for shuffling and weight init.
+- `verbose::Bool=false` (optional): print per-epoch NLL.
+"""
+function build(model::Type{MyGRUGenerator}, data::NamedTuple)::MyGRUGenerator
+
+    obs = data.observations;
+    epochs     = haskey(data, :epochs)     ? data.epochs     : 20;
+    lr         = haskey(data, :lr)         ? data.lr         : 1e-3;
+    hidden_dim = haskey(data, :hidden_dim) ? data.hidden_dim : 32;
+    window     = haskey(data, :window)     ? data.window     : 20;
+    seed       = haskey(data, :seed)       ? data.seed       : 20260420;
+    verbose    = haskey(data, :verbose)    ? data.verbose    : false;
+
+    m = model();
+    train_gru!(m, obs;
+        epochs=epochs, lr=lr, hidden_dim=hidden_dim,
+        window=window, seed=seed, verbose=verbose);
+
+    return m;
+end

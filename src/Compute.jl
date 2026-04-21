@@ -990,3 +990,188 @@ function log_growth_matrix(dataset::Array{Float64,1};
     # return -
     return return_matrix;
 end
+
+# --- GRU GENERATOR (Deep Learning Baseline) ---------------------------------- #
+#
+# Auto-regressive GRU generator for one-dimensional return series.
+# Predicts the (μ_t, log σ_t) parameters of a Gaussian next-step density and
+# is trained by negative log-likelihood. Style follows the build/simulate
+# factory pattern used elsewhere in this package and in JumpHMM.jl.
+
+"""
+    _gru_make_chain(input_dim::Int, hidden_dim::Int) -> Flux model
+
+Construct a single-layer GRU encoder + linear (μ, log σ) head suitable for
+auto-regressive return-series generation. Output is a 2-vector (μ, log σ).
+"""
+function _gru_make_chain(input_dim::Int, hidden_dim::Int)
+    # Process a (features, seq_len) sequence through a GRU encoder, take the
+    # final hidden state, and project to 2 outputs (μ, log σ) of the next-step
+    # Gaussian density. Flux's modern GRU returns (hidden, seq_len), so we
+    # slice the final time-step before the Dense head.
+    return Flux.Chain(
+        Flux.GRU(input_dim => hidden_dim),
+        x -> x[:, end],
+        Flux.Dense(hidden_dim => 2)
+    );
+end
+
+
+"""
+    _gru_step_chain(input_dim::Int, hidden_dim::Int, gru_weights, dense_weights) -> Stateful step closure
+
+Build a stateful single-step closure used by `simulate_gru`. The GRU cell is
+unrolled manually so we can stream one observation at a time and condition on
+the previous hidden state, mirroring auto-regressive sampling.
+"""
+function _gru_step_chain(chain)
+    # Extract the trained GRU and Dense layers, plus the cell for stepwise eval.
+    gru_layer  = chain[1];
+    dense_head = chain[3];
+    return gru_layer, dense_head;
+end
+
+
+"""
+    _gru_window_pairs(z::Vector{Float64}, w::Int) -> (Xs, ys)
+
+Build training pairs from a standardised return series `z`. For each anchor
+`t = w+1, ..., T`, the input is the contiguous window `z[t-w:t-1]` and the
+target is `z[t]`. Returns a vector of (1, w) Float32 windows and a vector
+of Float32 scalar targets, suitable for streaming through a `Flux.GRU`
+column-by-column.
+"""
+function _gru_window_pairs(z::Vector{Float64}, w::Int)
+    n = length(z);
+    n_pairs = n - w;
+    Xs = Vector{Matrix{Float32}}(undef, n_pairs);
+    ys = Vector{Float32}(undef, n_pairs);
+    for i in 1:n_pairs
+        win = z[i:(i + w - 1)];
+        Xs[i] = reshape(Float32.(win), 1, w);
+        ys[i] = Float32(z[i + w]);
+    end
+    return Xs, ys;
+end
+
+
+"""
+    train_gru!(model::MyGRUGenerator, observations::Vector{Float64};
+               epochs=20, lr=1e-3, hidden_dim=32, window=20, seed=20260420,
+               verbose=false) -> MyGRUGenerator
+
+Train the GRU generator by negative log-likelihood on the standardised
+in-sample series. Mutates `model.chain`, `model.μ_x`, `model.σ_x`,
+`model.window`, and `model.loss_history`. Returns the same model for
+chaining.
+
+The Gaussian NLL loss for one (μ, logσ, y) triple is
+    ℓ = logσ + ½ ((y − μ) / exp(logσ))²
+plus an additive constant that is dropped during optimisation.
+"""
+function train_gru!(model::MyGRUGenerator, observations::Vector{Float64};
+                    epochs::Int=20, lr::Float64=1e-3,
+                    hidden_dim::Int=32, window::Int=20,
+                    seed::Int=20260420, verbose::Bool=false)::MyGRUGenerator
+
+    Random.seed!(seed);
+
+    # Standardise input to keep gradients well-scaled.
+    μ_x = mean(observations); σ_x = std(observations);
+    z = (observations .- μ_x) ./ σ_x;
+
+    # Build network and unroll training pairs.
+    chain = _gru_make_chain(1, hidden_dim);
+    Xs, ys = _gru_window_pairs(z, window);
+    n_pairs = length(Xs);
+
+    # Negative log-likelihood loss for a single (window, target) pair.
+    # X has shape (features=1, seq_len=window); chain returns 2-vector (μ, logσ).
+    function _nll(chain, X, y)
+        out = chain(X);
+        μ = out[1]; logσ = out[2];
+        logσ = clamp(logσ, -6.0f0, 4.0f0);
+        return logσ + 0.5f0 * ((y - μ) / exp(logσ))^2;
+    end
+
+    opt_state = Flux.setup(Flux.Optimisers.Adam(lr), chain);
+    loss_history = Float64[];
+
+    for epoch in 1:epochs
+        order = Random.shuffle(1:n_pairs);
+        epoch_loss = 0.0;
+        for i in order
+            X = Xs[i]; y = ys[i];
+            grads = Flux.gradient(c -> _nll(c, X, y), chain);
+            Flux.update!(opt_state, chain, grads[1]);
+            epoch_loss += Float64(_nll(chain, X, y));
+        end
+        epoch_loss /= n_pairs;
+        push!(loss_history, epoch_loss);
+        if verbose
+            println("  GRU epoch $epoch: NLL = $(round(epoch_loss, digits=4))");
+        end
+    end
+
+    model.chain = chain;
+    model.window = window;
+    model.μ_x = μ_x;
+    model.σ_x = σ_x;
+    model.loss_history = loss_history;
+    return model;
+end
+
+
+"""
+    simulate_gru(model::MyGRUGenerator, n_steps::Int;
+                 seed_window::Vector{Float64}=Float64[],
+                 burn_in::Int=64) -> Vector{Float64}
+
+Generate a synthetic return path of length `n_steps` from the trained
+generator. The recurrence is initialised by streaming `seed_window` through
+the GRU; if no seed is provided the model's training-distribution mean
+(zero in standardised space) is used. After `burn_in` samples the warm-up
+prefix is discarded.
+"""
+function simulate_gru(model::MyGRUGenerator, n_steps::Int;
+                      seed_window::Vector{Float64}=Float64[],
+                      burn_in::Int=64)::Vector{Float64}
+
+    chain = model.chain;
+    w = model.window;
+
+    # Standardise seed_window (or fall back to zeros).
+    if isempty(seed_window)
+        z_seed = zeros(Float64, w);
+    else
+        if length(seed_window) < w
+            pad = zeros(Float64, w - length(seed_window));
+            sw  = vcat(pad, seed_window);
+        else
+            sw  = seed_window[(end - w + 1):end];
+        end
+        z_seed = (sw .- model.μ_x) ./ model.σ_x;
+    end
+
+    # Auto-regressive rollout: maintain a sliding context of length `w`.
+    # At each step, encode the window through the GRU + Dense head, sample
+    # the next standardised return, append it, and slide the window forward.
+    total   = burn_in + n_steps;
+    sampled = zeros(Float64, total);
+    context = copy(z_seed);
+
+    @inbounds for t in 1:total
+        X   = reshape(Float32.(context), 1, w);   # (features=1, seq_len=w)
+        out = chain(X);                            # 2-vector: (μ, log σ)
+        μ_t  = Float64(out[1]);
+        ls_t = clamp(Float64(out[2]), -6.0, 4.0);
+        z_next = μ_t + exp(ls_t) * randn();
+        sampled[t] = z_next;
+        # Slide context window forward by one step (append z_next, drop oldest).
+        context = vcat(context[2:end], z_next);
+    end
+
+    # Drop burn-in and unstandardise back to the return scale.
+    z_path = sampled[(burn_in + 1):end];
+    return model.μ_x .+ model.σ_x .* z_path;
+end

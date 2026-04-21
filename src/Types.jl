@@ -170,6 +170,41 @@ end
 # ----------------------------------------------------------------------------- #
 
 
+# --- GRU GENERATOR (Deep Learning Baseline) ---------------------------------- #
+
+"""
+    mutable struct MyGRUGenerator
+
+Recurrent neural-network generator for one-dimensional return series.
+
+A single-hidden-layer GRU encodes a context window of past returns and a
+linear head outputs the parameters (μ_t, log σ_t) of a Gaussian
+next-step density. Trained by maximum-likelihood (negative log-likelihood)
+on the in-sample series; simulation rolls forward by sampling from the
+predicted Gaussian and feeding the sample back into the recurrence,
+which is the standard auto-regressive RNN-based synthetic-data baseline
+used for financial return generation in the prior discrete-HMM paper.
+
+### Fields
+- `chain::Any`: trained Flux model (GRU + Dense head); kept as `Any` so
+  this file can be loaded without Flux being installed.
+- `window::Int64`: context-window length used during training and simulation.
+- `μ_x::Float64`, `σ_x::Float64`: pre-fit standardisation moments.
+- `loss_history::Array{Float64,1}`: per-epoch training loss.
+"""
+mutable struct MyGRUGenerator
+
+    chain::Any;
+    window::Int64;
+    μ_x::Float64;
+    σ_x::Float64;
+    loss_history::Array{Float64,1};
+
+    MyGRUGenerator() = new();
+end
+# ----------------------------------------------------------------------------- #
+
+
 # --- DISTRIBUTION MODELS (Bayesian Inference) -------------------------------- #
 
 """
