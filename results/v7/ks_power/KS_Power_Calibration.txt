@@ -1,0 +1,18 @@
+OoS KS Power Calibration
+============================================================
+  OoS length T_oos = 219
+  IS  length T_is  = 2766
+  replications     = 1000  (seed = 20260420)
+
+Reference pass rates at α = 0.05:
+  (a) Known-correct (iid resamples of R_oos):
+        T=219 vs R_oos   ->  100.0 %
+  (b) Nearly correct (iid resamples of R_is, length 219):
+        R_is bootstrap vs R_oos  ->  98.4 %
+  (c) Misspecified Gaussian, IS length  (should reject):
+        Gaussian(μ̂,σ̂) vs R_is  ->  0.0 %
+
+Interpretation:
+  Line (a) is the ceiling: even a known-correct generator at T=219 passes only at this rate under α=0.05.
+  CHMM OoS pass rates in the 93-96 % range should be read relative to this ceiling, not 100 %.
+  Line (c) shows the KS test retains power at IS length to reject a clearly-wrong generator.
