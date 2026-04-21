@@ -722,6 +722,133 @@ Functor call to simulate a path for the Discrete Jump HMM.
 
 
 # ========================================================================================= #
+# Continuous HMM — Return and Price Path Simulation
+# ========================================================================================= #
+
+# Union alias for the three continuous CHMM families that all share the
+# Dict{Int64, UnivariateDistribution} emission interface used below.
+const _ContinuousCHMM = Union{MyContinuousHiddenMarkovModel,
+                              MyStudentTHiddenMarkovModel,
+                              MyLaplaceHiddenMarkovModel};
+
+"""
+    _stationary_distribution(chmm) -> Categorical
+
+Power-iterate the CHMM transition matrix to obtain a stable initial-state
+distribution.
+"""
+function _stationary_distribution(chmm::_ContinuousCHMM)::Categorical
+    K = length(chmm.states);
+    T_mat = zeros(K, K);
+    for i in 1:K
+        T_mat[i, :] = probs(chmm.transition[i]);
+    end
+    π_stat = (T_mat ^ 1000)[1, :];
+    π_stat .= max.(π_stat, 1e-12);
+    π_stat ./= sum(π_stat);
+    return Categorical(π_stat);
+end
+
+"""
+    simulate_returns(chmm, n_steps; start=nothing, n_paths=1) -> Vector or Matrix
+
+Simulates synthetic return paths from a trained continuous HMM
+(Gaussian, Student-t, or Laplace emissions). Returns are on the same
+scale the model was trained on, i.e. annualized excess log returns
+`G_t = (1/Δt) * ln(P_t / P_{t-1}) - r_f` when trained via
+`log_growth_matrix`.
+
+### Arguments
+- `chmm`: trained `MyContinuousHiddenMarkovModel`, `MyStudentTHiddenMarkovModel`,
+  or `MyLaplaceHiddenMarkovModel`.
+- `n_steps::Int`: path length.
+
+### Keyword arguments
+- `start::Union{Nothing,Int,Categorical}=nothing`: initial state. If `nothing`,
+  draws from the stationary distribution; `Int` forces a specific state;
+  a `Categorical` is sampled once per path.
+- `n_paths::Int=1`: number of independent paths. With `n_paths == 1` a
+  `Vector{Float64}` is returned; otherwise a `n_steps × n_paths` `Matrix`.
+"""
+function simulate_returns(chmm::_ContinuousCHMM, n_steps::Int;
+    start::Union{Nothing,Int,Categorical}=nothing,
+    n_paths::Int=1)
+
+    start_dist = start === nothing ? _stationary_distribution(chmm) : start;
+
+    function _one_path()
+        s0 = start_dist isa Int ? start_dist : rand(start_dist);
+        states = chmm(s0, n_steps);
+        out = Vector{Float64}(undef, n_steps);
+        @inbounds for t in 1:n_steps
+            out[t] = rand(chmm.emission[states[t]]);
+        end
+        return out;
+    end
+
+    if n_paths == 1
+        return _one_path();
+    end
+
+    paths = Matrix{Float64}(undef, n_steps, n_paths);
+    for p in 1:n_paths
+        paths[:, p] = _one_path();
+    end
+    return paths;
+end
+
+"""
+    simulate_prices(chmm, S0, n_steps; Δt=1/252, risk_free_rate=0.0,
+                    start=nothing, n_paths=1) -> Vector or Matrix
+
+Simulates equity price paths from a trained continuous HMM by converting
+simulated returns back through the project's log-return convention:
+
+    ln(P_t / P_{t-1}) = (G_t + r_f) * Δt
+    P_t = P_{t-1} * exp((G_t + r_f) * Δt)
+
+Output path length is `n_steps + 1` (includes `P_0 = S0`). With
+`n_paths == 1` returns a `Vector`; otherwise an `(n_steps+1) × n_paths`
+`Matrix`.
+
+### Arguments
+- `chmm`: trained continuous CHMM.
+- `S0::Real`: initial spot price.
+- `n_steps::Int`: number of return steps to roll forward.
+
+### Keyword arguments
+- `Δt::Float64=1/252`: time step (annualized-returns convention).
+- `risk_free_rate::Float64=0.0`: `r_f` used when the model was trained.
+- `start`, `n_paths`: same semantics as `simulate_returns`.
+"""
+function simulate_prices(chmm::_ContinuousCHMM, S0::Real, n_steps::Int;
+    Δt::Float64=1.0/252.0, risk_free_rate::Float64=0.0,
+    start::Union{Nothing,Int,Categorical}=nothing,
+    n_paths::Int=1)
+
+    R = simulate_returns(chmm, n_steps; start=start, n_paths=n_paths);
+
+    if n_paths == 1
+        P = Vector{Float64}(undef, n_steps + 1);
+        P[1] = Float64(S0);
+        @inbounds for t in 1:n_steps
+            P[t + 1] = P[t] * exp((R[t] + risk_free_rate) * Δt);
+        end
+        return P;
+    end
+
+    P = Matrix{Float64}(undef, n_steps + 1, n_paths);
+    P[1, :] .= Float64(S0);
+    @inbounds for p in 1:n_paths
+        for t in 1:n_steps
+            P[t + 1, p] = P[t, p] * exp((R[t, p] + risk_free_rate) * Δt);
+        end
+    end
+    return P;
+end
+
+
+# ========================================================================================= #
 # GARCH(1,1) — Fitting and Simulation
 # ========================================================================================= #
 

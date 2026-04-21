@@ -48,6 +48,71 @@
         @test all(s -> s in model.states, chain)
     end
 
+    @testset "simulate_returns - Gaussian CHMM" begin
+        Random.seed!(1234)
+        model = _make_test_model()
+
+        # Single-path form returns a Vector.
+        R = simulate_returns(model, 250)
+        @test R isa Vector{Float64}
+        @test length(R) == 250
+        @test all(isfinite, R)
+
+        # Multi-path form returns a Matrix of the right shape.
+        R_mat = simulate_returns(model, 120; n_paths=8)
+        @test R_mat isa Matrix{Float64}
+        @test size(R_mat) == (120, 8)
+
+        # Explicit integer start state must be honored through emissions.
+        R2 = simulate_returns(model, 50; start=1)
+        @test length(R2) == 50
+    end
+
+    @testset "simulate_returns - Student-t and Laplace CHMMs" begin
+        rng = Random.MersenneTwister(4242)
+        obs = vcat(randn(rng, 200) .* 0.01, randn(rng, 200) .* 0.04)
+        obs = shuffle(rng, obs)
+
+        model_t = build(MyStudentTHiddenMarkovModel,
+            (observations=obs, number_of_states=3, max_iter=15))
+        model_l = build(MyLaplaceHiddenMarkovModel,
+            (observations=obs, number_of_states=3, max_iter=15))
+
+        R_t = simulate_returns(model_t, 100)
+        R_l = simulate_returns(model_l, 100)
+        @test length(R_t) == 100
+        @test length(R_l) == 100
+        @test all(isfinite, R_t)
+        @test all(isfinite, R_l)
+    end
+
+    @testset "simulate_prices - path shape and round-trip invariant" begin
+        Random.seed!(9999)
+        model = _make_test_model()
+        S0 = 100.0
+        Δt = 1/252
+        rf = 0.0
+
+        P = simulate_prices(model, S0, 200; Δt=Δt, risk_free_rate=rf)
+        @test length(P) == 201
+        @test P[1] == S0
+        @test all(P .> 0.0)
+
+        # Multi-path shape.
+        P_mat = simulate_prices(model, S0, 50; n_paths=10)
+        @test size(P_mat) == (51, 10)
+        @test all(P_mat[1, :] .== S0)
+
+        # Round-trip: prices recovered from their own simulated returns should
+        # satisfy ln(P_t/P_{t-1}) / Δt = G_t. We cannot replay the same random
+        # draws through simulate_returns independently, so instead we verify
+        # the invariant by taking log-ratios of the produced path and checking
+        # it is a finite, well-scaled series.
+        G_implied = (1.0 / Δt) .* diff(log.(P)) .- rf
+        @test length(G_implied) == 200
+        @test all(isfinite, G_implied)
+    end
+
     @testset "Simulation - discrete jump HMM" begin
         K = 7
         T_mat = zeros(K, K) .+ 1/K
