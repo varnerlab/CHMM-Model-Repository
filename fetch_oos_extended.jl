@@ -7,16 +7,12 @@
 # (volume, volume_weighted_average_price, open, close, high, low, timestamp,
 #  number_of_transactions).
 #
-# Also pulls VXX daily bars from 2025-01-03 onward and writes its own JLD2
-# with the same schema.
-#
 # Adjustment: "split" (matches the existing IS/OoS data, which is split-adjusted
 # but not dividend-adjusted per Polygon's default).
 # Feed:       "iex" (free tier).
 #
 # Output:
 #   data/SP500-Daily-OHLC-1-3-2025-to-4-20-2026.jld2    (equity OoS, extended)
-#   data/VXX-Daily-OHLC-1-3-2025-to-4-20-2026.jld2      (VXX OoS)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -29,14 +25,12 @@ using ProgressMeter
 const CHUNK            = 50;       # symbols per Alpaca call
 const START_EXT        = "2025-11-19";
 const FINISH           = "2026-04-20";
-const START_FULL       = "2025-01-03";   # for VXX-only pull
 const ADJUSTMENT       = "split";
 const FEED             = "iex";
 const TIMEFRAME        = "1Day";
 
 const IN_OOS_PATH   = "data/SP500-Daily-OHLC-1-3-2025-to-11-18-2025.jld2";
 const OUT_OOS_PATH  = "data/SP500-Daily-OHLC-1-3-2025-to-4-20-2026.jld2";
-const OUT_VXX_PATH  = "data/VXX-Daily-OHLC-1-3-2025-to-4-20-2026.jld2";
 
 println("="^72);
 println("  Extending OoS window via Alpaca daily bars");
@@ -116,24 +110,9 @@ println("[merge] AAPL new row count: $(nrow(merged["AAPL"])) (was $(nrow(existin
 jldsave(OUT_OOS_PATH; dataset=merged);
 println("[save] wrote extended OoS → $OUT_OOS_PATH");
 
-# --- VXX separate pull (full OoS window + extension) ---
-println("\n[vxx] fetching VXX daily bars $START_FULL → $FINISH ...");
-vxx_bars = get_bars(client, "VXX", TIMEFRAME;
-    start=START_FULL, finish=FINISH, limit=10_000,
-    adjustment=ADJUSTMENT, feed=FEED);
-vxx_rows = vxx_bars["VXX"];
-println("[vxx] pulled $(length(vxx_rows)) bars");
-
-vxx_df = DataFrame([_bar_to_row(b) for b in vxx_rows]);
-# Write in same outer structure as SP500 jld2: Dict{String, DataFrame} at key "dataset"
-vxx_dict = Dict{String, DataFrame}("VXX" => vxx_df);
-jldsave(OUT_VXX_PATH; dataset=vxx_dict);
-println("[save] wrote VXX OoS → $OUT_VXX_PATH");
-
 println("\n" * "="^72);
 println("  DONE");
 println("    $(basename(OUT_OOS_PATH)): $(length(merged)) tickers, last-day sample:");
 sample = merged["SPY"];
 println("    SPY last row: $(sample[end, :timestamp]) close=$(sample[end, :close])");
-println("    $(basename(OUT_VXX_PATH)): VXX $(nrow(vxx_df)) rows, $(vxx_df[1, :timestamp]) → $(vxx_df[end, :timestamp])");
 println("="^72);

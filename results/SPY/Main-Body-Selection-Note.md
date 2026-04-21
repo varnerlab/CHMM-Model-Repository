@@ -42,7 +42,6 @@ Based on the updated K-sweep (K ∈ {3, 6, 9, 12, 15, 18, 21}) reported in `Tabl
 ### Cuts that further tighten the paper
 - Drop the per-K "residence times" and "stationary distribution" figures from main body; they do not advance the central claim
 - Fold "Bayesian Student-t / Laplace" (Turing.jl) discussion into a single paragraph in §4 (future work), since they are not used as benchmarks here
-- Section 5 (VIX option pricing) should remain a one-page *illustrative* section; the full Heston / IV-surface calibration is companion work
 
 ## Mimicking arXiv:2603.10202 structure
 

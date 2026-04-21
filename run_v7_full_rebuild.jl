@@ -13,8 +13,7 @@
 #   4. run_cross_asset_sim_copula.jl   (SIM + Gaussian/Student-t copulas)
 #   5. run_v7_revisions.jl             (utility, nu diagnostics, ...)
 #   6. run_v7_gru.jl                   (deep-generative baseline)
-#   7. run_v7_vix.jl                   (VIX three-family panel)
-#   8. run_v7_figures.jl               (K=18 main-body figures)
+#   7. run_v7_figures.jl               (K=18 main-body figures)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -32,7 +31,6 @@ const SCRIPTS = [
     "run_cross_asset_sim_copula.jl",
     "run_v7_revisions.jl",
     "run_v7_gru.jl",
-    "run_v7_vix.jl",
     "run_v7_figures.jl",
 ];
 

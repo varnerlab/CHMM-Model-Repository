@@ -8,8 +8,6 @@ A Julia framework for modeling financial time series, comparing three approaches
 
 At small K, the continuous HMM alone reproduces all three canonical stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without requiring jump mechanisms.
 
-Additionally models **VIX/VXX volatility** and applies CHMM regime-switching volatility to **option pricing** (vs Heston benchmark).
-
 ## Academic Citation
 Alswaidan A, Varner JD. Continuous Hidden Markov Models for Financial Time Series. *In preparation*, Cornell University, 2026.
 
@@ -20,7 +18,6 @@ Financial markets exhibit volatility clustering, heavy-tailed returns, and regim
 - Trains **continuous Gaussian HMMs** via Baum-Welch (EM) on observed returns
 - Compares against **discrete HMM + Poisson jumps** (regime teleportation baseline)
 - Benchmarks against **GARCH(1,1)** fitted via maximum likelihood
-- Models **VIX volatility regimes** and maps them to equity vol for option pricing
 - Provides **Bayesian parameter learning** for alternative emissions (Student's t, Laplace) via Turing.jl
 - Validates with KS tests, ACF matching, kurtosis, Wasserstein distance, and Hellinger distance
 
@@ -56,8 +53,6 @@ garch_returns = simulate_garch(garch, 252)
 |---------|--------|-------------|----------|
 | Training | Jan 2014 -- Dec 2024 | 2,515 | 400+ US equities and ETFs |
 | Out-of-Sample | Jan 2025 -- Nov 2025 | ~240 | Same universe |
-| VIX Training | ~20 years through Dec 2024 | ~5,000 | VIX volatility index |
-| VIX Test | Jan 2025 onward | ~60 | VIX volatility index |
 
 ## Project Structure
 
@@ -70,7 +65,8 @@ garch_returns = simulate_garch(garch, 252)
 |   |-- Files.jl            # Data loading (JLD2)
 |   |-- Factory.jl          # Model constructors (build methods)
 |   |-- Compute.jl          # Baum-Welch, GARCH MLE, simulation, growth calc
-|   |-- Pricing.jl          # Option pricing (CHMM, Heston, Black-Scholes)
+|   |-- Pricing.jl          # Black-Scholes benchmark and implied-vol inversion
+|   |-- CrossAsset.jl       # SIM and Gaussian/Student-t copula generators
 |   |-- Visualize.jl        # Plotting utilities
 |-- Notebooks/              # Interactive analysis notebooks
 |   |-- 01-Stylized-Facts.ipynb           # Empirical analysis
@@ -78,7 +74,6 @@ garch_returns = simulate_garch(garch, 252)
 |   |-- 03-Continuous-HMM.ipynb           # New contribution
 |   |-- 04-GARCH-Benchmark.ipynb          # Classical benchmark
 |   |-- 05-Model-Comparison.ipynb         # Head-to-head comparison
-|   |-- 06-VIX-VXX-Volatility.ipynb      # Volatility modeling
 |-- data/                   # JLD2 datasets
 |-- test/                   # Test suite
 |-- docs/                   # Documenter.jl docs

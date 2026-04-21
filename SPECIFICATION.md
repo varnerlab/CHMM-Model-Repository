@@ -24,8 +24,9 @@ This project extends the methodology to **continuous emissions** -- each hidden 
 | `Files.jl` | Data I/O. Maps file paths to JLD2 datasets. |
 | `Factory.jl` | Construction. Every model via `build()`. |
 | `Compute.jl` | Algorithms. Baum-Welch, GARCH MLE, simulation, growth calculations. |
-| `Pricing.jl` | Option pricing. CHMM regime-switching MC, Heston benchmark. |
-| `Visualize.jl` | Plotting. Validation and pricing visualization. |
+| `Pricing.jl` | Black-Scholes analytical benchmark and implied-volatility inversion. |
+| `CrossAsset.jl` | Single Index Model and Gaussian/Student-t copula generators. |
+| `Visualize.jl` | Plotting. Validation visualization. |
 
 ### Factory Pattern
 
@@ -34,7 +35,7 @@ All model construction goes through `build(ModelType, data::NamedTuple)`:
 - `build(MyHiddenMarkovModelWithJumps, ...)` -- discrete + Poisson jumps
 - `build(MyContinuousHiddenMarkovModel, ...)` -- trains via Baum-Welch
 - `build(MyGARCHModel, ...)` -- fits via MLE
-- `build(MyCHMMPricingModel, ...)` / `build(MyHestonPricingModel, ...)` -- pricing
+- `build(MyEuropeanOptionContract, ...)` -- option contract for Black-Scholes
 
 ### Functor Interface
 
@@ -65,14 +66,6 @@ HMM models implement Julia's callable-object protocol:
 
 **Jump Mechanism**: At each step with probability ε, enter jump mode for Poisson(λ) steps. During jumps, coin flip (52/48) selects crash states (1:3) or boom states (K-2:K).
 
-## VIX/VXX Volatility Modeling
-
-The CHMM is applied to VIX returns to learn volatility regimes:
-1. Train CHMM on VIX log returns
-2. Decode regimes via Viterbi
-3. Map median VIX level per regime to equity volatility: σ_s = median(VIX|state=s) / 100
-4. Drive regime-switching GBM paths for Monte Carlo option pricing
-
 ## Validation Strategy
 
 1. **Convergence diagnostics** -- log-likelihood history
@@ -82,7 +75,6 @@ The CHMM is applied to VIX returns to learn volatility regimes:
 5. **Statistical tests** -- KS test, Wasserstein distance, Hellinger distance
 6. **Excess kurtosis** -- tail heaviness matching
 7. **Out-of-sample** -- 2025 holdout validation
-8. **Option pricing** -- implied volatility surface comparison
 
 ## Future Directions
 

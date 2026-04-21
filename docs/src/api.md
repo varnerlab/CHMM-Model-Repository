@@ -7,7 +7,6 @@
 ```julia
 abstract type AbstractMarkovModel end
 abstract type AbstractDistributionModel end
-abstract type AbstractPricingModel end
 ```
 
 ### Discrete Models (Baseline)
@@ -43,13 +42,10 @@ struct StudentTModel <: AbstractDistributionModel end
 struct LaplaceModel <: AbstractDistributionModel end
 ```
 
-### Pricing Models
+### Pricing Types
 
 ```julia
 mutable struct MyEuropeanOptionContract
-mutable struct MyCHMMPricingModel <: AbstractPricingModel
-mutable struct MyHestonPricingModel <: AbstractPricingModel
-struct MyPricingResult
 ```
 
 ## Model Construction
@@ -60,8 +56,6 @@ build(::Type{MyHiddenMarkovModelWithJumps}, data::NamedTuple)
 build(::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)
 build(::Type{MyGARCHModel}, data::NamedTuple)
 build(::Type{MyEuropeanOptionContract}, data::NamedTuple)
-build(::Type{MyCHMMPricingModel}, data::NamedTuple)
-build(::Type{MyHestonPricingModel}, data::NamedTuple)
 ```
 
 ## Simulation
@@ -88,10 +82,7 @@ walk_forward_regimes(observations, window_size, n_states; max_iter=30) -> Vector
 
 ```julia
 black_scholes(contract, sigma) -> Float64
-price(model::MyCHMMPricingModel, contract) -> MyPricingResult
-price(model::MyHestonPricingModel, contract) -> MyPricingResult
 implied_volatility(contract, market_price) -> Float64
-implied_vol_surface(model, S0, r, strikes, expiries) -> Matrix{Float64}
 ```
 
 ## Finance
@@ -106,6 +97,4 @@ vwap(df::DataFrame) -> Vector{Float64}
 ```julia
 MyPortfolioDataSet()                # Training: 2014-2024
 MyOutOfSamplePortfolioDataSet()     # Test: 2025
-MyVolatilityDataSet()               # VIX Training
-MyOutOfSampleVolatilityDataSet()    # VIX Test
 ```

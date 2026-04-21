@@ -329,53 +329,6 @@ function build(model::Type{MyEuropeanOptionContract}, data::NamedTuple)::MyEurop
 end
 
 
-"""
-    build(::Type{MyCHMMPricingModel}, data::NamedTuple) -> MyCHMMPricingModel
-
-Builds a CHMM-based Monte Carlo pricer. Computes the volatility map by mapping
-VIX price levels per regime to equity volatility: σ_s = median(VIX_close | state=s) / 100.
-
-### NamedTuple keys
-- `hmm::AbstractMarkovModel`: Trained CHMM
-- `vix_prices::Vector{Float64}`: VIX close prices aligned with vix_states
-- `vix_states::Vector{Int64}`: Viterbi-decoded state sequence for VIX prices
-- `n_paths::Int64`: Number of MC paths (default: 10000)
-- `n_steps_per_year::Int64`: Discretization (default: 252)
-"""
-function build(model::Type{MyCHMMPricingModel}, data::NamedTuple)::MyCHMMPricingModel
-
-    m = model();
-    hmm = data.hmm;
-    m.hmm = hmm;
-
-    # Build volatility map: median VIX level per regime → equity vol
-    vix_prices = data.vix_prices;
-    vix_states = data.vix_states;
-    volatility_map = Dict{Int64, Float64}();
-    for s in hmm.states
-        mask = findall(x -> x == s, vix_states);
-        if length(mask) > 0
-            volatility_map[s] = median(vix_prices[mask]) / 100.0;
-        else
-            volatility_map[s] = 0.20; # fallback
-        end
-    end
-    m.volatility_map = volatility_map;
-
-    # Compute stationary distribution from transition matrix (power method)
-    K = length(hmm.states);
-    T_mat = zeros(K, K);
-    for i in 1:K
-        T_mat[i, :] = hmm.transition[i].p;
-    end
-    π_stat = (T_mat^1000)[1, :];
-    m.start_distribution = Categorical(π_stat);
-
-    m.n_paths = haskey(data, :n_paths) ? data.n_paths : 10000;
-    m.n_steps_per_year = haskey(data, :n_steps_per_year) ? data.n_steps_per_year : 252;
-
-    return m;
-end
 
 
 # ----------------------------------------------------------------------------- #

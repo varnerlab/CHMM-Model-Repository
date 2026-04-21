@@ -2,16 +2,10 @@
 # run_all_analysis.jl
 #
 # Generates ALL figures and analysis for the continuous HMM paper.
-# Supports both equity (SPY) and volatility index (VIX) asset classes.
-# Runs the full pipeline for K ∈ {3, 6, 9, 12, 15, 18, 21} hidden states.
+# Runs the full pipeline for K ∈ {3, 6, 9, 12, 15, 18, 21} hidden states on SPY.
 #
 # This study focuses on continuous HMM (no jump mechanisms). At small K,
 # the CHMM alone reproduces all stylized facts to some extent.
-#
-# Usage:
-#   ASSET_CLASS = :equity       # SPY (default)
-#   ASSET_CLASS = :volatility   # VIX
-#   include("run_all_analysis.jl")
 #
 # Output: results/<ticker>/K<N>/  with figures (.svg, .pdf) and metrics (.txt)
 # ========================================================================================= #
@@ -27,14 +21,9 @@ Pkg.activate(".");
 
 include("Include.jl");
 
-# --- ASSET CLASS SELECTION ---
-if !@isdefined(ASSET_CLASS)
-    const ASSET_CLASS = :equity;
-end
-
 # --- CONFIGURATION ---
-const TICKER = (ASSET_CLASS == :volatility) ? "VIX" : "SPY";
-const RETURN_LABEL = (ASSET_CLASS == :volatility) ? "$TICKER Log Return (annualized)" : "Excess Growth Rate";
+const TICKER = "SPY";
+const RETURN_LABEL = "Excess Growth Rate";
 const K_VALUES = [3, 6, 9, 12, 15, 18, 21];
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
@@ -45,45 +34,33 @@ const L = 252;            # ACF max lag
 # Output directory
 const RESULTS_DIR = joinpath(_ROOT, "results");
 
-println("  Asset class: $(ASSET_CLASS) | Ticker: $(TICKER)");
+println("  Ticker: $(TICKER)");
 
 # ========================================================================================= #
 # LOAD DATA
 # ========================================================================================= #
 println("\n[1/4] Loading data...")
 
-if ASSET_CLASS == :volatility
-    train_dataset = MyVolatilityDataSet() |> x -> x["dataset"];
-    R_is = log_growth_matrix(train_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-    n_steps = length(R_is);
+train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
+maximum_number_trading_days = nrow(train_dataset["AAPL"]);
 
-    oos_dataset = MyOutOfSampleVolatilityDataSet() |> x -> x["dataset"];
-    R_oos = log_growth_matrix(oos_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-    n_steps_oos = length(R_oos);
-
-    println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs")
-else
-    train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
-    maximum_number_trading_days = nrow(train_dataset["AAPL"]);
-
-    dataset = Dict{String,DataFrame}();
-    for (t, data) ∈ train_dataset
-        if nrow(data) == maximum_number_trading_days
-            dataset[t] = data;
-        end
+dataset = Dict{String,DataFrame}();
+for (t, data) ∈ train_dataset
+    if nrow(data) == maximum_number_trading_days
+        dataset[t] = data;
     end
-    list_of_all_tickers = keys(dataset) |> collect |> sort;
-    all_firms_R = log_growth_matrix(dataset, list_of_all_tickers; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-    ticker_idx = findfirst(x -> x == TICKER, list_of_all_tickers);
-    R_is = all_firms_R[:, ticker_idx];
-    n_steps = length(R_is);
-
-    oos_dataset_raw = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
-    R_oos = log_growth_matrix(oos_dataset_raw, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
-    n_steps_oos = length(R_oos);
-
-    println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs | Tickers: $(length(list_of_all_tickers))")
 end
+list_of_all_tickers = keys(dataset) |> collect |> sort;
+all_firms_R = log_growth_matrix(dataset, list_of_all_tickers; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+ticker_idx = findfirst(x -> x == TICKER, list_of_all_tickers);
+R_is = all_firms_R[:, ticker_idx];
+n_steps = length(R_is);
+
+oos_dataset_raw = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
+R_oos = log_growth_matrix(oos_dataset_raw, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+n_steps_oos = length(R_oos);
+
+println("  IS: $(n_steps) obs | OoS: $(n_steps_oos) obs | Tickers: $(length(list_of_all_tickers))")
 
 # ========================================================================================= #
 # FIGURE 1: STYLIZED FACTS (only once — independent of K)

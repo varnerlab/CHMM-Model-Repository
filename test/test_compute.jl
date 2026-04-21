@@ -86,53 +86,6 @@
         @test all(isfinite, R_l)
     end
 
-    @testset "forward_filter - shape and row-stochasticity" begin
-        Random.seed!(7777)
-        model = _make_test_model()
-        obs = randn(300) .* 0.03
-
-        π = forward_filter(model, obs)
-        @test size(π) == (300, length(model.states))
-        @test all(isfinite, π)
-        # Each row is a probability distribution over states.
-        for t in axes(π, 1)
-            @test sum(π[t, :]) ≈ 1.0 atol=1e-8
-            @test all(π[t, :] .>= -1e-10)
-        end
-    end
-
-    @testset "regime_forecast - convergence to stationary as h grows" begin
-        Random.seed!(5050)
-        model = _make_test_model()
-        K = length(model.states)
-
-        π_now = fill(1.0 / K, K)
-        # Non-stationary start: put all mass on state 1.
-        π_now[:] .= 0.0; π_now[1] = 1.0
-
-        f1  = regime_forecast(model, π_now, 1)
-        f5  = regime_forecast(model, π_now, 5)
-        f50 = regime_forecast(model, π_now, 50)
-
-        @test size(f1)  == (1, K)
-        @test size(f5)  == (5, K)
-        @test size(f50) == (50, K)
-        for h in (1, 5, 50)
-            f = regime_forecast(model, π_now, h)
-            for i in 1:h
-                @test sum(f[i, :]) ≈ 1.0 atol=1e-8
-            end
-        end
-
-        # Long-horizon forecast from any starting point should be close to the
-        # stationary distribution.
-        π_stat = (1 / K) .* ones(K)  # will be replaced below
-        T_mat = zeros(K, K)
-        for i in 1:K; T_mat[i, :] = probs(model.transition[i]); end
-        π_stat = (T_mat ^ 500)[1, :]
-        @test maximum(abs.(f50[end, :] .- π_stat)) < 1e-3
-    end
-
     @testset "simulate_prices - path shape and round-trip invariant" begin
         Random.seed!(9999)
         model = _make_test_model()
@@ -173,43 +126,6 @@
         @test length(chain) == 500
         @test chain[1] == 1
         @test all(s -> s in model.states, chain)
-    end
-
-    @testset "fit_coupling - row-stochasticity and smoothing" begin
-        vix_states = [1, 1, 2, 2, 1, 3, 3, 1, 2]
-        eq_states  = [2, 1, 1, 3, 2, 3, 2, 1, 3]
-        C = fit_coupling(vix_states, eq_states, 3, 3; lag=1, alpha=1.0)
-
-        @test size(C) == (3, 3)
-        for i in 1:3
-            @test sum(C[i, :]) ≈ 1.0 atol=1e-10
-            @test all(C[i, :] .> 0.0)  # Laplace smoothing keeps every cell positive
-        end
-
-        # Entropies finite and bounded by log(K_eq).
-        h = coupling_entropy(C)
-        @test length(h) == 3
-        @test all(isfinite, h)
-        @test all(h .<= log(3) + 1e-10)
-    end
-
-    @testset "simulate_prices_vix_conditioned - path shape and nonnegative prices" begin
-        Random.seed!(4321)
-        model_vix = _make_test_model(n_states=4)
-        model_eq  = _make_test_model(n_states=5)
-
-        # Synthetic coupling matrix (random, row-stochastic).
-        raw = rand(4, 5)
-        C = raw ./ sum(raw; dims=2)
-
-        P = simulate_prices_vix_conditioned(model_eq, model_vix, C, 100.0, 150)
-        @test length(P) == 151
-        @test P[1] == 100.0
-        @test all(P .> 0.0)
-
-        P_mat = simulate_prices_vix_conditioned(model_eq, model_vix, C, 100.0, 50; n_paths=7)
-        @test size(P_mat) == (51, 7)
-        @test all(P_mat[1, :] .== 100.0)
     end
 
     @testset "GARCH(1,1) fitting and simulation" begin

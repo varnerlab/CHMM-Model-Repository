@@ -36,7 +36,6 @@
 | Gaussian-emission HMM via Baum-Welch | Ryden et al. (1998) | **Already done** — core of our continuous model |
 | HSMM (semi-Markov) | Bulla & Bulla (2006) | Fixes ACF decay via non-geometric dwell times |
 | Regime-switching GARCH (MS-GARCH) | Multiple authors | HMM states drive GARCH parameters |
-| Regime-switching Heston for VIX/SPX | Papanicolaou & Sircar | Markov chain modulates Heston vol dynamics |
 | FlowHMM (NeurIPS 2022) | Lorek et al. | Normalizing flows replace Gaussian emissions |
 | Regime-switching factor investing | Nystrup et al. (2020) | HMM for portfolio allocation |
 
@@ -54,9 +53,8 @@
 1. **Quantile-based initialization** for Baum-Welch — most papers use random or k-means init. Our approach of sorting observations into K quantile chunks is practical but not formalized in a financial context
 2. **The specific comparison**: discrete frequency-counting HMM + jumps vs continuous Baum-Welch HMM (no jumps) — this head-to-head showing the continuous model doesn't need jumps is new because our own discrete paper is the comparison baseline
 3. **424-asset scalability** via SIM factor decomposition + copulas — the multi-asset extension at that scale is distinctive
-4. **VIX regime → equity vol mapping for option pricing** — using CHMM-decoded VIX regimes to drive regime-switching Monte Carlo pricing is a novel application pipeline
-5. **Comprehensive multi-metric evaluation** (KS, AD, kurtosis, ACF-MAE, W1, Hellinger, Coverage) applied systematically to 5+ models
-6. **Out-of-sample temporal generalization** on 2025 holdout data
+4. **Comprehensive multi-metric evaluation** (KS, AD, kurtosis, ACF-MAE, W1, Hellinger, Coverage) applied systematically to 5+ models
+5. **Out-of-sample temporal generalization** on 2025 holdout data
 
 ---
 
@@ -71,28 +69,24 @@ Ryden et al. used only 2-3 states. Our K in {3,6,9,12,15,18,21} sweep is more co
 ### 4.3 The Baum-Welch vs frequency-counting comparison
 No paper has directly compared Baum-Welch continuous HMM against discrete frequency-counting HMM (with and without jumps) on the same data with the same metrics. Our discrete paper is the baseline. Showing that continuous Baum-Welch achieves comparable or better fidelity without jumps is the core novelty claim.
 
-### 4.4 VIX/VXX volatility regime modeling → option pricing pipeline
-Using CHMM to decode VIX regimes, map regime levels to equity vol, and drive regime-switching MC option pricing is an application pipeline not found in the literature. The bridge from "volatility index regime classification" to "implied volatility surface generation" is novel.
-
-### 4.5 Synthetic data quality framework
+### 4.4 Synthetic data quality framework
 The multi-metric evaluation applied systematically to 5+ models is more comprehensive than most papers. Framing this as a synthetic data quality benchmark for financial time series generators gives the evaluation framework independent value.
 
-### 4.6 Out-of-sample temporal generalization
+### 4.5 Out-of-sample temporal generalization
 Most HMM papers validate in-sample only. Our IS (2014-2024) + OoS (2025) design with the same metrics is stronger than typical HMM financial papers.
 
 ---
 
 ## 5. Recommended Novelty Framing
 
-> *"We show that a continuous Gaussian HMM trained via Baum-Welch with quantile-based initialization reproduces all three canonical stylized facts at moderate state resolution (K=6-13) without requiring jump mechanisms, achieving comparable distributional fidelity to the augmented discrete model while eliminating two tunable hyperparameters (ε, λ). We extend the framework to VIX regime-switching option pricing and validate out-of-sample on 2025 holdout data."*
+> *"We show that a continuous Gaussian HMM trained via Baum-Welch with quantile-based initialization reproduces all three canonical stylized facts at moderate state resolution (K=6-13) without requiring jump mechanisms, achieving comparable distributional fidelity to the augmented discrete model while eliminating two tunable hyperparameters (ε, λ). We validate out-of-sample on 2025 holdout data."*
 
 Key differentiation from Ryden et al. (1998):
 - (a) Quantile initialization strategy
 - (b) Systematic K sweep showing partial ACF recovery at higher K
 - (c) Head-to-head against our own discrete+jumps baseline
-- (d) VIX/VXX volatility application
-- (e) 2025 out-of-sample validation on modern data
-- (f) Multi-metric synthetic data quality evaluation framework
+- (d) 2025 out-of-sample validation on modern data
+- (e) Multi-metric synthetic data quality evaluation framework
 
 ---
 
@@ -102,9 +96,8 @@ Key differentiation from Ryden et al. (1998):
 2. Bulla J, Bulla I (2006). "Stylized facts of financial time series and hidden semi-Markov models." *Comp Stat & Data Analysis* 51(4):2192-2209. https://dl.acm.org/doi/abs/10.1016/j.csda.2006.07.021
 3. Malmsten H, Terasvirta T (2004). "Stylized facts and three popular models of volatility." http://www-stat.wharton.upenn.edu/~steele/Resources/FTSResources/StylizedFacts/MalmstenTerasvirta04.pdf
 4. Lorek P et al. (2022). "FlowHMM: Flow-based continuous hidden Markov models." *NeurIPS 2022*. https://proceedings.neurips.cc/paper_files/paper/2022/file/39c5871aa13be86ab978cba7069cbcec-Paper-Conference.pdf
-5. Papanicolaou A, Sircar R. "A regime-switching Heston model for VIX and S&P 500 implied volatilities." https://economics.princeton.edu/published-papers/a-regime-switching-heston-model-for-vix-and-sp-500-implied-volatilities/
-6. Nystrup P et al. (2020). "Regime-switching factor investing with hidden Markov models." *J Risk & Financial Management* 13(12):311. https://www.mdpi.com/1911-8074/13/12/311
-7. Cont R (2001). "Empirical properties of asset returns: stylized facts and statistical issues." *Quantitative Finance* 1(2):223-236.
-8. Hamilton JD (1989). "A new approach to the economic analysis of nonstationary time series and the business cycle." *Econometrica* 57(2):357-384.
-9. Bollerslev T (1986). "Generalized autoregressive conditional heteroskedasticity." *J Econometrics* 31(3):307-327.
-10. Alswaidan A, Varner JD (2026). "Hybrid hidden Markov model for modeling equity excess growth rate dynamics." *arXiv:2603.10202*. https://arxiv.org/abs/2603.10202
+5. Nystrup P et al. (2020). "Regime-switching factor investing with hidden Markov models." *J Risk & Financial Management* 13(12):311. https://www.mdpi.com/1911-8074/13/12/311
+6. Cont R (2001). "Empirical properties of asset returns: stylized facts and statistical issues." *Quantitative Finance* 1(2):223-236.
+7. Hamilton JD (1989). "A new approach to the economic analysis of nonstationary time series and the business cycle." *Econometrica* 57(2):357-384.
+8. Bollerslev T (1986). "Generalized autoregressive conditional heteroskedasticity." *J Econometrics* 31(3):307-327.
+9. Alswaidan A, Varner JD (2026). "Hybrid hidden Markov model for modeling equity excess growth rate dynamics." *arXiv:2603.10202*. https://arxiv.org/abs/2603.10202

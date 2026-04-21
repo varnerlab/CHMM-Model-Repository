@@ -226,7 +226,6 @@ struct LaplaceModel <: AbstractDistributionModel end
 
 
 # --- PRICING TYPES ----------------------------------------------------------- #
-abstract type AbstractPricingModel end
 
 """
     mutable struct MyEuropeanOptionContract
@@ -249,48 +248,6 @@ mutable struct MyEuropeanOptionContract
     is_call::Bool;
 
     MyEuropeanOptionContract() = new();
-end
-
-"""
-    mutable struct MyCHMMPricingModel <: AbstractPricingModel
-
-Monte Carlo option pricer using regime-switching volatility from a trained CHMM.
-The volatility_map bridges VIX regime levels to equity volatility: σ_s = median(VIX_level_s) / 100.
-
-### Required fields
-- `hmm::AbstractMarkovModel`: Trained CHMM
-- `volatility_map::Dict{Int64, Float64}`: state → equity vol σ_s
-- `start_distribution::Categorical`: Stationary distribution for initial state sampling
-- `n_paths::Int64`: Number of Monte Carlo paths
-- `n_steps_per_year::Int64`: Time discretization (252 for daily)
-"""
-mutable struct MyCHMMPricingModel <: AbstractPricingModel
-
-    hmm::AbstractMarkovModel;
-    volatility_map::Dict{Int64, Float64};
-    start_distribution::Categorical;
-    n_paths::Int64;
-    n_steps_per_year::Int64;
-
-    MyCHMMPricingModel() = new();
-end
-
-"""
-    struct MyPricingResult
-
-Immutable container for Monte Carlo pricing output.
-
-### Fields
-- `price::Float64`: Mean discounted payoff (the option price)
-- `std_error::Float64`: Standard error of the Monte Carlo estimate
-- `n_paths::Int64`: Number of paths used
-- `payoffs::Array{Float64,1}`: Individual discounted path payoffs (for diagnostics)
-"""
-struct MyPricingResult
-    price::Float64;
-    std_error::Float64;
-    n_paths::Int64;
-    payoffs::Array{Float64,1};
 end
 # ----------------------------------------------------------------------------- #
 

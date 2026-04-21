@@ -10,16 +10,15 @@ This project compares three approaches to modeling financial time series:
 
 The study demonstrates that the continuous HMM at small K reproduces all three stylized facts (heavy tails, negligible linear ACF, persistent volatility clustering) without requiring jump mechanisms.
 
-Additionally, the framework models VIX/VXX volatility measures and applies CHMM regime-switching volatility to option pricing.
-
 ## Module Load Order (Critical)
 Source files must be loaded in this exact order (defined in `Include.jl`):
 1. `Types.jl` -- abstract and concrete type definitions (no dependencies on other src files)
 2. `Files.jl` -- data loading (depends on path constants from `Include.jl`)
 3. `Factory.jl` -- model constructors (depends on Types)
 4. `Compute.jl` -- algorithms and simulation (depends on Types, uses Factory via `build`)
-5. `Pricing.jl` -- option pricing engines (depends on Types, Compute)
-6. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
+5. `Pricing.jl` -- Black-Scholes benchmark and implied-vol inversion
+6. `CrossAsset.jl` -- SIM and Gaussian/Student-t copula multi-asset generators
+7. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
 
 Rearranging this order will cause `UndefVarError` at load time.
 
@@ -35,10 +34,6 @@ MyGARCHModel                               (GARCH(1,1) benchmark)
 AbstractDistributionModel
   |-- StudentTModel    (Bayesian Student-t via Turing)
   |-- LaplaceModel     (Bayesian Laplace via Turing)
-
-AbstractPricingModel
-  |-- MyCHMMPricingModel    (regime-switching MC via VIX-trained CHMM)
-  |-- MyHestonPricingModel  (Heston stochastic vol benchmark)
 ```
 
 All mutable model structs use empty inner constructors. The `build()` factory pattern populates fields after construction.
@@ -61,9 +56,6 @@ All forward-backward computations use `_logsumexp_vec()` to prevent floating-poi
 - Jump duration drawn from `Poisson(lambda)`
 - During jumps, coin flip (52/48) selects crash states (1:3) or boom states (N-2:N)
 - Used ONLY in the discrete baseline for comparison — not in the continuous model
-
-### VIX/VXX Volatility Modeling
-The CHMM is applied to VIX returns to learn volatility regimes. Median VIX level per regime maps to equity volatility for option pricing.
 
 ### Functor Interface
 HMM models are callable: `model(start_state, n_steps)` dispatches to `_simulate()`.
