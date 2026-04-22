@@ -35,15 +35,15 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
 | `cross_asset/Table-T3-Cross-Asset-Dependence.txt`              | B        | 6 tickers, SIM / Gauss / t   | Table T3                  |
 | `cross_asset/Fig-Cross-Asset-Correlation.*`                    | B        | 6x6 correlation matrices     | Fig 7                     |
 | `cross_asset/Fig-Cross-Asset-KS-Dist.*`                        | B        | 6 tickers, bar chart         | Fig cross-asset KS        |
-| `v7/block_bootstrap/...`                                       | A        | SPY                          | Appendix                  |
-| `v7/bin_t/...`                                                 | A        | SPY                          | Appendix                  |
-| `v7/copula_profile/...`                                        | B        | 6 tickers, profile MLE of nu | Appendix                  |
-| `v7/gru/...`                                                   | A        | SPY, neural baseline         | Appendix                  |
-| `v7/ks_power/...`                                              | A        | SPY, power simulation        | Appendix                  |
-| `v7/nu_diagnostics/...`                                        | A        | SPY, CHMM-t nu behavior      | Appendix                  |
-| `v7/ryden_k2/...`                                              | A        | SPY, Ryden K=2 comparison    | Appendix                  |
-| `v7/utility/VaR_ES_Backtest.*`                                 | A        | SPY                          | Appendix VaR / ES         |
-| `v7/walk_forward/WalkForward.txt`                              | A        | JNJ, JPM                     | Appendix walk-forward     |
+| `diagnostics/block_bootstrap/...`                                       | A        | SPY                          | Appendix                  |
+| `diagnostics/bin_t/...`                                                 | A        | SPY                          | Appendix                  |
+| `diagnostics/copula_profile/...`                                        | B        | 6 tickers, profile MLE of nu | Appendix                  |
+| `diagnostics/gru/...`                                                   | A        | SPY, neural baseline         | Appendix                  |
+| `diagnostics/ks_power/...`                                              | A        | SPY, power simulation        | Appendix                  |
+| `diagnostics/nu_diagnostics/...`                                        | A        | SPY, CHMM-t nu behavior      | Appendix                  |
+| `diagnostics/ryden_k2/...`                                              | A        | SPY, Ryden K=2 comparison    | Appendix                  |
+| `diagnostics/utility/VaR_ES_Backtest.*`                                 | A        | SPY                          | Appendix VaR / ES         |
+| `diagnostics/walk_forward/WalkForward.txt`                              | A        | JNJ, JPM                     | Appendix walk-forward     |
 
 ## Table T2 vs. Table T3: quick disambiguation
 
@@ -70,4 +70,7 @@ Each script states its pipeline in its header.
 - `run_multi_emission_analysis.jl`   -- Pipeline A. Emits Table T1b and per-(K, family) SPY diagnostics (Figs 2-5).
 - `run_equity_price_sim.jl`          -- Pipeline A. Emits Fig 6 price fans and terminal distributions.
 - `run_cross_asset_sim_copula.jl`    -- Pipeline B. Emits Table T3 and Fig 7.
-- `run_v7_full_rebuild.jl`           -- Mixed. See subdirectory table above.
+- `run_full_rebuild.jl`              -- Master driver, all stages.
+- `run_diagnostics.jl`               -- Pipeline A diagnostics (VaR/ES, walk-forward, copula profile, ...).
+- `run_gru_baseline.jl`              -- Deep-generative baseline.
+- `run_figures.jl`                   -- Re-renders the paper's main-body figures.

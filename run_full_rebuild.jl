@@ -1,26 +1,25 @@
 # ========================================================================================= #
-# run_v7_full_rebuild.jl
+# run_full_rebuild.jl
 #
-# Master driver that re-runs every v7-relevant pipeline against the new
-# 10-year training / OoS-remainder split. Produces every figure, metrics
-# file, and table referenced by Paper_v7.tex.
+# Master driver that re-runs every analysis pipeline end-to-end. Produces every
+# figure, metrics file, and table referenced by the paper.
 #
-# Stages (each is an independent top-level include; failure in one does
-# not abort the others, but a warning is printed):
-#   1. run_all_analysis.jl             (stylized facts + per-K internals, SPY)
-#   2. run_multi_emission_analysis.jl  (K x family sensitivity)
-#   3. run_baselines_and_cross_asset.jl(Table 2 + Table T2)
-#   4. run_cross_asset_sim_copula.jl   (SIM + Gaussian/Student-t copulas)
-#   5. run_v7_revisions.jl             (utility, nu diagnostics, ...)
-#   6. run_v7_gru.jl                   (deep-generative baseline)
-#   7. run_v7_figures.jl               (K=18 main-body figures)
+# Stages (each is an independent top-level include; failure in one does not abort
+# the others, but a warning is printed):
+#   1. run_all_analysis.jl              (stylized facts + per-K internals, SPY)
+#   2. run_multi_emission_analysis.jl   (K x family sensitivity)
+#   3. run_baselines_and_cross_asset.jl (Table 2 + Table T2, Pipeline A)
+#   4. run_cross_asset_sim_copula.jl    (Table T3, Pipeline B)
+#   5. run_diagnostics.jl               (utility, nu diagnostics, walk-forward, ...)
+#   6. run_gru_baseline.jl              (deep-generative baseline)
+#   7. run_figures.jl                   (K=18 main-body figures)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
 using Dates
 
 println("="^72);
-println("  Paper v7 — full rebuild against new train/OoS split");
+println("  Full rebuild against the current train/OoS split");
 println("  Start: ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS"));
 println("="^72);
 
@@ -29,9 +28,9 @@ const SCRIPTS = [
     "run_multi_emission_analysis.jl",
     "run_baselines_and_cross_asset.jl",
     "run_cross_asset_sim_copula.jl",
-    "run_v7_revisions.jl",
-    "run_v7_gru.jl",
-    "run_v7_figures.jl",
+    "run_diagnostics.jl",
+    "run_gru_baseline.jl",
+    "run_figures.jl",
 ];
 
 stage_times = Dict{String, Float64}();

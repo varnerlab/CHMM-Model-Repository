@@ -47,7 +47,7 @@ train_raw = MyPortfolioDataSet() |> x -> x["dataset"];
 oos_raw   = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
 
 # Keep only tickers with the full daily panel, matching the convention used in
-# the v7 / baseline pipelines.
+# the baseline pipelines.
 max_days = nrow(train_raw["AAPL"]);
 train_dataset = Dict{String,DataFrame}();
 for (t, df) in train_raw

@@ -6,8 +6,8 @@
 using Pkg; Pkg.activate(".");
 include("Include.jl");
 using Random
-const V7_SEED = 20260420;
-Random.seed!(V7_SEED);
+const SEED = 20260420;
+Random.seed!(SEED);
 
 const TICKER = "SPY";
 const K = 18; const MAX_ITER = 60;
@@ -169,7 +169,7 @@ for (tag, build_fn) in [
     ("t", () -> build(MyStudentTHiddenMarkovModel,   (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
     ("L", () -> build(MyLaplaceHiddenMarkovModel,    (observations=R_is, number_of_states=K, max_iter=MAX_ITER)))]
     println("\n[$tag] Training CHMM-$tag at K=$K...")
-    Random.seed!(V7_SEED);
+    Random.seed!(SEED);
     model = build_fn();
     T_mat, sd = _stationary(model, K);
     sis, sos = _simulate(model, sd, n_is, n_oos, N_PATHS);
@@ -184,7 +184,7 @@ for (tag, build_fn) in [
         joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K-$tag"));
     println("  [$tag] Figures written.")
 
-    # Also write the main-body unsuffixed versions from the Gaussian family (used by results_v7 main body)
+    # Also write the main-body unsuffixed versions from the Gaussian family (main-body figures)
     if tag == "N"
         save_is_comparison(sis, m_is, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));

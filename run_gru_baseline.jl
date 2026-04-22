@@ -1,19 +1,19 @@
 # ========================================================================================= #
-# run_v7_gru.jl
+# run_gru_baseline.jl
 #
 # Trains the MyGRUGenerator on SPY in-sample data and evaluates the seven-metric
-# panel on 1000 simulated paths (IS + OoS), so the v7 paper can carry a deep
-# generative baseline row in Table 2 (review §5.4).
+# panel on 1000 simulated paths (IS + OoS), producing the deep generative baseline
+# row in Table 2.
 #
-# Output: results/v7/gru/{Metrics.txt, Loss.pdf, Loss.svg}
+# Output: results/diagnostics/gru/{Metrics.txt, Loss.pdf, Loss.svg}
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
 include("Include.jl");
 using Random
 
-const V7_SEED = 20260420;
-Random.seed!(V7_SEED);
+const SEED = 20260420;
+Random.seed!(SEED);
 
 const TICKER  = "SPY";
 const N_PATHS = 1000;
@@ -24,12 +24,12 @@ const HIDDEN_DIM = 32;
 const WINDOW     = 20;
 const LR         = 1e-3;
 
-const V7_DIR = joinpath(_ROOT, "results", "v7", "gru");
-mkpath(V7_DIR);
+const OUT_DIR = joinpath(_ROOT, "results", "diagnostics", "gru");
+mkpath(OUT_DIR);
 
 println("="^70)
-println("  Paper v7 — GRU baseline")
-println("  Seed:        $V7_SEED")
+println("  GRU deep-generative baseline")
+println("  Seed:        $SEED")
 println("  Hidden dim:  $HIDDEN_DIM   Window: $WINDOW   Epochs: $EPOCHS")
 println("  N paths:     $N_PATHS")
 println("="^70)
@@ -56,7 +56,7 @@ println("\n[train] Fitting MyGRUGenerator...")
 gru = build(MyGRUGenerator, (
     observations=R_is, epochs=EPOCHS, lr=LR,
     hidden_dim=HIDDEN_DIM, window=WINDOW,
-    seed=V7_SEED, verbose=true));
+    seed=SEED, verbose=true));
 println("  Final NLL = $(round(gru.loss_history[end], digits=4))")
 
 # Convergence plot
@@ -65,8 +65,8 @@ fig_loss = plot(1:length(gru.loss_history), gru.loss_history,
     xlabel="Epoch", ylabel="NLL (per window)",
     title="GRU training loss — SPY ($EPOCHS epochs, hidden=$HIDDEN_DIM, win=$WINDOW)",
     titlefontsize=10, legend=false, size=(700, 420));
-savefig(fig_loss, joinpath(V7_DIR, "Loss.pdf"));
-savefig(fig_loss, joinpath(V7_DIR, "Loss.svg"));
+savefig(fig_loss, joinpath(OUT_DIR, "Loss.pdf"));
+savefig(fig_loss, joinpath(OUT_DIR, "Loss.svg"));
 
 # ----- Simulate paths and evaluate -----
 println("\n[sim] Generating $N_PATHS paths of length $n_is + $n_oos...")
@@ -78,16 +78,16 @@ gru_oos_paths = Array{Float64,2}(undef, n_oos, N_PATHS);
 seed_window = R_is[(end - WINDOW + 1):end];
 
 for i in 1:N_PATHS
-    Random.seed!(V7_SEED + i);
+    Random.seed!(SEED + i);
     gru_is_paths[:,  i] = simulate_gru(gru, n_is;  seed_window=seed_window);
-    Random.seed!(V7_SEED + 1_000_000 + i);
+    Random.seed!(SEED + 1_000_000 + i);
     gru_oos_paths[:, i] = simulate_gru(gru, n_oos; seed_window=seed_window);
     if i % 100 == 0
         println("  path $i / $N_PATHS");
     end
 end
 
-# ----- Seven-metric evaluation (re-uses the panel from run_v7_revisions.jl) -----
+# ----- Seven-metric evaluation (shared with run_diagnostics.jl) -----
 function eval_full(observed, sim_archive; L_val=L_LAGS)
     np = size(sim_archive, 2); n_o = length(observed);
     μ_o = mean(observed); σ_o = std(observed);
@@ -148,8 +148,8 @@ println("\n[eval] Seven-metric panel...")
 m_is  = eval_full(R_is,  gru_is_paths);
 m_oos = eval_full(R_oos, gru_oos_paths);
 
-open(joinpath(V7_DIR, "Metrics.txt"), "w") do io
-    println(io, "GRU Generator Seven-Metric Panel (SPY, seed=$V7_SEED, $N_PATHS paths)");
+open(joinpath(OUT_DIR, "Metrics.txt"), "w") do io
+    println(io, "GRU Generator Seven-Metric Panel (SPY, seed=$SEED, $N_PATHS paths)");
     println(io, "="^85);
     println(io, "  Architecture: 1-layer GRU(hidden=$HIDDEN_DIM) + Dense(2) Gaussian head");
     println(io, "  Training:     $EPOCHS epochs, Adam(lr=$LR), window=$WINDOW, NLL loss");
@@ -169,5 +169,5 @@ open(joinpath(V7_DIR, "Metrics.txt"), "w") do io
     end
 end
 
-println("\nGRU metrics written to $V7_DIR/Metrics.txt")
+println("\nGRU metrics written to $OUT_DIR/Metrics.txt")
 println("Done.")

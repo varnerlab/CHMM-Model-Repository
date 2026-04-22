@@ -1,16 +1,17 @@
 # ========================================================================================= #
-# run_v7_revisions.jl
+# run_diagnostics.jl
 #
-# Generates every new result required for Paper v7 in a single run:
+# Generates every diagnostic / supplementary-results subdirectory referenced by
+# the paper's supplemental section:
 #
-#   [4.1] VaR/ES utility back-test            -> results/v7/utility/VaR_ES.txt, .pdf
-#   [4.2] CHMM-t nu_k diagnostics             -> results/v7/nu_diagnostics/
-#   [4.3] OoS KS power calibration            -> results/v7/ks_power/
-#   [4.4] Ryden K=2 random-init replication   -> results/v7/ryden_k2/
-#   [4.5] Walk-forward JPM/JNJ rolling fit    -> results/v7/walk_forward/
-#   [4.6] Copula profile log-L plot           -> results/v7/copula_profile/
-#   [5.2] Block-bootstrap benchmark row       -> results/v7/block_bootstrap/
-#   [8.1] Discrete bin-conditional Student-t  -> results/v7/bin_t/
+#   [4.1] VaR/ES utility back-test            -> results/diagnostics/utility/
+#   [4.2] CHMM-t nu_k diagnostics             -> results/diagnostics/nu_diagnostics/
+#   [4.3] OoS KS power calibration            -> results/diagnostics/ks_power/
+#   [4.4] Ryden K=2 random-init replication   -> results/diagnostics/ryden_k2/
+#   [4.5] Walk-forward JPM/JNJ rolling fit    -> results/diagnostics/walk_forward/
+#   [4.6] Copula profile log-L plot           -> results/diagnostics/copula_profile/
+#   [5.2] Block-bootstrap benchmark row       -> results/diagnostics/block_bootstrap/
+#   [8.1] Discrete bin-conditional Student-t  -> results/diagnostics/bin_t/
 #
 # Uses the global seed below so numbers are deterministic.
 # ========================================================================================= #
@@ -19,8 +20,8 @@ using Pkg; Pkg.activate(".");
 include("Include.jl");
 
 using Random
-const V7_SEED = 20260420;       # deterministic for table reproducibility
-Random.seed!(V7_SEED);
+const SEED = 20260420;       # deterministic for table reproducibility
+Random.seed!(SEED);
 
 const TICKER       = "SPY";
 const RISK_FREE    = 0.0;
@@ -32,12 +33,12 @@ const K_MAIN       = 18;
 const MAX_ITER     = 60;
 const DISCRETE_K   = 13;
 
-const V7_DIR       = joinpath(_ROOT, "results", "v7");
-mkpath(V7_DIR);
+const DIAG_DIR       = joinpath(_ROOT, "results", "diagnostics");
+mkpath(DIAG_DIR);
 
 println("="^70)
-println("  Paper v7 — Revisions pipeline")
-println("  Seed:      $V7_SEED")
+println("  Diagnostics pipeline")
+println("  Seed:      $SEED")
 println("  Main K:    $K_MAIN")
 println("  N paths:   $N_PATHS")
 println("="^70)
@@ -186,7 +187,7 @@ println("  Paths ready.");
 # ========================================================================================= #
 println("\n[4.1] VaR / ES utility back-test...")
 
-util_dir = joinpath(V7_DIR, "utility"); mkpath(util_dir);
+util_dir = joinpath(DIAG_DIR, "utility"); mkpath(util_dir);
 
 function var_es(x::AbstractVector, α::Float64)
     # Left-tail VaR at level α. Daily excess-growth input.
@@ -257,7 +258,7 @@ for (name, sim_is_mx, sim_oos_mx) in [
 end
 
 open(joinpath(util_dir, "VaR_ES_Backtest.txt"), "w") do io
-    println(io, "VaR and ES Back-test Calibration (SPY, seed=$V7_SEED, $N_PATHS paths)");
+    println(io, "VaR and ES Back-test Calibration (SPY, seed=$SEED, $N_PATHS paths)");
     println(io, "="^98);
     println(io, "Historical observed excess growth rate: daily (annualized), dt=1/252");
     println(io, "  IS observed VaR01=$(round(obs_is_v01, digits=3))  ES01=$(round(obs_is_e01, digits=3))");
@@ -324,7 +325,7 @@ println("  [4.1] Done.")
 # ========================================================================================= #
 println("\n[4.2] CHMM-t nu_k histogram + bracket sensitivity...")
 
-nu_dir = joinpath(V7_DIR, "nu_diagnostics"); mkpath(nu_dir);
+nu_dir = joinpath(DIAG_DIR, "nu_diagnostics"); mkpath(nu_dir);
 
 # Pull nu_k from the already-fitted CHMM-t at K=18.
 nu_k_main = Float64[];
@@ -359,7 +360,7 @@ bracket_rows = [];
 
 for νf in ν_floors
     println("  Refitting CHMM-t with ν_min = $νf ...");
-    Random.seed!(V7_SEED);   # keep each refit independent but reproducible
+    Random.seed!(SEED);   # keep each refit independent but reproducible
     local_model = build(MyStudentTHiddenMarkovModel, (
         observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER,
         ν_bounds=(νf, 50.0)));
@@ -377,7 +378,7 @@ m_n_oos = eval_full(R_oos, sim_n_oos);
 push!(bracket_rows, (νf=Inf, m_is=m_n_is, m_oos=m_n_oos, nu_k=[Inf for _ in 1:K_MAIN]));
 
 open(joinpath(nu_dir, "Bracket_Sensitivity_K$(K_MAIN).txt"), "w") do io
-    println(io, "CHMM-t ν_min bracket sensitivity (K = $K_MAIN, SPY IS+OoS, seed=$V7_SEED)");
+    println(io, "CHMM-t ν_min bracket sensitivity (K = $K_MAIN, SPY IS+OoS, seed=$SEED)");
     println(io, "="^100);
     println(io, rpad("ν_min",8), " | ", rpad("KS IS",8), " | ", rpad("AD IS",8), " | ",
                 rpad("KS OoS",8), " | ", rpad("AD OoS",8), " | ",
@@ -402,7 +403,7 @@ println("  [4.2] Done.")
 # ========================================================================================= #
 println("\n[4.3] OoS KS power calibration...")
 
-ksp_dir = joinpath(V7_DIR, "ks_power"); mkpath(ksp_dir);
+ksp_dir = joinpath(DIAG_DIR, "ks_power"); mkpath(ksp_dir);
 
 # Reference generator 1: i.i.d. resamples of R_oos itself (known-correct by construction)
 function _count_ks_pass(reference, sim_generator::Function, nrep::Int; α=0.05)
@@ -416,15 +417,15 @@ function _count_ks_pass(reference, sim_generator::Function, nrep::Int; α=0.05)
 end
 
 nrep = 1000;
-Random.seed!(V7_SEED + 1);
+Random.seed!(SEED + 1);
 ref_pass_oos = _count_ks_pass(R_oos, () -> R_oos[rand(1:n_oos, n_oos)], nrep);
 
 # Reference generator 2: T-length resamples of R_is ("nearly correct", same pipeline)
-Random.seed!(V7_SEED + 2);
+Random.seed!(SEED + 2);
 ref_pass_is = _count_ks_pass(R_oos, () -> R_is[rand(1:n_is, n_oos)], nrep);
 
 # Extra: KS power at IS length (should be higher rejection rate on misspecified generator)
-Random.seed!(V7_SEED + 3);
+Random.seed!(SEED + 3);
 d_gauss_is = Normal(mean(R_is), std(R_is));
 ref_pass_gauss_is = _count_ks_pass(R_is, () -> rand(d_gauss_is, n_is), nrep);
 
@@ -433,7 +434,7 @@ open(joinpath(ksp_dir, "KS_Power_Calibration.txt"), "w") do io
     println(io, "="^60);
     println(io, "  OoS length T_oos = $n_oos");
     println(io, "  IS  length T_is  = $n_is");
-    println(io, "  replications     = $nrep  (seed = $V7_SEED)");
+    println(io, "  replications     = $nrep  (seed = $SEED)");
     println(io);
     println(io, "Reference pass rates at α = 0.05:");
     println(io, "  (a) Known-correct (iid resamples of R_oos):");
@@ -455,10 +456,10 @@ println("  [4.3] Done.")
 # ========================================================================================= #
 println("\n[4.4] Ryden K=2 random vs quantile init...")
 
-ryden_dir = joinpath(V7_DIR, "ryden_k2"); mkpath(ryden_dir);
+ryden_dir = joinpath(DIAG_DIR, "ryden_k2"); mkpath(ryden_dir);
 
 # Quantile-based init (existing baum_welch): already uses quantile init by default.
-Random.seed!(V7_SEED + 10);
+Random.seed!(SEED + 10);
 ry_model_q = build(MyContinuousHiddenMarkovModel, (
     observations=R_is, number_of_states=2, max_iter=MAX_ITER));
 _, ry_sd_q = _stationary(ry_model_q, 2);
@@ -546,7 +547,7 @@ for s in seeds
     T_r, μ_r, σ_r, π_r, _ = _baum_welch_random_init(R_is, 2; max_iter=MAX_ITER, seed=s);
     m_r = _make_chmm(T_r, μ_r, σ_r, 2);
     _, sd_r = _stationary(m_r, 2);
-    Random.seed!(V7_SEED + 20 + s);
+    Random.seed!(SEED + 20 + s);
     sis, sos = _simulate_chmm_paths(m_r, sd_r, n_is, n_oos, N_PATHS);
     push!(random_rows, (seed=s, m_is=eval_full(R_is, sis), m_oos=eval_full(R_oos, sos)));
 end
@@ -579,12 +580,12 @@ println("  [4.4] Done.")
 # ========================================================================================= #
 println("\n[4.5] Walk-forward rolling fit for JPM and JNJ...")
 
-wf_dir = joinpath(V7_DIR, "walk_forward"); mkpath(wf_dir);
+wf_dir = joinpath(DIAG_DIR, "walk_forward"); mkpath(wf_dir);
 
 # Quarterly refit: 63 trading days per quarter
 const Q_LEN = 63;
 
-function walk_forward_metrics(R_is_series, R_oos_series, K; seed=V7_SEED)
+function walk_forward_metrics(R_is_series, R_oos_series, K; seed=SEED)
     n_oos_local = length(R_oos_series);
     n_q = cld(n_oos_local, Q_LEN);
     pred_paths = Array{Float64,2}(undef, n_oos_local, N_PATHS_OOS);
@@ -616,7 +617,7 @@ function walk_forward_metrics(R_is_series, R_oos_series, K; seed=V7_SEED)
 end
 
 println("  JNJ fixed IS fit...")
-Random.seed!(V7_SEED + 30);
+Random.seed!(SEED + 30);
 jnj_fixed = build(MyContinuousHiddenMarkovModel, (
     observations=R_jnj_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
 _, jnj_sd = _stationary(jnj_fixed, K_MAIN);
@@ -625,10 +626,10 @@ m_jnj_fixed_is  = eval_full(R_jnj_is,  jnj_is_sim);
 m_jnj_fixed_oos = eval_full(R_jnj_oos, jnj_oos_sim);
 
 println("  JNJ walk-forward...")
-m_jnj_wf = walk_forward_metrics(R_jnj_is, R_jnj_oos, K_MAIN; seed=V7_SEED + 40);
+m_jnj_wf = walk_forward_metrics(R_jnj_is, R_jnj_oos, K_MAIN; seed=SEED + 40);
 
 println("  JPM fixed IS fit...")
-Random.seed!(V7_SEED + 50);
+Random.seed!(SEED + 50);
 jpm_fixed = build(MyContinuousHiddenMarkovModel, (
     observations=R_jpm_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
 _, jpm_sd = _stationary(jpm_fixed, K_MAIN);
@@ -637,7 +638,7 @@ m_jpm_fixed_is  = eval_full(R_jpm_is,  jpm_is_sim);
 m_jpm_fixed_oos = eval_full(R_jpm_oos, jpm_oos_sim);
 
 println("  JPM walk-forward...")
-m_jpm_wf = walk_forward_metrics(R_jpm_is, R_jpm_oos, K_MAIN; seed=V7_SEED + 60);
+m_jpm_wf = walk_forward_metrics(R_jpm_is, R_jpm_oos, K_MAIN; seed=SEED + 60);
 
 open(joinpath(wf_dir, "WalkForward.txt"), "w") do io
     println(io, "Walk-forward (quarterly refit) versus fixed-IS CHMM-N on defensives");
@@ -669,7 +670,7 @@ println("  [4.5] Done.")
 # ========================================================================================= #
 println("\n[4.6] Copula profile log-likelihood plot...")
 
-cp_dir = joinpath(V7_DIR, "copula_profile"); mkpath(cp_dir);
+cp_dir = joinpath(DIAG_DIR, "copula_profile"); mkpath(cp_dir);
 
 # Use the six-asset universe from the cross-asset section
 cross_tickers = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
@@ -717,7 +718,7 @@ println("  [4.6] Done.")
 # ========================================================================================= #
 println("\n[5.2] Block-bootstrap benchmark (block length 10)...")
 
-bb_dir = joinpath(V7_DIR, "block_bootstrap"); mkpath(bb_dir);
+bb_dir = joinpath(DIAG_DIR, "block_bootstrap"); mkpath(bb_dir);
 
 function stationary_block_bootstrap(R::Vector{Float64}, T_out::Int; block_size::Int=10)
     n = length(R);
@@ -736,7 +737,7 @@ function stationary_block_bootstrap(R::Vector{Float64}, T_out::Int; block_size::
     return sim;
 end
 
-Random.seed!(V7_SEED + 70);
+Random.seed!(SEED + 70);
 bb_is  = Array{Float64,2}(undef, n_is,  N_PATHS);
 bb_oos = Array{Float64,2}(undef, n_oos, N_PATHS);
 for i in 1:N_PATHS
@@ -767,7 +768,7 @@ println("  [5.2] Done.")
 # ========================================================================================= #
 println("\n[8.1] Discrete HMM with bin-conditional Student-t emissions...")
 
-bt_dir = joinpath(V7_DIR, "bin_t"); mkpath(bt_dir);
+bt_dir = joinpath(DIAG_DIR, "bin_t"); mkpath(bt_dir);
 
 # 13 quantile bins, frequency-counted transitions, within-bin Student-t fit.
 qprobs_bt = range(0.0, 1.0, length=DISCRETE_K+1) |> collect;
@@ -821,7 +822,7 @@ for k in 1:DISCRETE_K
 end
 
 # Simulate: chain in bin space via T_disc, then draw from bin_tdists[k].
-Random.seed!(V7_SEED + 80);
+Random.seed!(SEED + 80);
 bt_is  = Array{Float64,2}(undef, n_is,  N_PATHS);
 bt_oos = Array{Float64,2}(undef, n_oos, N_PATHS);
 for i in 1:N_PATHS
@@ -865,6 +866,6 @@ println("  [8.1] Done.")
 # Final summary printout
 # ========================================================================================= #
 println("\n" * "="^70);
-println("  v7 revisions finished.");
-println("  Results written to: $V7_DIR");
+println("  Diagnostics pipeline finished.");
+println("  Results written to: $DIAG_DIR");
 println("="^70);
