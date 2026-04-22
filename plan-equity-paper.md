@@ -57,14 +57,16 @@
 | B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | OPEN |
 | B4 | MS-GARCH (Haas-Mittnik-Paolella 2004): variance regime comparison | OPEN (optional) |
 
-### Track C: model upgrades that rename the paper (OPEN, priority order)
+### Track C: model upgrades that rename the paper (C1 DONE 2026-04-22)
 
 | Item | Description | Status |
 |---|---|---|
-| C1 | **Semi-Markov continuous HMM**: port Yu 2010 FB + `_pick_sojourn_family` from vol repo; retrain SM-CHMM-N / -t / -L on SPY; ablate vs flat CHMM | OPEN |
+| C1 | **Semi-Markov continuous HMM**: port Yu 2010 FB + `_pick_sojourn_family` from vol repo; retrain SM-CHMM-N / -t / -L on SPY; ablate vs flat CHMM | **DONE** |
 | C2 | **Vine copula cross-asset**: C-vine or D-vine (Aas 2009) scaling to 50 to 100 tickers | OPEN |
 | C3 | **Time-varying transition matrix**: $T_{ij}(t)$ via logistic regression on macro features (VIX, realized vol, term spread) | OPEN |
 | C4 | **Leverage-effect emission ablation**: $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ single row | OPEN |
+
+**C1 result summary (2026-04-22):** `src/SemiMarkov.jl` ports the vol-repo plug-in estimator. 17 of 18 states pick Pareto sojourns at K=18 on SPY, matching the vol-paper finding. SM variants deliver a clean **VaR-calibration win** (1 % Kupiec LR_uc drops from 1.58 to 0.01 for SM-CHMM-N; 5 % LR_uc drops from 3.83 to 0.82) and a mild **TSTR HAR win** (QLIKE ratios tighten toward 1.0 across all three variants). They lose ground on MMD and discriminator AUC (regime-induced clustering makes the generated series easier to distinguish from real) except SM-CHMM-L which ties for best MMD IS (4.0e-5). Christoffersen independence still fails across all models, motivating C3. Full numbers in `results/track_c1/Track-C1-summary.txt`.
 
 ### Track D: nice-to-have (OPEN)
 
@@ -248,11 +250,12 @@ Gates mean "do not start the next item until this one passes".
 4. [x] **A8** (Kupiec + Christoffersen on existing VaR). Gate passed for continuous models at 1 % and 5 % VaR; discrete NJ/WJ fail 5 % Kupiec. Note: Christoffersen independence fails across all models on the 2024-2026 OoS window; acknowledged as follow-up in the paper narrative and tied to C1 semi-Markov / C3 time-varying transitions.
 5. [x] **A4 + A5** (downstream utility beyond VaR). Gate passed: CHMM-N synth-trained HAR QLIKE 1.519 vs real-trained 1.521 (QLIKE ratio 0.999). A5 Sharpe values cluster because of the interaction between TARGET_VOL and the annualized-excess-growth convention; qualitative finding (GARCH + CHMM-N produce real turnover, i.i.d. baselines produce 0) is the publishable signal. Follow-up calibration improvement: rescale TARGET_VOL to the G-convention or convert to daily-return strategy in the paper v10 writeup.
 6. [x] **A9, A10** (simulation p-values + 1000-path standardization). Gate passed: CHMM-L OoS pv̄ 0.692, CHMM-t 0.661, CHMM-N 0.539 all above the 0.3 target on OoS; pv̄ IS is lower (0.14-0.39) because K=18 and the IS window has richer tail structure than the simulators capture perfectly.
-7. [ ] **B1** (QuantGAN). Gate: one row in Table 4. Honest reporting; even if QuantGAN wins on marginals, it should lose on long-horizon ACF, leverage, and pv̄ OoS.
-8. [ ] **Stretch: C1** (semi-Markov port). Gate: SM-CHMM-t matches CHMM-t on marginal metrics, beats on ACF tail and on stress-window VaR calibration. Also expected to close the Christoffersen independence failure via conditional VaR from the sojourn distribution.
-9. [ ] **Stretch: C2** (vine copula) OR **B3** (diffusion). Pick one based on venue target (see §14).
-10. [ ] **C4** (leverage-emission ablation). Gate: one row in Table 4; reviewer-defensible content even if marginal on metrics.
-11. [ ] **Paper writeup v10.** Main text in `CHMM-paper/paper/Paper_v10.tex` (v9 becomes a frozen reference snapshot per user memory rule on version freezes). Must include: new Extended Evaluation subsection from Track A; new Downstream Utility subsection (A4, A5, A8); discussion of the DiscreteNJ/WJ 5 % VaR failure and the Christoffersen-independence across-the-board failure.
+7. [ ] **B1** (QuantGAN) OR **B4** (MS-GARCH). Gate: one row in Table 4. Honest reporting; even if QuantGAN wins on marginals, it should lose on long-horizon ACF, leverage, and pv̄ OoS. MS-GARCH is the lower-risk starting point and gives a proper variance-regime comparison.
+8. [x] **C1** (semi-Markov port) DONE 2026-04-22. Gate result: SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc ≤ 1.74 vs 3.83 for flat), TSTR HAR QLIKE tightens toward real-trained. Trade-off: marginal metrics (MMD, disc AUC) worsen for N and t variants; SM-CHMM-L ties the best MMD IS. Christoffersen independence **not** fixed by C1 alone.
+9. [ ] **C3** (time-varying transitions). Upgraded priority after C1 landed because Christoffersen-independence is still open. Fit logistic regression on macro features to generate time-dependent transition rows; derive conditional VaR from current-regime posterior.
+10. [ ] **Stretch: C2** (vine copula) OR **B3** (diffusion). Pick one based on venue target (see §14).
+11. [ ] **C4** (leverage-emission ablation). Gate: one row in Table 4; reviewer-defensible content even if marginal on metrics.
+12. [ ] **Paper writeup v10.** Main text in `CHMM-paper/paper/Paper_v10.tex` (v9 becomes a frozen reference snapshot per user memory rule on version freezes). Must include: Extended Evaluation from Track A; Semi-Markov Ablation from C1 with the risk-vs-marginal-fidelity trade-off as explicit finding; DiscreteNJ/WJ 5 % VaR failure; Christoffersen-independence open question tied to C3 follow-up.
 
 ## 12. Reuse map from `CHMM-Vol-Model`
 
@@ -306,16 +309,18 @@ Avoid: Journal of Econometrics, Journal of Banking and Finance, Finance Research
 **Completed (2026-04-22):**
 - v9 draft, 7-metric panel, VaR utility, cross-asset copula, GRU baseline, Rydén refutation (Track 0).
 - Track A full: `src/Metrics.jl` module, `run_track_a_metrics.jl`, `run_track_a_utility.jl`, 7 result files under `results/track_a/`.
+- Track C1: `src/SemiMarkov.jl` module, `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, 9 result files under `results/track_c1/`. SM variants upgrade VaR calibration and TSTR vol forecasting at the cost of marginal fidelity.
 
-**Next concrete step:** **B1 (QuantGAN)** as the one deep-generative baseline, then decide between **C1 (semi-Markov port)** and **C2 (vine copula cross-asset)** based on target venue. See §11 work order and §14 venue strategy.
+**Next concrete step:** **C3 (time-varying transitions)** is now the highest-ROI item, because C1 surfaced a Christoffersen-independence failure that is exactly what C3 attacks. After C3, **B4 (MS-GARCH)** as the one variance-regime baseline, then **C2 (vine copula)** for the scalable-cross-asset headline. QuantGAN (B1) / diffusion (B3) stay on the list but rank below these three.
 
 Deliverables in order:
 
-1. [ ] QuantGAN implementation: TCN encoder + Wasserstein-GP discriminator, trained on standardized SPY IS log returns. Either (a) Flux.jl port, or (b) `PyCall` bridge to the original PyTorch implementation (Wiese et al. 2020 code). Cache samples to `results/track_a/sim_archive_cache.jld2` for compatibility with existing Track-A harnesses.
-2. [ ] Rerun `run_track_a_metrics.jl` and `run_track_a_utility.jl` with the QuantGAN archive appended to `MODEL_ORDER`. This is zero-refactor: the harness already loops over any key in the archive dict.
-3. [ ] Interpret: QuantGAN expected to beat on pure marginal metrics (MMD, KS) and lose on leverage + sim p-values + VaR independence. Honest reporting either way.
-4. [ ] Decision point: C1 (semi-Markov) vs C2 (vine copula). C1 adds a model-structure story and dovetails with the Christoffersen-independence open question; C2 adds a scalable-cross-asset headline and ports from existing `CrossAsset.jl` scaffold. If venue target is ICAIF methods track or TMLR, pick C1. If target is JFDS or Quantitative Finance, pick C2.
-5. [ ] Paper writeup `Paper_v10.tex`.
+1. [ ] **C3 time-varying transitions**: add `MyConditionalTransitionCHMM` or augment `MySemiMarkovContinuousHMM.transition` with covariate-dependent rows. Covariates: realized volatility (20-day rolling), VIX level (external data), term spread (external data, optional). Fit via logistic regression on Viterbi-decoded transitions. Simulate with covariates from the generated path (state-only covariates) or from observed OoS (covariate-conditioned).
+2. [ ] Rerun `run_track_c1_smchmm.jl`-style harness with conditional transition rows; gate: Christoffersen LR_ind drops below 3.84 for at least one CHMM family at 1 % VaR.
+3. [ ] **B4 MS-GARCH** (Haas-Mittnik-Paolella 2004): regime-conditional GARCH(1,1) with K=2 or K=3 regimes. Pure-Julia MLE; no external dependencies. One row in Table 4.
+4. [ ] **C2 vine copula**: replace the flat Student-t copula with a C-vine (sequential pair-copula tree) scaling to 50 to 100 assets. Use `VineCopulas.jl` or pair-copula fits one at a time in pure Julia.
+5. [ ] **B1 QuantGAN** or **B3 diffusion** (whichever the target venue values more).
+6. [ ] **Paper writeup `Paper_v10.tex`** with the three big narrative additions (Extended Evaluation, Semi-Markov Ablation, Time-Varying Transitions if C3 lands).
 
 ## 17. Out of scope for this plan
 

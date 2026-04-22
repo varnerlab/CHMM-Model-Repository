@@ -140,6 +140,50 @@ mutable struct MyLaplaceHiddenMarkovModel <: AbstractMarkovModel
 end
 
 
+"""
+    mutable struct MySemiMarkovContinuousHMM <: AbstractMarkovModel
+
+Semi-Markov continuous HMM with state-dependent AR(1) emissions (Track C1,
+ported from `CHMM-Vol-Model`). Each state k carries an AR(1) conditional
+mean plus a residual drawn from the model's chosen family, and an explicit
+sojourn-duration distribution (negative-binomial or truncated discrete
+Pareto). Between-state transitions have zero diagonal per Yu (2010): the
+diagonal is absorbed into the sojourn distribution.
+
+For equity returns the AR(1) φ_k is typically near zero (returns are white
+noise) but the per-state sojourn distribution is load-bearing: heavy-tailed
+(Pareto) sojourns on the crisis states reproduce clustered-crash
+morphology that flat CHMM undershoots.
+
+### Required fields
+- `states::Array{Int64,1}`: state labels 1..K
+- `transition::Dict{Int64, Categorical}`: zero-diagonal between-state transition
+- `emission_family::Symbol`: `:gaussian`, `:student_t`, or `:laplace`
+- `emission_mu::Dict{Int64, Float64}`: per-state AR(1) long-run mean
+- `emission_phi::Dict{Int64, Float64}`: per-state AR(1) coefficient
+- `emission_sigma::Dict{Int64, Float64}`: per-state scale (σ for N/t, b for Laplace)
+- `emission_nu::Dict{Int64, Float64}`: per-state Student-t df (Inf for N/L)
+- `sojourn::Dict{Int64, DiscreteUnivariateDistribution}`: per-state sojourn pmf
+- `sojourn_family::Dict{Int64, Symbol}`: `:nb`, `:pareto`, or `:geometric`
+- `log_likelihood_history::Array{Float64,1}`: plug-in init + refit LL
+"""
+mutable struct MySemiMarkovContinuousHMM <: AbstractMarkovModel
+
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission_family::Symbol
+    emission_mu::Dict{Int64, Float64}
+    emission_phi::Dict{Int64, Float64}
+    emission_sigma::Dict{Int64, Float64}
+    emission_nu::Dict{Int64, Float64}
+    sojourn::Dict{Int64, DiscreteUnivariateDistribution}
+    sojourn_family::Dict{Int64, Symbol}
+    log_likelihood_history::Array{Float64,1}
+
+    MySemiMarkovContinuousHMM() = new();
+end
+
+
 # --- GARCH MODEL ------------------------------------------------------------- #
 
 """

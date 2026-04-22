@@ -51,13 +51,13 @@ This memo is the equity-paper companion to `CHMM-Vol-Model/DECISION-MEMO.md`. Th
 | B3 | Score-based time-series diffusion (TimeGrad-style, depth-2 conditional UNet) | OPEN | One row; acknowledge strong marginals, weaker long-horizon ACF |
 | B4 | MS-GARCH (Haas-Mittnik-Paolella 2004) as variance-regime baseline          | OPEN   | Strengthens the discussion, not mandatory |
 
-### Track C: model upgrades that change the paper title (OPEN, priority-ordered)
+### Track C: model upgrades that change the paper title (C1 DONE 2026-04-22)
 
 | # | Work item                                                                   | Status | Notes |
 |---|-----------------------------------------------------------------------------|--------|-------|
-| C1 | Semi-Markov CHMM with heavy-tailed sojourns (port Yu 2010 FB from vol repo) | OPEN   | Biggest scientific upgrade available; see §4 below |
+| C1 | Semi-Markov CHMM with heavy-tailed sojourns (port Yu 2010 FB from vol repo) | **DONE (2026-04-22)** | `src/SemiMarkov.jl`, `run_track_c1_smchmm.jl`. 17 of 18 states pick Pareto sojourns. SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc drops from 3.83 to 0.82 for SM-N at 5 %). Trade-off: worse MMD and discriminator AUC on marginals (except SM-CHMM-L which wins MMD at 4.0e-5). |
 | C2 | Vine copula cross-asset extension (C-vine or D-vine, Aas 2009) on 50 to 100 assets | OPEN | Scales beyond the current 6 |
-| C3 | Time-varying transition matrix $T_{ij}(t)$ via logistic-regression on VIX / realized vol / term spread | OPEN | Already in v9 future-work list |
+| C3 | Time-varying transition matrix $T_{ij}(t)$ via logistic-regression on VIX / realized vol / term spread | OPEN | In v9 future-work list; attacks the Christoffersen-independence failure that C1 alone does not fix |
 | C4 | Leverage-effect emission $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ (single ablation row) | OPEN | Low-effort, captures one missing fact |
 
 ### Track D: nice-to-have (OPEN, skip if time-bound)
@@ -212,14 +212,48 @@ The stretch plan adds **C1 (semi-Markov sojourns)** and re-pitches the paper tit
 
 **Yes, within one focused track of work.** Track A alone moves the paper from mid-tier to ICAIF/JFDS quality, and is now DONE (2026-04-22). Track A + one B row + C1 or C2 makes it a genuinely strong submission to the best non-Elsevier generator venues. Nothing here requires a fundamental rewrite; the v9 scaffold already carries the load, and the missing pieces are standard additions that the vol repo has already proven feasible in Julia at the same scale.
 
-### Status snapshot (2026-04-22 end-of-session)
+### Status snapshot (2026-04-22 end-of-session, after C1)
 
 - Track 0 (v9 baseline): DONE.
-- Track A (evaluation rigor): **DONE**. Ten new metrics, four new artifact files, one new source module (`src/Metrics.jl`), two new run scripts.
-- Track B (deep-generative baseline): OPEN, target B1 QuantGAN first.
-- Track C (model upgrades): OPEN, target C1 semi-Markov port from `CHMM-Vol-Model` next.
+- Track A (evaluation rigor): **DONE**. Ten new metrics, seven new result files, one new source module (`src/Metrics.jl`), two new run scripts.
+- Track B (deep-generative baseline): OPEN. Target order: B4 (MS-GARCH, easy) then B1 (QuantGAN) or B3 (diffusion).
+- Track C (model upgrades): **C1 DONE**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, 9 new result files. C2 (vine copula), C3 (time-varying transitions), C4 (leverage emission) remain open.
 - Track D (nice-to-have): OPEN.
-- Paper update: `Paper_v9.tex` is live; Track A results should be folded into Results + a new Extended Evaluation subsection, or committed as a `Paper_v10.tex` if the narrative is re-pitched.
+- Paper update: `Paper_v9.tex` is live; Track A + C1 results fold into a new Extended Evaluation + Semi-Markov Ablation section, which also motivates re-pitching the paper as `Paper_v10.tex` with the regime-persistence-vs-marginal-fidelity trade-off as an explicit finding.
+
+### Track C1 headline findings (2026-04-22)
+
+Results in `results/track_c1/`. SM-CHMM variants fit with the plug-in estimator (Viterbi + per-state AR(1) + sojourn-family pick).
+
+**Sojourn structure:** 17 of 18 states choose Pareto sojourns for all three SM variants (one NB each). This matches the vol paper's finding: Pareto-tailed sojourns are empirically dominant even on equity returns at K=18, not just on log-VIX.
+
+**Where SM-CHMM wins cleanly (risk + vol forecasting):**
+
+| Metric | Flat CHMM | SM-CHMM | Delta |
+|---|---|---|---|
+| 1 % VaR Kupiec LR_uc (N) | 1.58 | **0.01** | -1.57 (to almost exact calibration, breach rate 1.0 %) |
+| 1 % VaR Kupiec LR_uc (t) | 0.58 | **0.10** | -0.48 |
+| 5 % VaR Kupiec LR_uc (N) | 3.83 | **0.82** | -3.01 (clean pass, breach rate 4.2 %) |
+| 5 % VaR Kupiec LR_uc (t) | 3.83 | **1.74** | -2.09 (clean pass) |
+| TSTR HAR QLIKE ratio (N) | 0.999 | **1.000** | tie at real-trained |
+| TSTR HAR QLIKE ratio (t) | 1.045 | **1.014** | -0.031 |
+| TSTR HAR QLIKE ratio (L) | 1.027 | **1.012** | -0.015 |
+| MMD IS (L) | 0.00089 | **4.0e-5** | now best in full panel |
+
+**Where SM-CHMM loses (marginal fit):**
+
+| Metric | Flat CHMM | SM-CHMM | Delta |
+|---|---|---|---|
+| MMD IS (N) | 0.00015 | 0.00384 | +0.00369 (worse) |
+| MMD IS (t) | 2.0e-5 | 0.00619 | +0.006 (worse) |
+| Disc AUC IS (N) | 0.646 | 0.699 | +0.053 (easier to tell apart) |
+| Disc AUC IS (t) | 0.607 | 0.782 | +0.175 (much easier) |
+| Disc AUC IS (L) | 0.623 | 0.823 | +0.200 (much easier) |
+| pv̄ OoS (t) | 0.661 | 0.384 | -0.277 |
+
+**What did not change:** Christoffersen independence still fails across all nine original rows and all three SM rows (LR_ind 5.9 to 20.9). Unconditional VaR alone cannot capture clustered-breach structure; this motivates C3 (time-varying transitions) or a conditional-VaR formulation off the Viterbi decode as the next step.
+
+**Publishable finding:** semi-Markov structure is a **risk-calibration upgrade, not a marginal-fidelity upgrade**. The paper narrative now has a clean split: flat CHMM-t for distributional matching (MMD, discriminator, stylized facts), SM-CHMM-N/-t for VaR backtesting and TSTR vol forecasting. This is a better story than "SM is uniformly better" because it gives reviewers a clear operational recommendation.
 
 ## 9. Related repos
 
