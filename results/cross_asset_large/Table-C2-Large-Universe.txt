@@ -1,0 +1,16 @@
+==================================================================================================================================
+Track C2 large-universe dependence scaling (exact empirical marginals, 50 assets)
+==================================================================================================================================
+Universe    : top-50 common tickers by in-sample average dollar volume.
+Marginals   : exact empirical marginals via rank reordering (dependence layer isolated).
+IS          : (2516, 50)   OoS: (572, 50)   Paths: 100
+Student-t ν*: 15.0
+Vine root   : SPY
+
+Model              | MAE IS   | MAE OoS  | Frob IS  | Frob OoS  | Port LR01 | Port LR05
+----------------------------------------------------------------------------------------------------------------------------------
+Gaussian copula    | 0.035    | 0.174    | 2.277    | 10.204    | 0.01      | 8.18     
+Student-t copula   | 0.037    | 0.181    | 2.373    | 10.603    | 0.01      | 8.18     
+Truncated C-vine   | 0.075    | 0.189    | 4.899    | 11.192    | 0.1       | 4.74     
+
+Top 10 assets: SPY, TSLA, QQQ, AAPL, AMZN, NVDA, MSFT, AMD, NFLX, GOOG

@@ -10,19 +10,20 @@
 #   2.  run_multi_emission_analysis.jl    (K x family sensitivity)
 #   3.  run_baselines_and_cross_asset.jl  (Table 2 + Table T2, Pipeline A)
 #   4.  run_cross_asset_sim_copula.jl     (Table T3, Pipeline B)
-#   5.  run_diagnostics.jl                (utility, nu diagnostics, walk-forward, ...)
-#   6.  run_gru_baseline.jl               (deep-generative baseline)
-#   7.  run_equity_price_sim.jl           (price fans + terminal distributions)
-#   8.  run_track_a_metrics.jl            (A1, A2, A3, A6, A7, A8, A9)
-#   9.  run_track_a_utility.jl            (A4, A5)
-#   10. run_track_b1_quantgan.jl          (B1 QuantGAN-style deep baseline)
-#   11. run_track_b3_diffusion.jl         (B3 diffusion baseline)
-#   12. run_track_b4_msgarch.jl           (B4 MS-GARCH baseline)
-#   13. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
-#   14. run_track_c3_conditional_var.jl   (C3a conditional VaR)
-#   15. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
-#   16. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
-#   17. run_figures.jl                    (K=18 main-body figures)
+#   5.  run_track_c2_large_universe.jl    (C2 large-universe dependence scaling)
+#   6.  run_diagnostics.jl                (utility, nu diagnostics, walk-forward, ...)
+#   7.  run_gru_baseline.jl               (deep-generative baseline)
+#   8.  run_equity_price_sim.jl           (price fans + terminal distributions)
+#   9.  run_track_a_metrics.jl            (A1, A2, A3, A6, A7, A8, A9)
+#   10. run_track_a_utility.jl            (A4, A5)
+#   11. run_track_b1_quantgan.jl          (B1 QuantGAN-style deep baseline)
+#   12. run_track_b3_diffusion.jl         (B3 diffusion baseline)
+#   13. run_track_b4_msgarch.jl           (B4 MS-GARCH baseline)
+#   14. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
+#   15. run_track_c3_conditional_var.jl   (C3a conditional VaR)
+#   16. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
+#   17. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
+#   18. run_figures.jl                    (K=18 main-body figures)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -38,6 +39,7 @@ const SCRIPTS = [
     "run_multi_emission_analysis.jl",
     "run_baselines_and_cross_asset.jl",
     "run_cross_asset_sim_copula.jl",
+    "run_track_c2_large_universe.jl",
     "run_diagnostics.jl",
     "run_gru_baseline.jl",
     "run_equity_price_sim.jl",

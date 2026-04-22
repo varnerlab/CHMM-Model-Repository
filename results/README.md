@@ -35,6 +35,7 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
 | `cross_asset/Table-T3-Cross-Asset-Dependence.txt`              | B        | 6 tickers, SIM / Gauss / t   | Table T3                  |
 | `cross_asset/Fig-Cross-Asset-Correlation.*`                    | B        | 6x6 correlation matrices     | Fig 7                     |
 | `cross_asset/Fig-Cross-Asset-KS-Dist.*`                        | B        | 6 tickers, bar chart         | Fig cross-asset KS        |
+| `cross_asset_large/...`                                        | B        | 50 assets, dependence scaling| Appendix / C2 scaling     |
 | `diagnostics/block_bootstrap/...`                                       | A        | SPY                          | Appendix                  |
 | `diagnostics/bin_t/...`                                                 | A        | SPY                          | Appendix                  |
 | `diagnostics/copula_profile/...`                                        | B        | 6 tickers, profile MLE of nu | Appendix                  |
@@ -77,6 +78,7 @@ Each script states its pipeline in its header.
 - `run_multi_emission_analysis.jl`   -- Pipeline A. Emits Table T1b and per-(K, family) SPY diagnostics (Figs 2-5).
 - `run_equity_price_sim.jl`          -- Pipeline A. Emits Fig 6 price fans and terminal distributions.
 - `run_cross_asset_sim_copula.jl`    -- Pipeline B. Emits Table T3 and Fig 7.
+- `run_track_c2_large_universe.jl`   -- Pipeline B. Large-universe dependence-layer scaling for C2.
 - `run_full_rebuild.jl`              -- Master driver, all stages.
 - `run_diagnostics.jl`               -- Pipeline A diagnostics (VaR/ES, walk-forward, copula profile, ...).
 - `run_gru_baseline.jl`              -- Deep-generative baseline.
