@@ -1,0 +1,14 @@
+Track B1 summary: QuantGAN-style convolutional WGAN baseline
+================================================================================
+
+Training setup:
+  rolling-window WGAN with critic weight clipping on standardised SPY returns, W=64, latent=8, epochs=15.
+  final generator loss 0.0005, critic loss -0.0004.
+
+  GARCH    MMD IS 0.0 sig-MMD IS 0.0348 AUC IS 0.766 pv̄ OoS 0.468
+  QuantGAN MMD IS 0.06373 sig-MMD IS 0.12877 AUC IS 0.963 pv̄ OoS 0.289
+  CHMM-t   MMD IS 0.00019 sig-MMD IS 0.00595 AUC IS 0.607 pv̄ OoS 0.661
+
+Interpretation: QuantGAN is the deep generative row to compare against CHMM-t on
+distributional fidelity. The stitched-window simulation scheme is simple and reproducible,
+but it may understate long-horizon dependence relative to an autoregressive generator.
