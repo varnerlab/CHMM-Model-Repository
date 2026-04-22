@@ -302,37 +302,6 @@ end
 # --------------------------------------------------------------------------------------------- #
 
 
-# --- PRICING MODEL BUILDERS -------------------------------------------------- #
-
-"""
-    build(::Type{MyEuropeanOptionContract}, data::NamedTuple) -> MyEuropeanOptionContract
-
-Builds a European option contract.
-
-### NamedTuple keys
-- `S0::Float64`: Spot price
-- `K::Float64`: Strike price
-- `T::Float64`: Time to expiration (years)
-- `r::Float64`: Risk-free rate
-- `is_call::Bool`: true for call, false for put (default: true)
-"""
-function build(model::Type{MyEuropeanOptionContract}, data::NamedTuple)::MyEuropeanOptionContract
-
-    m = model();
-    m.S0 = data.S0;
-    m.K = data.K;
-    m.T = data.T;
-    m.r = data.r;
-    m.is_call = haskey(data, :is_call) ? data.is_call : true;
-
-    return m;
-end
-
-
-
-
-# ----------------------------------------------------------------------------- #
-
 # --- GRU GENERATOR BUILDER --------------------------------------------------- #
 
 """

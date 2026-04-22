@@ -225,33 +225,6 @@ struct LaplaceModel <: AbstractDistributionModel end
 # ----------------------------------------------------------------------------- #
 
 
-# --- PRICING TYPES ----------------------------------------------------------- #
-
-"""
-    mutable struct MyEuropeanOptionContract
-
-Represents a European option contract (call or put).
-
-### Required fields
-- `S0::Float64`: Current spot price of the underlying
-- `K::Float64`: Strike price
-- `T::Float64`: Time to expiration in years
-- `r::Float64`: Risk-free rate (annualized, continuously compounded)
-- `is_call::Bool`: true for call, false for put
-"""
-mutable struct MyEuropeanOptionContract
-
-    S0::Float64;
-    K::Float64;
-    T::Float64;
-    r::Float64;
-    is_call::Bool;
-
-    MyEuropeanOptionContract() = new();
-end
-# ----------------------------------------------------------------------------- #
-
-
 # --- CROSS-ASSET DEPENDENCE MODELS ------------------------------------------- #
 abstract type AbstractDependenceModel end
 

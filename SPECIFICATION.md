@@ -24,7 +24,6 @@ This project extends the methodology to **continuous emissions** -- each hidden 
 | `Files.jl` | Data I/O. Maps file paths to JLD2 datasets. |
 | `Factory.jl` | Construction. Every model via `build()`. |
 | `Compute.jl` | Algorithms. Baum-Welch, GARCH MLE, simulation, growth calculations. |
-| `Pricing.jl` | Black-Scholes analytical benchmark and implied-volatility inversion. |
 | `CrossAsset.jl` | Single Index Model and Gaussian/Student-t copula generators. |
 | `Visualize.jl` | Plotting. Validation visualization. |
 
@@ -35,7 +34,6 @@ All model construction goes through `build(ModelType, data::NamedTuple)`:
 - `build(MyHiddenMarkovModelWithJumps, ...)` -- discrete + Poisson jumps
 - `build(MyContinuousHiddenMarkovModel, ...)` -- trains via Baum-Welch
 - `build(MyGARCHModel, ...)` -- fits via MLE
-- `build(MyEuropeanOptionContract, ...)` -- option contract for Black-Scholes
 
 ### Functor Interface
 

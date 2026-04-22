@@ -61,11 +61,10 @@ garch_returns = simulate_garch(garch, 252)
 |-- Include.jl              # Entry point
 |-- run_all_analysis.jl     # Full analysis pipeline
 |-- src/
-|   |-- Types.jl            # All type definitions (HMM, GARCH, pricing)
+|   |-- Types.jl            # All type definitions (HMM, GARCH)
 |   |-- Files.jl            # Data loading (JLD2)
 |   |-- Factory.jl          # Model constructors (build methods)
 |   |-- Compute.jl          # Baum-Welch, GARCH MLE, simulation, growth calc
-|   |-- Pricing.jl          # Black-Scholes benchmark and implied-vol inversion
 |   |-- CrossAsset.jl       # SIM and Gaussian/Student-t copula generators
 |   |-- Visualize.jl        # Plotting utilities
 |-- Notebooks/              # Interactive analysis notebooks

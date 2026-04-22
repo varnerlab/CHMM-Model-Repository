@@ -16,9 +16,8 @@ Source files must be loaded in this exact order (defined in `Include.jl`):
 2. `Files.jl` -- data loading (depends on path constants from `Include.jl`)
 3. `Factory.jl` -- model constructors (depends on Types)
 4. `Compute.jl` -- algorithms and simulation (depends on Types, uses Factory via `build`)
-5. `Pricing.jl` -- Black-Scholes benchmark and implied-vol inversion
-6. `CrossAsset.jl` -- SIM and Gaussian/Student-t copula multi-asset generators
-7. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
+5. `CrossAsset.jl` -- SIM and Gaussian/Student-t copula multi-asset generators
+6. `Visualize.jl` -- plotting utilities (depends on StatsBase for `autocor`)
 
 Rearranging this order will cause `UndefVarError` at load time.
 

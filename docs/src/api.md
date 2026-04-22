@@ -42,12 +42,6 @@ struct StudentTModel <: AbstractDistributionModel end
 struct LaplaceModel <: AbstractDistributionModel end
 ```
 
-### Pricing Types
-
-```julia
-mutable struct MyEuropeanOptionContract
-```
-
 ## Model Construction
 
 ```julia
@@ -55,7 +49,6 @@ build(::Type{MyHiddenMarkovModel}, data::NamedTuple)
 build(::Type{MyHiddenMarkovModelWithJumps}, data::NamedTuple)
 build(::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)
 build(::Type{MyGARCHModel}, data::NamedTuple)
-build(::Type{MyEuropeanOptionContract}, data::NamedTuple)
 ```
 
 ## Simulation
@@ -76,13 +69,6 @@ simulate_garch(model::MyGARCHModel, n_steps::Int64) -> Vector{Float64}
 baum_welch(observations::Vector{Float64}, n_states::Int; max_iter=30, tol=1e-4)
 viterbi(observations::Vector{Float64}, model::MyContinuousHiddenMarkovModel) -> Vector{Int64}
 walk_forward_regimes(observations, window_size, n_states; max_iter=30) -> Vector{Int64}
-```
-
-## Pricing
-
-```julia
-black_scholes(contract, sigma) -> Float64
-implied_volatility(contract, market_price) -> Float64
 ```
 
 ## Finance
