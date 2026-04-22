@@ -1,0 +1,23 @@
+===============================================================================================
+Track C4. Leverage-emission ablation (CHMM-N-Lev) vs flat CHMM-N.
+===============================================================================================
+
+Emission  : r_t = μ_k + ρ_k * min(r_{t-1}, 0) + σ_k * ε_t,  ε_t ~ N(0,1)
+Estimator : Viterbi decode on flat CHMM-N at K=18, then per-state OLS on (r_{t-1}^-, r_t).
+Seeds     : 20260422.
+
+Per-state ρ_k distribution:
+  min=-0.0538  median=0.0059  max=0.188
+  negative-ρ states: 6 / 18
+
+Observed leverage metric (IS):  avg_neg = -0.0876,  asym = 0.35763
+Observed leverage metric (OoS): avg_neg = -0.0659, asym = 0.47774
+
+Model          | avg_neg IS  | asym IS    | pv IS     | avg_neg OoS | asym OoS   | pv OoS
+-----------------------------------------------------------------------------------------------
+CHMM-N         | -0.0381    | 0.2924    | 0.0       | -0.0332     | -          | 0.205    
+CHMM-N-Lev     | -0.037     | 0.3349    | 0.004     | -0.0359     | 0.3386     | 0.308    
+===============================================================================================
+
+Interpretation: a negative avg_neg indicates the leverage effect (negative past returns
+predict larger subsequent squared returns). pv near 0.5 means the model covers observed well.
