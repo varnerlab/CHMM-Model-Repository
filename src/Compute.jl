@@ -473,6 +473,12 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
         return 0.5*(a + b);
     end
 
+    # Last-known-good snapshot. Restored if a subsequent iteration produces a
+    # non-finite LL (Student-t EM at large K can drive a state's σ_k to the
+    # 1e-6 floor, yielding NaN log-densities in the next E-step).
+    last_good_μ = copy(curr_μ); last_good_σ = copy(curr_σ); last_good_ν = copy(curr_ν);
+    last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+
     for iter in 1:max_iter
 
         # E-STEP: emission log-likelihoods + forward-backward.
@@ -486,6 +492,18 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
         for t in 2:N, j in 1:K
             log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
         end
+
+        # Early LL check: if the forward pass already went non-finite, the
+        # incoming params are degenerate. Restore last-good and stop.
+        current_ll_early = _logsumexp_vec(log_alpha[N, :]);
+        if !isfinite(current_ll_early)
+            curr_μ = last_good_μ; curr_σ = last_good_σ; curr_ν = last_good_ν;
+            curr_T = last_good_T; curr_π = last_good_π;
+            break;
+        end
+        # Incoming params validated. Snapshot them now, before the M-step mutates.
+        last_good_μ = copy(curr_μ); last_good_σ = copy(curr_σ); last_good_ν = copy(curr_ν);
+        last_good_T = copy(curr_T); last_good_π = copy(curr_π);
 
         log_beta = zeros(N, K);
         for t in N-1:-1:1, i in 1:K
@@ -543,7 +561,7 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
             end
         end
 
-        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        current_ll = current_ll_early;
         push!(ll_history, current_ll);
         final_gamma = γ;
         if abs(current_ll - prev_ll) < tol
