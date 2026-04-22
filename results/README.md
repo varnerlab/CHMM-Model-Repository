@@ -46,6 +46,7 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
 | `diagnostics/walk_forward/WalkForward.txt`                              | A        | JNJ, JPM                     | Appendix walk-forward     |
 | `track_a/...`                                                           | A        | SPY, extended evaluation     | Table 4 extension / app.  |
 | `track_b1/...`                                                          | A        | SPY, QuantGAN-style baseline | Table 4 extension / app.  |
+| `track_b3/...`                                                          | A        | SPY, diffusion baseline      | Table 4 extension / app.  |
 | `track_b4/...`                                                          | A        | SPY, MS-GARCH baseline       | Table 4 extension / app.  |
 | `track_c1/...`                                                          | A        | SPY, semi-Markov ablation    | Table 4 extension / app.  |
 | `track_c3/...`                                                          | A        | SPY, conditional VaR         | Utility / risk section    |
@@ -83,6 +84,7 @@ Each script states its pipeline in its header.
 - `run_track_a_metrics.jl`           -- Track A metrics (MMD, sig-MMD, discriminator AUC, leverage, agg kurtosis, VaR LR, sim p-values).
 - `run_track_a_utility.jl`           -- Track A downstream utility (TSTR HAR and vol-target strategy).
 - `run_track_b1_quantgan.jl`         -- Track B1 QuantGAN-style convolutional WGAN baseline.
+- `run_track_b3_diffusion.jl`        -- Track B3 window-based diffusion baseline.
 - `run_track_b4_msgarch.jl`          -- Track B4 MS-GARCH benchmark row.
 - `run_track_c1_smchmm.jl`           -- Track C1 semi-Markov ablation.
 - `run_track_c3_conditional_var.jl`  -- Track C3a regime-conditional VaR.

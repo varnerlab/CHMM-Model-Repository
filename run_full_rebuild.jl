@@ -16,12 +16,13 @@
 #   8.  run_track_a_metrics.jl            (A1, A2, A3, A6, A7, A8, A9)
 #   9.  run_track_a_utility.jl            (A4, A5)
 #   10. run_track_b1_quantgan.jl          (B1 QuantGAN-style deep baseline)
-#   11. run_track_b4_msgarch.jl           (B4 MS-GARCH baseline)
-#   12. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
-#   13. run_track_c3_conditional_var.jl   (C3a conditional VaR)
-#   14. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
-#   15. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
-#   16. run_figures.jl                    (K=18 main-body figures)
+#   11. run_track_b3_diffusion.jl         (B3 diffusion baseline)
+#   12. run_track_b4_msgarch.jl           (B4 MS-GARCH baseline)
+#   13. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
+#   14. run_track_c3_conditional_var.jl   (C3a conditional VaR)
+#   15. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
+#   16. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
+#   17. run_figures.jl                    (K=18 main-body figures)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -43,6 +44,7 @@ const SCRIPTS = [
     "run_track_a_metrics.jl",
     "run_track_a_utility.jl",
     "run_track_b1_quantgan.jl",
+    "run_track_b3_diffusion.jl",
     "run_track_b4_msgarch.jl",
     "run_track_c1_smchmm.jl",
     "run_track_c3_conditional_var.jl",

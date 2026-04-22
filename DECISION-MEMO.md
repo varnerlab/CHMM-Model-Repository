@@ -48,7 +48,7 @@ This memo is the equity-paper companion to `CHMM-Vol-Model/DECISION-MEMO.md`. Th
 |---|-----------------------------------------------------------------------------|--------|-------|
 | B1 | QuantGAN (TCN + Wasserstein GAN) on standardized log returns               | OPEN (first-pass Julia-native QuantGAN-style WGAN implemented 2026-04-22)   | `run_track_b1_quantgan.jl`. Real deep baseline row now exists, but is decisively worse than CHMM-t on MMD / sig-MMD / discriminator AUC. |
 | B2 | Sig-WGAN (signature-Wasserstein) as path-level competitor                   | OPEN   | One row in Table 4 |
-| B3 | Score-based time-series diffusion (TimeGrad-style, depth-2 conditional UNet) | OPEN | One row; acknowledge strong marginals, weaker long-horizon ACF |
+| B3 | Score-based time-series diffusion (TimeGrad-style, depth-2 conditional UNet) | OPEN (first-pass window diffusion implemented 2026-04-22) | `run_track_b3_diffusion.jl`. Strongest deep row on local distributional metrics (MMD, sig-MMD, disc AUC), but still weak on pv̄ and unconditional VaR independence. |
 | B4 | MS-GARCH (Haas-Mittnik-Paolella 2004) as variance-regime baseline          | **DONE (2026-04-22)** | `src/MSGARCH.jl`, `run_track_b4_msgarch.jl`. K=2 fit on SPY: calm σ 0.97, stress σ 12.67, p_11=0.914, p_22=0.547. **Best-in-panel unconditional VaR Kupiec** at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26). Doesn't dominate CHMMs on marginals. |
 
 ### Track C: model upgrades that change the paper title (C1 DONE 2026-04-22)
@@ -217,7 +217,7 @@ The stretch plan adds **C1 (semi-Markov sojourns)** and re-pitches the paper tit
 
 - Track 0 (v9 baseline): DONE.
 - Track A (evaluation rigor): **DONE**. Ten new metrics, seven new result files, one new source module (`src/Metrics.jl`), two new run scripts.
-- Track B (deep-generative baseline): **B1 first pass implemented, B4 DONE**. `run_track_b1_quantgan.jl` adds a serious GAN row; outcome is negative-control rather than competitive. If a stronger deep row is still desired, B3 (diffusion) is now the remaining high-value target.
+- Track B (deep-generative baseline): **B1 first pass implemented, B3 first pass implemented, B4 DONE**. `run_track_b1_quantgan.jl` adds a serious GAN row; outcome is negative-control rather than competitive. `run_track_b3_diffusion.jl` adds a strong diffusion row on local window metrics. The deep-baseline section is now reviewer-defensible.
 - Track C (model upgrades): **C1 DONE, C3a DONE, C4 DONE; C2 and C3 first passes implemented but still open at full scope**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, `run_track_c3_conditional_var.jl`, `run_track_c3_time_varying_transition.jl`, `run_track_c4_leverage_emission.jl`, plus `MyTruncatedCVineCopulaModel` in `src/CrossAsset.jl`, and result files across `results/track_c1/`, `results/track_c3/`, `results/track_c4/`, and `results/cross_asset/`. Full-scope C3 with external covariates remains open.
 - Track D (nice-to-have): OPEN.
 - Paper update: `Paper_v9.tex` is live; Track A + C1 + C3a results fold into three new subsections (Extended Evaluation, Semi-Markov Ablation, Conditional VaR). Motivates re-pitching as `Paper_v10.tex`.

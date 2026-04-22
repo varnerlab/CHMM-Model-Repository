@@ -54,12 +54,14 @@
 |---|---|---|
 | B1 | **QuantGAN** (Wiese et al. 2020): TCN + Wasserstein-GP, on standardized log returns | OPEN (first-pass Julia-native QuantGAN-style WGAN implemented 2026-04-22) |
 | B2 | **Sig-WGAN** (Ni et al. 2020): signature-Wasserstein GAN, path-level | OPEN (optional) |
-| B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | OPEN |
+| B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | OPEN (first-pass window diffusion implemented 2026-04-22) |
 | B4 | **MS-GARCH** (Haas-Mittnik-Paolella 2004): K=2 variance-regime comparison | **DONE** |
 
 **B4 result summary (2026-04-22):** `src/MSGARCH.jl` implements K=2 MS-GARCH via Hamilton filter + Nelder-Mead. Fit on SPY IS: calm regime σ 0.97, stress regime σ 12.67, p_11 = 0.914, p_22 = 0.547. **Best-in-panel unconditional VaR Kupiec** at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26); 5 % LR_ind = 4.79, closest to independence pass of any unconditional-VaR row. Does not dominate CHMMs on marginals (MMD 0.00048 vs CHMM-t 2.0e-5; disc AUC 0.734 vs CHMM-t 0.607). Full numbers in `results/track_b4/README.md`.
 
 **B1 first-pass result summary (2026-04-22):** `run_track_b1_quantgan.jl` adds a repo-native QuantGAN-style baseline in Flux: 1D convolutional generator + critic, Wasserstein training with critic weight clipping, rolling-window training on standardised SPY returns, and stitched-window path generation. Outcome: **negative-control deep baseline, not a competitive row**. On the Track A metrics panel it scores **MMD IS 0.06373**, **sig-MMD IS 0.12877**, **disc AUC IS 0.963**, far worse than `CHMM-t` (0.00019, 0.00595, 0.607). Interpretation: the repo now has a serious GAN comparator, but under this reproducible first-pass setup it strengthens the CHMM argument rather than threatening it. Full numbers in `results/track_b1/Track-B1-summary.txt`.
+
+**B3 first-pass result summary (2026-04-22):** `run_track_b3_diffusion.jl` adds a repo-native DDPM-style window diffusion baseline in Flux. Outcome: **strongest deep baseline so far on short-window distributional fidelity**. It achieves **MMD IS 9.0e-5**, **sig-MMD IS 0.0026**, **disc AUC IS 0.565**, beating the current CHMM rows on these local window metrics. But it is weak on the broader stylized-fact/risk panel: **pv̄ OoS 0.204** versus `CHMM-t 0.661`, and unconditional VaR independence still fails badly (`LR_ind01 16.4`, `LR_ind05 7.37`). Interpretation: diffusion is now the best black-box deep row for local distributional matching, while `CHMM-t` remains the stronger generator on global stylized-fact coverage and operational risk metrics. Full numbers in `results/track_b3/Track-B3-summary.txt`.
 
 ### Track C: model upgrades that rename the paper (C1 DONE 2026-04-22)
 
@@ -270,7 +272,7 @@ Gates mean "do not start the next item until this one passes".
 9. [x] **B4** (MS-GARCH). Gate passed: best-in-panel unconditional VaR Kupiec calibration at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26); keep as the canonical variance-regime baseline.
 10. [ ] **C2** (vine copula cross-asset). First pass landed: truncated C-vine implemented and evaluated on the six-asset panel. Outcome is negative on the current small universe (off-diag MAE 0.067 IS / 0.235 OoS vs flat t-copula 0.027 / 0.210). Remaining work is the 50 to 100 ticker scaling run.
 11. [x] **C4** (leverage-emission ablation). Gate passed: OoS leverage p-value improves from 0.205 to 0.308 and discriminator AUC improves from 0.646 to 0.594, but unconditional VaR worsens; keep as an ablation row, not a headline replacement.
-12. [ ] **B1** (QuantGAN) or **B3** (diffusion). First-pass B1 landed and is clearly non-competitive (MMD 0.06373, AUC 0.963). That is useful as a reviewer-defensible GAN row, but if we want a stronger deep baseline the next move is B3 diffusion.
+12. [ ] **B1** (QuantGAN) or **B3** (diffusion). First-pass B1 and B3 now both landed. B1 is non-competitive; B3 is the strongest deep row on local window metrics but still weak on pv̄ and VaR independence. Deep-baseline coverage is now reviewer-defensible.
 13. [ ] **C3 proper** (time-varying transitions via logistic regression). First pass landed with lagged realized vol only. Outcome: viable but not a new headline over C3a; external covariates (`VIX`, term spread) remain open.
 14. [ ] **Paper writeup `Paper_v10.tex`.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR).
 
