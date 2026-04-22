@@ -1,0 +1,33 @@
+Track C3a (regime-conditional VaR) summary
+================================================================================
+
+Problem (from A8, unconditional VaR):
+   LR_ind was 6-20 across every model: consecutive breaches cluster in the 2024-2026
+   OoS window because an α-quantile of the pooled archive is fixed while observed vol
+   varies by regime.
+
+Fix: at each t, Viterbi-decode the current state k_t on R_oos and set VaR_t(α) to the
+     α-quantile of state k_t's emission. For SM-CHMM, VaR_t also adds the AR(1)
+     conditional-mean term μ_k + φ_k (y_{t-1} - μ_k).
+
+Results (1 % VaR):
+  CHMM-N        br 0.7%  LR_uc 0.58 (PASS)  LR_ind 5.73 (FAIL)
+  CHMM-t        br 0.87%  LR_uc 0.1 (PASS)  LR_ind 0.09 (PASS)
+  CHMM-L        br 0.35%  LR_uc 3.26 (PASS)  LR_ind 0.01 (PASS)
+  SM-CHMM-N (AR-res)  br 31.82%  LR_uc 968.56 (FAIL)  LR_ind 29.03 (FAIL)
+  SM-CHMM-t (AR-res)  br 18.18%  LR_uc 424.87 (FAIL)  LR_ind 0.33 (PASS)
+  SM-CHMM-L (AR-res)  br 14.86%  LR_uc 311.87 (FAIL)  LR_ind 6.76 (FAIL)
+  SM-CHMM-N (stat-σ)  br 29.9%  LR_uc 885.22 (FAIL)  LR_ind 30.33 (FAIL)
+  SM-CHMM-t (stat-σ)  br 13.99%  LR_uc 283.73 (FAIL)  LR_ind 0.07 (PASS)
+  SM-CHMM-L (stat-σ)  br 8.74%  LR_uc 131.8 (FAIL)  LR_ind 1.65 (PASS)
+
+Results (5 % VaR):
+  CHMM-N        br 5.07%  LR_uc 0.01 (PASS)  LR_ind 1.39 (PASS)
+  CHMM-t        br 5.07%  LR_uc 0.01 (PASS)  LR_ind 0.19 (PASS)
+  CHMM-L        br 3.32%  LR_uc 3.83 (PASS)  LR_ind 2.25 (PASS)
+  SM-CHMM-N (AR-res)  br 32.69%  LR_uc 436.92 (FAIL)  LR_ind 24.07 (FAIL)
+  SM-CHMM-t (AR-res)  br 21.33%  LR_uc 184.21 (FAIL)  LR_ind 3.73 (PASS)
+  SM-CHMM-L (AR-res)  br 20.28%  LR_uc 164.92 (FAIL)  LR_ind 4.98 (FAIL)
+  SM-CHMM-N (stat-σ)  br 31.12%  LR_uc 397.56 (FAIL)  LR_ind 26.63 (FAIL)
+  SM-CHMM-t (stat-σ)  br 15.56%  LR_uc 88.25 (FAIL)  LR_ind 0.44 (PASS)
+  SM-CHMM-L (stat-σ)  br 13.29%  LR_uc 58.01 (FAIL)  LR_ind 0.45 (PASS)

@@ -63,10 +63,13 @@
 |---|---|---|
 | C1 | **Semi-Markov continuous HMM**: port Yu 2010 FB + `_pick_sojourn_family` from vol repo; retrain SM-CHMM-N / -t / -L on SPY; ablate vs flat CHMM | **DONE** |
 | C2 | **Vine copula cross-asset**: C-vine or D-vine (Aas 2009) scaling to 50 to 100 tickers | OPEN |
-| C3 | **Time-varying transition matrix**: $T_{ij}(t)$ via logistic regression on macro features (VIX, realized vol, term spread) | OPEN |
+| C3a | **Regime-conditional VaR via Viterbi decode** (first-pass fix for Christoffersen) | **DONE** |
+| C3 | **Time-varying transition matrix**: $T_{ij}(t)$ via logistic regression on macro features (VIX, realized vol, term spread) | OPEN (lower priority after C3a) |
 | C4 | **Leverage-effect emission ablation**: $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ single row | OPEN |
 
-**C1 result summary (2026-04-22):** `src/SemiMarkov.jl` ports the vol-repo plug-in estimator. 17 of 18 states pick Pareto sojourns at K=18 on SPY, matching the vol-paper finding. SM variants deliver a clean **VaR-calibration win** (1 % Kupiec LR_uc drops from 1.58 to 0.01 for SM-CHMM-N; 5 % LR_uc drops from 3.83 to 0.82) and a mild **TSTR HAR win** (QLIKE ratios tighten toward 1.0 across all three variants). They lose ground on MMD and discriminator AUC (regime-induced clustering makes the generated series easier to distinguish from real) except SM-CHMM-L which ties for best MMD IS (4.0e-5). Christoffersen independence still fails across all models, motivating C3. Full numbers in `results/track_c1/Track-C1-summary.txt`.
+**C1 result summary (2026-04-22):** `src/SemiMarkov.jl` ports the vol-repo plug-in estimator. 17 of 18 states pick Pareto sojourns at K=18 on SPY, matching the vol-paper finding. SM variants deliver a clean **VaR-calibration win** (1 % Kupiec LR_uc drops from 1.58 to 0.01 for SM-CHMM-N; 5 % LR_uc drops from 3.83 to 0.82) and a mild **TSTR HAR win** (QLIKE ratios tighten toward 1.0 across all three variants). They lose ground on MMD and discriminator AUC (regime-induced clustering makes the generated series easier to distinguish from real) except SM-CHMM-L which ties for best MMD IS (4.0e-5). Christoffersen independence still fails across all models. Full numbers in `results/track_c1/Track-C1-summary.txt`.
+
+**C3a result summary (2026-04-22):** `run_track_c3_conditional_var.jl` uses the existing `viterbi(R_oos, flat_model)` to decode the current regime per time step and takes the α-quantile of that state's conditional emission as VaR_t. **Flat CHMM-t passes Kupiec and Christoffersen cleanly at both 1 % and 5 % VaR** (LR_uc 0.10 / 0.01, LR_ind 0.09 / 0.19 vs A8 unconditional 15.53 / 5.26). CHMM-N and CHMM-L pass Christoffersen at 5 % VaR. This closes the A8 / C1 independence gap for the flat CHMM family. SM-CHMM conditional VaR is future work (needs SM-aware Viterbi decoder; current Viterbi uses flat-CHMM emission which mismatches SM's state partition). Full numbers in `results/track_c3/README.md`.
 
 ### Track D: nice-to-have (OPEN)
 
@@ -250,12 +253,14 @@ Gates mean "do not start the next item until this one passes".
 4. [x] **A8** (Kupiec + Christoffersen on existing VaR). Gate passed for continuous models at 1 % and 5 % VaR; discrete NJ/WJ fail 5 % Kupiec. Note: Christoffersen independence fails across all models on the 2024-2026 OoS window; acknowledged as follow-up in the paper narrative and tied to C1 semi-Markov / C3 time-varying transitions.
 5. [x] **A4 + A5** (downstream utility beyond VaR). Gate passed: CHMM-N synth-trained HAR QLIKE 1.519 vs real-trained 1.521 (QLIKE ratio 0.999). A5 Sharpe values cluster because of the interaction between TARGET_VOL and the annualized-excess-growth convention; qualitative finding (GARCH + CHMM-N produce real turnover, i.i.d. baselines produce 0) is the publishable signal. Follow-up calibration improvement: rescale TARGET_VOL to the G-convention or convert to daily-return strategy in the paper v10 writeup.
 6. [x] **A9, A10** (simulation p-values + 1000-path standardization). Gate passed: CHMM-L OoS pv̄ 0.692, CHMM-t 0.661, CHMM-N 0.539 all above the 0.3 target on OoS; pv̄ IS is lower (0.14-0.39) because K=18 and the IS window has richer tail structure than the simulators capture perfectly.
-7. [ ] **B1** (QuantGAN) OR **B4** (MS-GARCH). Gate: one row in Table 4. Honest reporting; even if QuantGAN wins on marginals, it should lose on long-horizon ACF, leverage, and pv̄ OoS. MS-GARCH is the lower-risk starting point and gives a proper variance-regime comparison.
-8. [x] **C1** (semi-Markov port) DONE 2026-04-22. Gate result: SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc ≤ 1.74 vs 3.83 for flat), TSTR HAR QLIKE tightens toward real-trained. Trade-off: marginal metrics (MMD, disc AUC) worsen for N and t variants; SM-CHMM-L ties the best MMD IS. Christoffersen independence **not** fixed by C1 alone.
-9. [ ] **C3** (time-varying transitions). Upgraded priority after C1 landed because Christoffersen-independence is still open. Fit logistic regression on macro features to generate time-dependent transition rows; derive conditional VaR from current-regime posterior.
-10. [ ] **Stretch: C2** (vine copula) OR **B3** (diffusion). Pick one based on venue target (see §14).
-11. [ ] **C4** (leverage-emission ablation). Gate: one row in Table 4; reviewer-defensible content even if marginal on metrics.
-12. [ ] **Paper writeup v10.** Main text in `CHMM-paper/paper/Paper_v10.tex` (v9 becomes a frozen reference snapshot per user memory rule on version freezes). Must include: Extended Evaluation from Track A; Semi-Markov Ablation from C1 with the risk-vs-marginal-fidelity trade-off as explicit finding; DiscreteNJ/WJ 5 % VaR failure; Christoffersen-independence open question tied to C3 follow-up.
+7. [x] **C1** (semi-Markov port) DONE 2026-04-22. Gate result: SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc ≤ 1.74 vs 3.83 for flat), TSTR HAR QLIKE tightens toward real-trained. Trade-off: marginal metrics (MMD, disc AUC) worsen for N and t variants; SM-CHMM-L ties the best MMD IS. Christoffersen independence **not** fixed by C1 alone.
+8. [x] **C3a** (Viterbi-decoded conditional VaR) DONE 2026-04-22. Gate result: flat CHMM-t passes Kupiec AND Christoffersen cleanly at 1 % and 5 % (LR_uc 0.10 / 0.01, LR_ind 0.09 / 0.19 vs A8 15.53 / 5.26). Closes the A8 / C1 independence gap for flat CHMM. SM-CHMM conditional VaR requires an SM-aware Viterbi decoder (future work).
+9. [ ] **B4** (MS-GARCH). Regime-conditional GARCH(1,1). Pure-Julia MLE; one row in Table 4.
+10. [ ] **C2** (vine copula cross-asset). C-vine or D-vine on 50 to 100 tickers.
+11. [ ] **C4** (leverage-emission ablation). One table row.
+12. [ ] **B1** (QuantGAN) or **B3** (diffusion). Whichever the target venue values more.
+13. [ ] **C3 proper** (time-varying transitions via logistic regression). Lower priority now since C3a closed the Christoffersen question.
+14. [ ] **Paper writeup `Paper_v10.tex`.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR).
 
 ## 12. Reuse map from `CHMM-Vol-Model`
 

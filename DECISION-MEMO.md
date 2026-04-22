@@ -57,7 +57,8 @@ This memo is the equity-paper companion to `CHMM-Vol-Model/DECISION-MEMO.md`. Th
 |---|-----------------------------------------------------------------------------|--------|-------|
 | C1 | Semi-Markov CHMM with heavy-tailed sojourns (port Yu 2010 FB from vol repo) | **DONE (2026-04-22)** | `src/SemiMarkov.jl`, `run_track_c1_smchmm.jl`. 17 of 18 states pick Pareto sojourns. SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc drops from 3.83 to 0.82 for SM-N at 5 %). Trade-off: worse MMD and discriminator AUC on marginals (except SM-CHMM-L which wins MMD at 4.0e-5). |
 | C2 | Vine copula cross-asset extension (C-vine or D-vine, Aas 2009) on 50 to 100 assets | OPEN | Scales beyond the current 6 |
-| C3 | Time-varying transition matrix $T_{ij}(t)$ via logistic-regression on VIX / realized vol / term spread | OPEN | In v9 future-work list; attacks the Christoffersen-independence failure that C1 alone does not fix |
+| C3a | Regime-conditional VaR via Viterbi decode (first-pass fix for Christoffersen) | **DONE (2026-04-22)** | `run_track_c3_conditional_var.jl`. Flat CHMM-t passes Kupiec AND Christoffersen cleanly at 1 % and 5 % (LR_uc 0.10, LR_ind 0.09 at 1 %). Closes the A8/C1 independence failure. SM-CHMM conditional VaR remains open; needs SM-aware decoder. |
+| C3 | Time-varying transition matrix $T_{ij}(t)$ via logistic-regression on VIX / realized vol / term spread | OPEN | In v9 future-work list; lower priority now that C3a closed Christoffersen for flat CHMM-t |
 | C4 | Leverage-effect emission $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ (single ablation row) | OPEN | Low-effort, captures one missing fact |
 
 ### Track D: nice-to-have (OPEN, skip if time-bound)
@@ -212,14 +213,41 @@ The stretch plan adds **C1 (semi-Markov sojourns)** and re-pitches the paper tit
 
 **Yes, within one focused track of work.** Track A alone moves the paper from mid-tier to ICAIF/JFDS quality, and is now DONE (2026-04-22). Track A + one B row + C1 or C2 makes it a genuinely strong submission to the best non-Elsevier generator venues. Nothing here requires a fundamental rewrite; the v9 scaffold already carries the load, and the missing pieces are standard additions that the vol repo has already proven feasible in Julia at the same scale.
 
-### Status snapshot (2026-04-22 end-of-session, after C1)
+### Status snapshot (2026-04-22 end-of-session, after C1 + C3a)
 
 - Track 0 (v9 baseline): DONE.
 - Track A (evaluation rigor): **DONE**. Ten new metrics, seven new result files, one new source module (`src/Metrics.jl`), two new run scripts.
 - Track B (deep-generative baseline): OPEN. Target order: B4 (MS-GARCH, easy) then B1 (QuantGAN) or B3 (diffusion).
-- Track C (model upgrades): **C1 DONE**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, 9 new result files. C2 (vine copula), C3 (time-varying transitions), C4 (leverage emission) remain open.
+- Track C (model upgrades): **C1 DONE, C3a DONE**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, `run_track_c3_conditional_var.jl`, 12 new result files across `results/track_c1/` and `results/track_c3/`. C2 (vine copula), C3 proper (time-varying transitions, now lower priority), C4 (leverage emission) remain open.
 - Track D (nice-to-have): OPEN.
-- Paper update: `Paper_v9.tex` is live; Track A + C1 results fold into a new Extended Evaluation + Semi-Markov Ablation section, which also motivates re-pitching the paper as `Paper_v10.tex` with the regime-persistence-vs-marginal-fidelity trade-off as an explicit finding.
+- Paper update: `Paper_v9.tex` is live; Track A + C1 + C3a results fold into three new subsections (Extended Evaluation, Semi-Markov Ablation, Conditional VaR). Motivates re-pitching as `Paper_v10.tex`.
+
+### Track C3a headline findings (2026-04-22): conditional VaR closes Christoffersen
+
+Results in `results/track_c3/`. Uses existing `viterbi(R_oos, flat_model)` to decode the current state per time step, then takes the α-quantile of that state's conditional emission.
+
+**Flat CHMM passes both tests cleanly:**
+
+| Model | α | Breach % | LR_uc (was A8) | LR_ind (was A8) |
+|---|---|---|---|---|
+| CHMM-t | 1 % | 0.87 | 0.10 (0.58 unconditional) | **0.09 (15.53 unconditional)** |
+| CHMM-t | 5 % | 5.07 | 0.01 (3.83 unconditional) | **0.19 (5.26 unconditional)** |
+| CHMM-N | 1 % | 0.70 | 0.58 | 5.73 (marginal; was 18.98) |
+| CHMM-N | 5 % | 5.07 | 0.01 | **1.39 (5.26 unconditional)** |
+| CHMM-L | 1 % | 0.35 | 3.26 | **0.01 (9.15 unconditional)** |
+| CHMM-L | 5 % | 3.32 | 3.83 (marginal) | **2.25 (4.71 unconditional)** |
+
+**CHMM-t with Viterbi-decoded conditional VaR is the headline risk-management result for the paper**: both Kupiec and Christoffersen pass cleanly at both 1 % and 5 % VaR on OoS.
+
+**SM-CHMM conditional VaR is harder.** The existing Viterbi uses the flat CHMM's emission, so the decoded state does not match SM's internal partition after plug-in refitting. Two naive fallbacks (AR-residual scale, stationary within-state σ) both over-breach (9 to 33 % breach rate). Interestingly SM-t under stat-σ achieves clean LR_ind (0.07 at 1 %) but still fails LR_uc. A proper SM-aware Viterbi decoder is future work and not required for the flat-CHMM paper narrative.
+
+### Three-way operational split for the paper v10 narrative
+
+1. **Distributional fidelity**: flat CHMM-t wins (MMD 2.0e-5, discriminator AUC 0.607).
+2. **Unconditional VaR calibration**: SM-CHMM-N / -t win (1 % Kupiec LR_uc ≤ 0.10, 5 % ≤ 1.74).
+3. **Conditional VaR with independent breaches**: flat CHMM-t with Viterbi decode wins (Kupiec 0.10 / 0.01, Christoffersen 0.09 / 0.19 at 1 % / 5 %).
+
+Each addresses a different operational question and the paper can make a concrete recommendation per use case.
 
 ### Track C1 headline findings (2026-04-22)
 
@@ -251,7 +279,7 @@ Results in `results/track_c1/`. SM-CHMM variants fit with the plug-in estimator 
 | Disc AUC IS (L) | 0.623 | 0.823 | +0.200 (much easier) |
 | pv̄ OoS (t) | 0.661 | 0.384 | -0.277 |
 
-**What did not change:** Christoffersen independence still fails across all nine original rows and all three SM rows (LR_ind 5.9 to 20.9). Unconditional VaR alone cannot capture clustered-breach structure; this motivates C3 (time-varying transitions) or a conditional-VaR formulation off the Viterbi decode as the next step.
+**What did not change in C1:** Christoffersen independence still fails across all nine original rows and all three SM rows (LR_ind 5.9 to 20.9). Unconditional VaR alone cannot capture clustered-breach structure. This gap was closed in Track C3a (see next section): Viterbi-decoded conditional VaR on flat CHMM-t passes both Kupiec and Christoffersen cleanly.
 
 **Publishable finding:** semi-Markov structure is a **risk-calibration upgrade, not a marginal-fidelity upgrade**. The paper narrative now has a clean split: flat CHMM-t for distributional matching (MMD, discriminator, stylized facts), SM-CHMM-N/-t for VaR backtesting and TSTR vol forecasting. This is a better story than "SM is uniformly better" because it gives reviewers a clear operational recommendation.
 
