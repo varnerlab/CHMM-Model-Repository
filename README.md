@@ -1,25 +1,49 @@
-# ContinuousHMM
+# CHMM-Model
 
-A Julia framework for modeling financial time series, comparing three approaches:
+A Julia framework for modeling equity return dynamics as a **Continuous Hidden Markov Model (CHMM) digital twin**, with a three-family emission ablation (Gaussian, Student-t with per-state $\nu_k$, Laplace) and cross-asset copula composition. Companion code repository to the working paper in [`../CHMM-paper`](https://github.com/altashly1/CHMM-paper).
 
-1. **Continuous Hidden Markov Model** (Baum-Welch, no jumps) — the new contribution
-2. **Discrete HMM with Poisson Jumps** — baseline from the prior paper ([JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl))
-3. **GARCH(1,1)** — classical conditional variance benchmark
+The framework compares the CHMM against a broad panel of alternatives:
 
-At small K, the continuous HMM alone reproduces all three canonical stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without requiring jump mechanisms.
+1. **Continuous Hidden Markov Model** (Baum-Welch / ECM, three emission families) — the main contribution
+2. **Discrete HMM with Poisson jumps** — baseline from [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl)
+3. **GARCH(1,1)** — classical conditional-variance benchmark
+4. **GRU + Gaussian head** — deep-generative baseline
+5. **Bootstrap, stationary-block bootstrap, Gaussian i.i.d.** — non-parametric and parametric null generators
+6. **Single Index Model, Gaussian copula, Student-t copula** — cross-asset dependence generators
+
+At moderate $K$, the CHMM reproduces the three canonical stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without requiring an explicit jump mechanism, and the Student-t copula with $\nu^\ast \approx 6$ reproduces cross-asset tail dependence missed by SIM and Gaussian copulas.
+
+## Authors
+
+- **Abdulrahman Alswaidan** — Robert Frederick Smith School of Chemical and Biomolecular Engineering, Cornell University, Ithaca, NY, USA. `aa2725@cornell.edu`
+- **Cade Jin** — Cornell University, Ithaca, NY, USA. `cj383@cornell.edu`
+- **Jeffrey D. Varner** — Robert Frederick Smith School of Chemical and Biomolecular Engineering, Cornell University, Ithaca, NY, USA. `jdv27@cornell.edu`
 
 ## Academic Citation
-Alswaidan A, Varner JD. Continuous Hidden Markov Models for Financial Time Series. *In preparation*, Cornell University, 2026.
+
+Alswaidan A, Jin C, Varner JD. *Continuous Hidden Markov Models as a Digital Twin for Equity Returns: Gaussian, Student-t, and Laplace Emissions Trained by EM, with Cross-Asset Copula Composition.* Working paper, Cornell University, 2026.
+
+```bibtex
+@article{alswaidan2026chmm,
+  title   = {Continuous Hidden Markov Models as a Digital Twin for Equity Returns:
+             {Gaussian}, {Student}-t, and {Laplace} Emissions Trained by {EM},
+             with Cross-Asset Copula Composition},
+  author  = {Alswaidan, Abdulrahman and Jin, Cade and Varner, Jeffrey D.},
+  year    = {2026},
+  institution = {Cornell University},
+  note    = {Working paper}
+}
+```
 
 ## Overview
 
 Financial markets exhibit volatility clustering, heavy-tailed returns, and regime-dependent dynamics. This framework:
 
-- Trains **continuous Gaussian HMMs** via Baum-Welch (EM) on observed returns
-- Compares against **discrete HMM + Poisson jumps** (regime teleportation baseline)
-- Benchmarks against **GARCH(1,1)** fitted via maximum likelihood
-- Provides **Bayesian parameter learning** for alternative emissions (Student's t, Laplace) via Turing.jl
-- Validates with KS tests, ACF matching, kurtosis, Wasserstein distance, and Hellinger distance
+- Trains a **continuous HMM** via Baum-Welch / ECM on observed returns with three emission families (Gaussian, Student-t with per-state $\nu_k$, Laplace)
+- Compares against **discrete HMM + Poisson jumps** (regime teleportation baseline from JumpHMM.jl)
+- Benchmarks against **GARCH(1,1)**, a **GRU + Gaussian head** deep-generative model, and parametric / non-parametric null generators (Gaussian i.i.d., bootstrap, stationary block bootstrap)
+- Composes marginals into **multi-asset samples** via Single Index Model, Gaussian copula, and Student-t copula
+- Validates with a seven-metric fidelity panel: KS, AD, kurtosis, ACF-MAE, Wasserstein-1, Hellinger, quantile-envelope coverage
 
 ## Quick Start
 
@@ -30,14 +54,14 @@ include("Include.jl")
 dataset = MyPortfolioDataSet()["dataset"]
 R = log_growth_matrix(dataset, "SPY"; Δt=1/252, risk_free_rate=0.0)
 
-# Train continuous HMM (6 states)
+# Train CHMM-N at K = 18 (Gaussian emissions)
 chmm = build(MyContinuousHiddenMarkovModel, (
-    observations = R, number_of_states = 6, max_iter = 60))
+    observations = R, number_of_states = 18, max_iter = 60))
 
 # Fit GARCH(1,1) benchmark
 garch = build(MyGARCHModel, (observations = R,))
 
-# Simulate and compare
+# Simulate from the stationary distribution
 K = length(chmm.states)
 T_mat = zeros(K,K); for i in 1:K; T_mat[i,:] = probs(chmm.transition[i]); end
 π_stat = (T_mat^1000)[1,:]; start_dist = Categorical(π_stat)
@@ -47,36 +71,56 @@ chmm_returns = [rand(chmm.emission[s]) for s in states]
 garch_returns = simulate_garch(garch, 252)
 ```
 
+To regenerate every table and figure in the companion paper in one pass:
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
+julia --project=. run_full_rebuild.jl
+```
+
 ## Data
 
 | Dataset | Period | Trading Days | Coverage |
 |---------|--------|-------------|----------|
-| Training | Jan 2014 -- Dec 2024 | 2,515 | 400+ US equities and ETFs |
-| Out-of-Sample | Jan 2025 -- Nov 2025 | ~240 | Same universe |
+| Training (IS) | 2014-01-03 -- 2024-01-03 | 2,516 | Six-ticker panel (SPY, NVDA, JNJ, JPM, AAPL, QQQ) |
+| Out-of-Sample (OoS) | 2024-01-04 -- 2026-04-20 | 573 | Same universe |
+
+Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / P_{t-1}) - r_f$ with $\Delta t = 1/252$ and $r_f = 0$.
 
 ## Project Structure
 
 ```
 .
-|-- Include.jl              # Entry point
-|-- run_all_analysis.jl     # Full analysis pipeline
+|-- Include.jl                            # Entry point (sets paths, loads src/)
+|-- run_full_rebuild.jl                   # End-to-end rebuild of every paper artefact
+|-- run_all_analysis.jl                   # SPY-only analysis pipeline
+|-- run_multi_emission_analysis.jl        # Pipeline A: three-emission CHMM + benchmarks
+|-- run_baselines_and_cross_asset.jl      # Pipeline A baselines + Pipeline B setup
+|-- run_cross_asset_sim_copula.jl         # Pipeline B: SIM, Gaussian copula, Student-t copula
+|-- run_gru_baseline.jl                   # GRU + Gaussian head baseline
+|-- run_diagnostics.jl                    # Diagnostic metrics
+|-- run_figures.jl                        # Paper figures (Fig 1, Fig 2)
+|-- run_track_*.jl                        # Additional tracks (utility, QuantGAN, diffusion, etc.)
 |-- src/
-|   |-- Types.jl            # All type definitions (HMM, GARCH)
-|   |-- Files.jl            # Data loading (JLD2)
-|   |-- Factory.jl          # Model constructors (build methods)
-|   |-- Compute.jl          # Baum-Welch, GARCH MLE, simulation, growth calc
-|   |-- CrossAsset.jl       # SIM and Gaussian/Student-t copula generators
-|   |-- Visualize.jl        # Plotting utilities
-|-- Notebooks/              # Interactive analysis notebooks
-|   |-- 01-Stylized-Facts.ipynb           # Empirical analysis
-|   |-- 02-Discrete-HMM-Jumps.ipynb      # Discrete baseline
-|   |-- 03-Continuous-HMM.ipynb           # New contribution
-|   |-- 04-GARCH-Benchmark.ipynb          # Classical benchmark
-|   |-- 05-Model-Comparison.ipynb         # Head-to-head comparison
-|-- data/                   # JLD2 datasets
-|-- test/                   # Test suite
-|-- docs/                   # Documenter.jl docs
+|   |-- Types.jl                          # HMM / GARCH / copula type definitions
+|   |-- Files.jl                          # JLD2 data loaders
+|   |-- Factory.jl                        # build() constructors
+|   |-- Compute.jl                        # Baum-Welch, ECM, GARCH MLE, simulation
+|   |-- CrossAsset.jl                     # SIM and Gaussian / Student-t copula generators
+|   |-- Visualize.jl                      # Plotting utilities
+|-- Notebooks/                            # Interactive analysis notebooks
+|-- data/                                 # JLD2 datasets
+|-- results/                              # Generated metrics tables (per-ticker, per-K)
+|-- figs/                                 # Generated SVG / PDF figures
+|-- test/                                 # Test suite
+|-- docs/                                 # Documenter.jl docs
 ```
+
+## Related Repositories
+
+- [`CHMM-paper`](https://github.com/altashly1/CHMM-paper) — LaTeX source for the working paper this code supports
+- [`SM-CHMM-AR-Model`](https://github.com/altashly1/SM-CHMM-AR-Model) / [`SM-CHMM-AR-Paper`](https://github.com/altashly1/SM-CHMM-AR-Paper) — companion VIX / semi-Markov extension
+- [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl) — discrete HMM core package from the prior paper
 
 ## Disclaimer
 
