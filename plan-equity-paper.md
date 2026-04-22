@@ -48,14 +48,16 @@
 - DiscreteNJ + DiscreteWJ (the prior-paper baseline) fail 5 % VaR Kupiec with LR_uc 16.81 (breach 1.75 % vs 5 % target, p < 0.001). This is a concrete negative finding against the discrete baseline that v9 did not surface.
 - All generators fail Christoffersen independence: unconditional VaR cannot capture clustered-breach structure in 2024-2026 OoS. Follow-up: conditional VaR using Viterbi regime decode (C1 semi-Markov port makes this natural).
 
-### Track B: one serious deep-generative baseline (OPEN)
+### Track B: deep-generative + variance-regime baselines (B4 DONE 2026-04-22)
 
 | Item | Description | Status |
 |---|---|---|
 | B1 | **QuantGAN** (Wiese et al. 2020): TCN + Wasserstein-GP, on standardized log returns | OPEN |
 | B2 | **Sig-WGAN** (Ni et al. 2020): signature-Wasserstein GAN, path-level | OPEN (optional) |
 | B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | OPEN |
-| B4 | MS-GARCH (Haas-Mittnik-Paolella 2004): variance regime comparison | OPEN (optional) |
+| B4 | **MS-GARCH** (Haas-Mittnik-Paolella 2004): K=2 variance-regime comparison | **DONE** |
+
+**B4 result summary (2026-04-22):** `src/MSGARCH.jl` implements K=2 MS-GARCH via Hamilton filter + Nelder-Mead. Fit on SPY IS: calm regime σ 0.97, stress regime σ 12.67, p_11 = 0.914, p_22 = 0.547. **Best-in-panel unconditional VaR Kupiec** at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26); 5 % LR_ind = 4.79, closest to independence pass of any unconditional-VaR row. Does not dominate CHMMs on marginals (MMD 0.00048 vs CHMM-t 2.0e-5; disc AUC 0.734 vs CHMM-t 0.607). Full numbers in `results/track_b4/README.md`.
 
 ### Track C: model upgrades that rename the paper (C1 DONE 2026-04-22)
 

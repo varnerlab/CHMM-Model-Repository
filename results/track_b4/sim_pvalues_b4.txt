@@ -1,0 +1,15 @@
+Track B4. Joint p-value coverage pv̄ with MS-GARCH row appended.
+Model         | pv̄ IS   | pv̄ OoS
+Bootstrap     | 0.228   | 0.466  
+Gaussian      | 0.0     | 0.116  
+Laplace       | 0.001   | 0.156  
+DiscreteNJ    | 0.002   | 0.163  
+DiscreteWJ    | 0.0     | 0.164  
+GARCH         | 0.54    | 0.468  
+MS-GARCH      | 0.368   | 0.487  
+CHMM-N        | 0.39    | 0.539  
+CHMM-t        | 0.324   | 0.661  
+CHMM-L        | 0.14    | 0.692  
+SM-CHMM-N     | 0.474   | 0.483  
+SM-CHMM-t     | 0.577   | 0.384  
+SM-CHMM-L     | 0.468   | 0.436  

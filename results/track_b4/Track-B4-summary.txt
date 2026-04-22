@@ -1,0 +1,14 @@
+Track B4 summary: MS-GARCH(K=2) vs single-regime GARCH vs CHMMs (SPY)
+================================================================================
+
+Fit params (HMP 2004 path-independent recursion):
+  regime 1 (calm):   ω=0.0389 α=0.109 β=0.85  uncond-σ=0.969
+  regime 2 (stress): ω=1.0982 α=0.251 β=0.742  uncond-σ=12.666
+  common μ = 0.0944
+  stickiness: p_11=0.9145 p_22=0.5474
+  log-likelihood: -4964.78
+
+Headline metrics (lower is better for MMD / sig-MMD, closer to 0.50 for AUC):
+  GARCH       MMD IS 0.0  sig-MMD IS 0.0348  disc AUC IS 0.766  pv̄ IS 0.54  pv̄ OoS 0.468
+  MS-GARCH    MMD IS 0.00048  sig-MMD IS 0.03139  disc AUC IS 0.734  pv̄ IS 0.368  pv̄ OoS 0.487
+  CHMM-t      MMD IS 0.00019  sig-MMD IS 0.00595  disc AUC IS 0.607  pv̄ IS 0.324  pv̄ OoS 0.661

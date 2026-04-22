@@ -42,14 +42,14 @@ This memo is the equity-paper companion to `CHMM-Vol-Model/DECISION-MEMO.md`. Th
 | A9 | Simulation-based p-values on stylized-fact statistics                       | **DONE (2026-04-22)** | `src/Metrics.jl::sim_pvalue`; CHMM-L OoS pv̄ 0.692, CHMM-t 0.661, CHMM-N 0.539 |
 | A10 | Unify simulation counts at N_PATHS = 1000 across all Track-A scripts       | **DONE (2026-04-22)** | `run_track_a_metrics.jl`, `run_track_a_utility.jl` |
 
-### Track B: one serious deep-generative baseline (OPEN)
+### Track B: deep-generative + variance-regime baselines (B4 DONE 2026-04-22)
 
 | # | Work item                                                                   | Status | Notes |
 |---|-----------------------------------------------------------------------------|--------|-------|
 | B1 | QuantGAN (TCN + Wasserstein GAN) on standardized log returns               | OPEN   | Python via `PyCall`, or rewrite in Flux.jl |
 | B2 | Sig-WGAN (signature-Wasserstein) as path-level competitor                   | OPEN   | One row in Table 4 |
 | B3 | Score-based time-series diffusion (TimeGrad-style, depth-2 conditional UNet) | OPEN | One row; acknowledge strong marginals, weaker long-horizon ACF |
-| B4 | MS-GARCH (Haas-Mittnik-Paolella 2004) as variance-regime baseline          | OPEN   | Strengthens the discussion, not mandatory |
+| B4 | MS-GARCH (Haas-Mittnik-Paolella 2004) as variance-regime baseline          | **DONE (2026-04-22)** | `src/MSGARCH.jl`, `run_track_b4_msgarch.jl`. K=2 fit on SPY: calm σ 0.97, stress σ 12.67, p_11=0.914, p_22=0.547. **Best-in-panel unconditional VaR Kupiec** at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26). Doesn't dominate CHMMs on marginals. |
 
 ### Track C: model upgrades that change the paper title (C1 DONE 2026-04-22)
 
@@ -244,10 +244,24 @@ Results in `results/track_c3/`. Uses existing `viterbi(R_oos, flat_model)` to de
 ### Three-way operational split for the paper v10 narrative
 
 1. **Distributional fidelity**: flat CHMM-t wins (MMD 2.0e-5, discriminator AUC 0.607).
-2. **Unconditional VaR calibration**: SM-CHMM-N / -t win (1 % Kupiec LR_uc ≤ 0.10, 5 % ≤ 1.74).
+2. **Unconditional VaR calibration**: MS-GARCH (K=2) and SM-CHMM-N / -t tie at the top (1 % Kupiec LR_uc 0.01 each; 5 % MS-GARCH 0.26 best, SM-N 0.82).
 3. **Conditional VaR with independent breaches**: flat CHMM-t with Viterbi decode wins (Kupiec 0.10 / 0.01, Christoffersen 0.09 / 0.19 at 1 % / 5 %).
 
 Each addresses a different operational question and the paper can make a concrete recommendation per use case.
+
+### Track B4 headline (MS-GARCH K=2, 2026-04-22)
+
+Fit `src/MSGARCH.jl`: HMP 2004 two-regime recursion, Hamilton filter + Nelder-Mead on 8 params. On SPY IS:
+
+- Regime 1 (calm): ω=0.039, α=0.109, β=0.85, unconditional σ ≈ 0.97.
+- Regime 2 (stress): ω=1.098, α=0.251, β=0.742, unconditional σ ≈ 12.67.
+- Transition: p_11 = 0.9145 (expected calm sojourn ~12 days), p_22 = 0.5474 (expected stress sojourn ~2 days).
+
+**Unconditional VaR calibration is best-in-panel** for MS-GARCH: 1 % LR_uc = 0.01 (breach rate 1.0 % exactly), 5 % LR_uc = 0.26 (breach rate 4.5 %), 5 % LR_ind = 4.79 (closest to the 3.84 crit value among all unconditional-VaR rows; still marginal fail but much better than 5.26-20.87 for others).
+
+Marginals: MS-GARCH MMD IS = 0.00048 (second-best non-CHMM, behind single GARCH's numerical-zero artifact), disc AUC IS = 0.734 (better than GARCH's 0.766, worse than CHMMs' 0.607-0.646). MS-GARCH gets a defensible Table-4 row but does not challenge CHMM-t for top distributional slot.
+
+**Publishable finding:** MS-GARCH is the correct variance-regime baseline for the paper, and it nearly passes Christoffersen independence at unconditional 5 % VaR (LR_ind 4.79, p 0.029). No other unconditional-VaR generator in the panel comes this close.
 
 ### Track C1 headline findings (2026-04-22)
 

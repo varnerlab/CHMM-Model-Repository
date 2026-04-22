@@ -42,3 +42,4 @@ include(joinpath(_PATH_TO_SRC, "CrossAsset.jl"));
 include(joinpath(_PATH_TO_SRC, "Visualize.jl"));
 include(joinpath(_PATH_TO_SRC, "Metrics.jl"));
 include(joinpath(_PATH_TO_SRC, "SemiMarkov.jl"));
+include(joinpath(_PATH_TO_SRC, "MSGARCH.jl"));

@@ -211,6 +211,45 @@ mutable struct MyGARCHModel
 
     MyGARCHModel() = new();
 end
+
+
+"""
+    mutable struct MyMSGARCHModel
+
+Markov-Switching GARCH(1,1) (Haas-Mittnik-Paolella 2004) with K regimes.
+Each regime k has its own GARCH(1,1) recursion
+    σ²_{k,t} = ω_k + α_k (r_{t-1} - μ)² + β_k σ²_{k,t-1}
+updated independently for every k (path-independent, per HMP). The active
+regime s_t follows a homogeneous Markov chain with transition matrix T.
+Observation: r_t = μ + sqrt(σ²_{s_t, t}) * ε_t, ε_t ~ N(0,1).
+
+Fit via Hamilton (1989) filter + Nelder-Mead on the joint parameter vector.
+
+### Fields
+- `K::Int`: regime count (commonly 2 or 3).
+- `ω::Vector{Float64}` (length K).
+- `α::Vector{Float64}` (length K).
+- `β::Vector{Float64}` (length K).
+- `μ::Float64`: common mean for r_t (HMP assume state-invariant mean).
+- `T::Matrix{Float64}`: K x K transition matrix.
+- `σ2_histories::Matrix{Float64}`: N x K filtered conditional-variance paths.
+- `gamma::Matrix{Float64}`: N x K smoothed regime posteriors.
+- `log_likelihood::Float64`.
+"""
+mutable struct MyMSGARCHModel
+
+    K::Int;
+    ω::Vector{Float64};
+    α::Vector{Float64};
+    β::Vector{Float64};
+    μ::Float64;
+    T::Matrix{Float64};
+    σ2_histories::Matrix{Float64};
+    gamma::Matrix{Float64};
+    log_likelihood::Float64;
+
+    MyMSGARCHModel() = new();
+end
 # ----------------------------------------------------------------------------- #
 
 
