@@ -40,3 +40,4 @@ include(joinpath(_PATH_TO_SRC, "Factory.jl"));
 include(joinpath(_PATH_TO_SRC, "Compute.jl"));
 include(joinpath(_PATH_TO_SRC, "CrossAsset.jl"));
 include(joinpath(_PATH_TO_SRC, "Visualize.jl"));
+include(joinpath(_PATH_TO_SRC, "Metrics.jl"));

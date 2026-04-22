@@ -1,0 +1,23 @@
+==============================================================================================================
+A6. Leverage effect: corr(r_t^2, r_{t-k}) profile for k=1..20, down/up asymmetry
+==============================================================================================================
+
+Observed IS  avg corr over k=1..20 = -0.0876   |E(|r_{t+1}| | r_t<0) - E(|r_{t+1}| | r_t>=0)| = 0.35763
+Observed OoS avg corr over k=1..20 = -0.0659   (asymmetry) = 0.47774
+
+Model        | avg_neg IS   | asym IS      | pv avg IS  | avg_neg OoS  | asym OoS     | pv avg OoS
+--------------------------------------------------------------------------------------------------------------
+Bootstrap    | 0.0001       | 0.00113      | 0.0        | 0.0006       | -0.00562     | 0.0       
+Gaussian     | -0.0001      | -0.00078     | 0.0        | -0.0001      | 0.00052      | 0.0       
+Laplace      | -0.0         | -0.00038     | 0.0        | -0.0002      | 0.0055       | 0.0       
+DiscreteNJ   | -0.0092      | 0.29644      | 0.0        | -0.009       | 0.29203      | 0.001     
+DiscreteWJ   | -0.0086      | 0.29453      | 0.0        | -0.0069      | 0.28875      | 0.0       
+GARCH        | -0.0007      | 0.0644       | 0.014      | -0.0011      | 0.06469      | 0.061     
+CHMM-N       | -0.0381      | 0.29236      | 0.0        | -0.0332      | 0.28733      | 0.205     
+CHMM-t       | -0.0253      | 0.28107      | 0.0        | -0.0291      | 0.27449      | 0.048     
+CHMM-L       | -0.0242      | 0.32233      | 0.0        | -0.0248      | 0.30968      | 0.019     
+==============================================================================================================
+
+Interpretation: a negative avg_neg is the leverage effect (past negative returns predict
+larger subsequent squared returns). The pv column is a two-sided sim-based p-value under
+the model; large pv means the model's distribution covers the observed leverage value.
