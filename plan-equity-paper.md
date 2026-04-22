@@ -272,7 +272,15 @@ Gates mean "do not start the next item until this one passes".
 11. [x] **C4** (leverage-emission ablation). Gate passed: OoS leverage p-value improves from 0.205 to 0.308 and discriminator AUC improves from 0.646 to 0.594, but unconditional VaR worsens; keep as an ablation row, not a headline replacement.
 12. [ ] **B1** (QuantGAN) or **B3** (diffusion). First-pass B1 and B3 now both landed. B1 is non-competitive; B3 is the strongest deep row on local window metrics but still weak on pv̄ and VaR independence. Deep-baseline coverage is now reviewer-defensible.
 13. [ ] **C3 proper** (time-varying transitions via logistic regression). Lagged-RV and lagged-RV + `VIX` passes both landed. Outcome: viable but not a new headline over C3a; term-spread conditioning remains open.
-14. [ ] **Paper writeup `Paper_v10.tex`.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR).
+14. [~] **Paper writeup `Paper_v10.tex`.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR).
+    - [x] **Scaffolded 2026-04-22.** `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root root retargeted to v10 includes. v9 joins the frozen reference snapshot set with v7 / v8.
+    - [ ] Retitle to generator thesis.
+    - [ ] Extended Evaluation subsection (A1 to A9).
+    - [ ] Semi-Markov Ablation subsection (C1).
+    - [ ] Conditional VaR subsection (C3a).
+    - [ ] B1 / B3 / B4 baselines paragraphs.
+    - [ ] Three-way operational split in Discussion.
+    - [ ] Discrete NJ / WJ 5 % VaR Kupiec failure callout.
 
 ## 12. Reuse map from `CHMM-Vol-Model`
 
@@ -327,17 +335,20 @@ Avoid: Journal of Econometrics, Journal of Banking and Finance, Finance Research
 - v9 draft, 7-metric panel, VaR utility, cross-asset copula, GRU baseline, Rydén refutation (Track 0).
 - Track A full: `src/Metrics.jl` module, `run_track_a_metrics.jl`, `run_track_a_utility.jl`, 7 result files under `results/track_a/`.
 - Track C1: `src/SemiMarkov.jl` module, `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, 9 result files under `results/track_c1/`. SM variants upgrade VaR calibration and TSTR vol forecasting at the cost of marginal fidelity.
+- Paper v10 scaffold: `CHMM-paper/paper/Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root retargeted to v10 includes. v9 joins the frozen reference snapshot set. CHANGELOG updated with v9 and v10 entries.
 
-**Next concrete step:** **C3 (time-varying transitions)** is now the highest-ROI item, because C1 surfaced a Christoffersen-independence failure that is exactly what C3 attacks. After C3, **B4 (MS-GARCH)** as the one variance-regime baseline, then **C2 (vine copula)** for the scalable-cross-asset headline. QuantGAN (B1) / diffusion (B3) stay on the list but rank below these three.
+**Next concrete step:** All empirical work for v10 is done; the outstanding deliverable is the v10 writeup itself. Order: retitle to the generator thesis, then land the Extended Evaluation, Semi-Markov Ablation, and Conditional VaR subsections in that order; then the B1 / B3 / B4 baselines paragraphs, the three-way operational split, and the DiscreteNJ / WJ 5 % VaR failure callout. Term-spread conditioning (C3) and Sig-WGAN (B2) stay on the nice-to-have list but are not gates for v10.
 
-Deliverables in order:
+Deliverables in order (all v10-paper-writeup subtasks; empirical work above is complete):
 
-1. [ ] **C3 time-varying transitions**: add `MyConditionalTransitionCHMM` or augment `MySemiMarkovContinuousHMM.transition` with covariate-dependent rows. Covariates: realized volatility (20-day rolling), VIX level (external data), term spread (external data, optional). Fit via logistic regression on Viterbi-decoded transitions. Simulate with covariates from the generated path (state-only covariates) or from observed OoS (covariate-conditioned).
-2. [ ] Rerun `run_track_c1_smchmm.jl`-style harness with conditional transition rows; gate: Christoffersen LR_ind drops below 3.84 for at least one CHMM family at 1 % VaR.
-3. [ ] **B4 MS-GARCH** (Haas-Mittnik-Paolella 2004): regime-conditional GARCH(1,1) with K=2 or K=3 regimes. Pure-Julia MLE; no external dependencies. One row in Table 4.
-4. [ ] **C2 vine copula**: replace the flat Student-t copula with a C-vine (sequential pair-copula tree) scaling to 50 to 100 assets. Use `VineCopulas.jl` or pair-copula fits one at a time in pure Julia.
-5. [ ] **B1 QuantGAN** or **B3 diffusion** (whichever the target venue values more).
-6. [ ] **Paper writeup `Paper_v10.tex`** with the three big narrative additions (Extended Evaluation, Semi-Markov Ablation, Time-Varying Transitions if C3 lands).
+1. [x] Scaffold `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` from v9; freeze v9 (2026-04-22).
+2. [ ] Retitle v10 to the generator thesis and update abstract to match.
+3. [ ] Extended Evaluation subsection in `results_v10.tex` (A1 to A9).
+4. [ ] Semi-Markov Ablation subsection in `results_v10.tex` (C1).
+5. [ ] Conditional VaR subsection in `results_v10.tex` (C3a, flat CHMM-t + Viterbi closes Kupiec + Christoffersen).
+6. [ ] B1 / B3 / B4 baselines paragraphs in the baselines section of v10.
+7. [ ] Three-way operational split in `discussion_v10.tex`.
+8. [ ] DiscreteNJ / WJ 5 % VaR Kupiec failure callout in `results_v10.tex`.
 
 ## 17. Out of scope for this plan
 
