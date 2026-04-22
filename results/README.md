@@ -44,6 +44,11 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
 | `diagnostics/ryden_k2/...`                                              | A        | SPY, Ryden K=2 comparison    | Appendix                  |
 | `diagnostics/utility/VaR_ES_Backtest.*`                                 | A        | SPY                          | Appendix VaR / ES         |
 | `diagnostics/walk_forward/WalkForward.txt`                              | A        | JNJ, JPM                     | Appendix walk-forward     |
+| `track_a/...`                                                           | A        | SPY, extended evaluation     | Table 4 extension / app.  |
+| `track_b4/...`                                                          | A        | SPY, MS-GARCH baseline       | Table 4 extension / app.  |
+| `track_c1/...`                                                          | A        | SPY, semi-Markov ablation    | Table 4 extension / app.  |
+| `track_c3/...`                                                          | A        | SPY, conditional VaR         | Utility / risk section    |
+| `track_c4/...`                                                          | A        | SPY, leverage-emission row   | Table 4 extension / app.  |
 
 ## Table T2 vs. Table T3: quick disambiguation
 
@@ -73,4 +78,11 @@ Each script states its pipeline in its header.
 - `run_full_rebuild.jl`              -- Master driver, all stages.
 - `run_diagnostics.jl`               -- Pipeline A diagnostics (VaR/ES, walk-forward, copula profile, ...).
 - `run_gru_baseline.jl`              -- Deep-generative baseline.
+- `run_equity_price_sim.jl`          -- Pipeline A. Emits price fans and terminal distributions.
+- `run_track_a_metrics.jl`           -- Track A metrics (MMD, sig-MMD, discriminator AUC, leverage, agg kurtosis, VaR LR, sim p-values).
+- `run_track_a_utility.jl`           -- Track A downstream utility (TSTR HAR and vol-target strategy).
+- `run_track_b4_msgarch.jl`          -- Track B4 MS-GARCH benchmark row.
+- `run_track_c1_smchmm.jl`           -- Track C1 semi-Markov ablation.
+- `run_track_c3_conditional_var.jl`  -- Track C3a regime-conditional VaR.
+- `run_track_c4_leverage_emission.jl` -- Track C4 leverage-emission ablation.
 - `run_figures.jl`                   -- Re-renders the paper's main-body figures.

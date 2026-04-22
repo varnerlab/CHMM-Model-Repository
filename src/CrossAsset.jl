@@ -261,6 +261,117 @@ function build(model::Type{MyStudentTCopulaModel}, data::NamedTuple)::MyStudentT
 end
 
 
+# --- TRUNCATED LEVEL-1 C-VINE COPULA ---------------------------------------- #
+
+"""
+    _gaussian_pair_loglik(u::AbstractVector, v::AbstractVector, ρ::Float64) -> Float64
+
+Log-likelihood of a bivariate Gaussian copula evaluated on pseudo-uniform data.
+"""
+function _gaussian_pair_loglik(u::AbstractVector, v::AbstractVector, ρ::Float64)::Float64
+    ρ = clamp(ρ, -0.995, 0.995);
+    x = quantile.(Normal(), u);
+    y = quantile.(Normal(), v);
+    denom = 1.0 - ρ^2;
+    ll = 0.0;
+    for i in eachindex(x)
+        ll += -0.5 * log(denom) - (ρ^2 * (x[i]^2 + y[i]^2) - 2.0 * ρ * x[i] * y[i]) / (2.0 * denom);
+    end
+    return ll;
+end
+
+"""
+    _t_pair_loglik(u::AbstractVector, v::AbstractVector, ρ::Float64, ν::Float64) -> Float64
+
+Log-likelihood of a bivariate Student-t copula evaluated on pseudo-uniform data.
+"""
+function _t_pair_loglik(u::AbstractVector, v::AbstractVector, ρ::Float64, ν::Float64)::Float64
+    ρ = clamp(ρ, -0.995, 0.995);
+    x = quantile.(TDist(ν), u);
+    y = quantile.(TDist(ν), v);
+    Σ = [1.0 ρ; ρ 1.0];
+    mv = MvTDist(ν, zeros(2), Σ);
+    uni = TDist(ν);
+    ll = 0.0;
+    for i in eachindex(x)
+        ll += logpdf(mv, [x[i], y[i]]) - logpdf(uni, x[i]) - logpdf(uni, y[i]);
+    end
+    return ll;
+end
+
+"""
+    _fit_pair_copula(u::AbstractVector, v::AbstractVector;
+                     nu_grid::Vector{Float64}=...) -> NamedTuple
+
+Fit one bivariate pair-copula by AIC, choosing between Gaussian and Student-t.
+The correlation parameter is estimated from Kendall's τ via the usual inversion.
+"""
+function _fit_pair_copula(u::AbstractVector, v::AbstractVector;
+                          nu_grid::Vector{Float64}=Float64[2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0])
+    τ = corkendall(u, v);
+    ρ = clamp(sin(π * τ / 2.0), -0.995, 0.995);
+
+    ll_g = _gaussian_pair_loglik(u, v, ρ);
+    best = (family=:gaussian, rho=ρ, nu=Inf, ll=ll_g, aic=2.0 - 2.0 * ll_g);
+
+    for ν in nu_grid
+        ll_t = _t_pair_loglik(u, v, ρ, ν);
+        aic_t = 4.0 - 2.0 * ll_t;
+        if aic_t < best.aic
+            best = (family=:student_t, rho=ρ, nu=ν, ll=ll_t, aic=aic_t);
+        end
+    end
+    return best;
+end
+
+"""
+    build(::Type{MyTruncatedCVineCopulaModel}, data::NamedTuple) -> MyTruncatedCVineCopulaModel
+
+Fits a truncated level-1 C-vine:
+
+1. Pick the root asset with the largest sum of absolute Kendall's τ values.
+2. Fit one bivariate pair-copula from the root to every remaining asset.
+3. Choose the pair family (`:gaussian` or `:student_t`) by AIC.
+"""
+function build(model::Type{MyTruncatedCVineCopulaModel}, data::NamedTuple)::MyTruncatedCVineCopulaModel
+    R = data.returns;
+    tickers = data.tickers;
+    marginals = data.marginals;
+    ν_grid = haskey(data, :nu_grid) ? data.nu_grid : Float64[2.0, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 15.0, 20.0, 30.0];
+
+    U = _pit_ranks(R);
+    τ = _kendall_tau_matrix(R);
+    root_scores = [sum(abs.(τ[j, setdiff(1:size(τ, 1), [j])])) for j in 1:size(τ, 1)];
+    root_index = argmax(root_scores);
+    children = [j for j in 1:size(R, 2) if j != root_index];
+
+    families = Symbol[];
+    rhos = Float64[];
+    nus = Float64[];
+    aic = Float64[];
+
+    u_root = U[:, root_index];
+    for j in children
+        fit = _fit_pair_copula(u_root, U[:, j]; nu_grid=ν_grid);
+        push!(families, fit.family);
+        push!(rhos, fit.rho);
+        push!(nus, fit.nu);
+        push!(aic, fit.aic);
+    end
+
+    m = model();
+    m.tickers = tickers;
+    m.root_index = root_index;
+    m.children = children;
+    m.families = families;
+    m.rhos = rhos;
+    m.nus = nus;
+    m.aic = aic;
+    m.marginals = marginals;
+    return m;
+end
+
+
 # --- COPULA SIMULATION VIA RANK REORDERING ----------------------------------- #
 
 """
@@ -290,6 +401,40 @@ function _sample_t_copula(Σ::Matrix{Float64}, ν::Float64, T::Int64)::Matrix{Fl
     w = rand(Chisq(ν), T) ./ ν;
     X = Z ./ sqrt.(w);
     U = cdf.(TDist(ν), X);
+    return U;
+end
+
+"""
+    _sample_truncated_cvine(model::MyTruncatedCVineCopulaModel, T::Int) -> Matrix{Float64}
+
+Sample a T × d pseudo-uniform matrix from the truncated level-1 C-vine.
+All non-root assets are conditionally sampled from the root under their fitted
+pair-copula. This is a scalable one-factor vine approximation.
+"""
+function _sample_truncated_cvine(model::MyTruncatedCVineCopulaModel, T::Int)::Matrix{Float64}
+    d = length(model.tickers);
+    U = zeros(T, d);
+    root_u = rand(T);
+    U[:, model.root_index] = root_u;
+
+    for (edge, j) in enumerate(model.children)
+        ρ = model.rhos[edge];
+        fam = model.families[edge];
+        if fam === :gaussian
+            z_root = quantile.(Normal(), root_u);
+            z_child = ρ .* z_root .+ sqrt(1.0 - ρ^2) .* randn(T);
+            U[:, j] = cdf.(Normal(), z_child);
+        else
+            ν = model.nus[edge];
+            x_root = quantile.(TDist(ν), root_u);
+            x_child = similar(x_root);
+            for t in eachindex(x_root)
+                scale = sqrt((ν + x_root[t]^2) * (1.0 - ρ^2) / (ν + 1.0));
+                x_child[t] = ρ * x_root[t] + scale * rand(TDist(ν + 1.0));
+            end
+            U[:, j] = cdf.(TDist(ν), x_child);
+        end
+    end
     return U;
 end
 
@@ -363,6 +508,24 @@ function simulate(model::MyStudentTCopulaModel, T_sim::Int, n_paths::Int)::Array
     starts = [ _stationary(model.marginals[j]) for j in 1:d ];
     for p in 1:n_paths
         U = _sample_t_copula(model.Sigma, model.nu, T_sim);
+        for j in 1:d
+            g = _simulate_chmm_marginal(model.marginals[j], starts[j], T_sim);
+            ord_g = sortperm(g);
+            ord_u = ordinalrank(U[:, j]);
+            reordered = Vector{Float64}(undef, T_sim);
+            reordered[1:T_sim] = g[ord_g];
+            out[:, j, p] = reordered[ord_u];
+        end
+    end
+    return out;
+end
+
+function simulate(model::MyTruncatedCVineCopulaModel, T_sim::Int, n_paths::Int)::Array{Float64,3}
+    d = length(model.tickers);
+    out = zeros(T_sim, d, n_paths);
+    starts = [_stationary(model.marginals[j]) for j in 1:d];
+    for p in 1:n_paths
+        U = _sample_truncated_cvine(model, T_sim);
         for j in 1:d
             g = _simulate_chmm_marginal(model.marginals[j], starts[j], T_sim);
             ord_g = sortperm(g);

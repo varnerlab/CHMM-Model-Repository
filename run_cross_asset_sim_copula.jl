@@ -7,6 +7,7 @@
 #   1. Single Index Model (SIM) with SPY as the market factor.
 #   2. Gaussian copula on CHMM marginals (rank reordering).
 #   3. Student-t copula on CHMM marginals (rank reordering), nu selected by profile MLE.
+#   4. Truncated level-1 C-vine on CHMM marginals, pair family chosen edge-wise by AIC.
 #
 # Output files (results/cross_asset/):
 #   - Table-T3-Cross-Asset-Dependence.txt           (Table T3 in the paper)
@@ -92,6 +93,12 @@ t_copula = build(MyStudentTCopulaModel, (
     returns=R_is, tickers=available, marginals=chmms));
 println("  ν* = ", t_copula.nu);
 
+println("\nFitting truncated C-vine copula...");
+vine_copula = build(MyTruncatedCVineCopulaModel, (
+    returns=R_is, tickers=available, marginals=chmms));
+println("  root asset = ", available[vine_copula.root_index]);
+println("  pair families = ", Dict(string(available[j]) => string(vine_copula.families[k]) for (k, j) in enumerate(vine_copula.children)));
+
 
 # ========================================================================================= #
 # GENERATE MARKET PATHS VIA SPY CHMM (for SIM)
@@ -131,6 +138,10 @@ println("Simulating Student-t copula paths...");
 t_paths_is = simulate(t_copula, n_is, N_PATHS);
 t_paths_oos = simulate(t_copula, n_oos, N_PATHS);
 
+println("Simulating truncated C-vine paths...");
+vine_paths_is = simulate(vine_copula, n_is, N_PATHS);
+vine_paths_oos = simulate(vine_copula, n_oos, N_PATHS);
+
 
 # ========================================================================================= #
 # EVALUATION
@@ -140,16 +151,20 @@ println("\nEvaluating cross-asset fidelity...");
 ks_sim_is = per_asset_ks_pass_rates(R_is, sim_full_is);
 ks_gauss_is = per_asset_ks_pass_rates(R_is, gauss_paths_is);
 ks_t_is = per_asset_ks_pass_rates(R_is, t_paths_is);
+ks_vine_is = per_asset_ks_pass_rates(R_is, vine_paths_is);
 ks_sim_oos = per_asset_ks_pass_rates(R_oos, sim_full_oos);
 ks_gauss_oos = per_asset_ks_pass_rates(R_oos, gauss_paths_oos);
 ks_t_oos = per_asset_ks_pass_rates(R_oos, t_paths_oos);
+ks_vine_oos = per_asset_ks_pass_rates(R_oos, vine_paths_oos);
 
 cor_sim_is = correlation_reproduction(R_is, sim_full_is);
 cor_gauss_is = correlation_reproduction(R_is, gauss_paths_is);
 cor_t_is = correlation_reproduction(R_is, t_paths_is);
+cor_vine_is = correlation_reproduction(R_is, vine_paths_is);
 cor_sim_oos = correlation_reproduction(R_oos, sim_full_oos);
 cor_gauss_oos = correlation_reproduction(R_oos, gauss_paths_oos);
 cor_t_oos = correlation_reproduction(R_oos, t_paths_oos);
+cor_vine_oos = correlation_reproduction(R_oos, vine_paths_oos);
 
 
 # ========================================================================================= #
@@ -159,7 +174,7 @@ mkpath(joinpath(RESULTS_DIR, "cross_asset"));
 outpath = joinpath(RESULTS_DIR, "cross_asset", "Table-T3-Cross-Asset-Dependence.txt");
 open(outpath, "w") do io
     println(io, "=" ^ 100);
-    println(io, "TABLE T3. Cross-asset dependence: SIM, Gaussian copula, Student-t copula on CHMM marginals.");
+    println(io, "TABLE T3. Cross-asset dependence: SIM, Gaussian copula, Student-t copula, truncated C-vine on CHMM marginals.");
     println(io, "          Pipeline B (cross-asset extension): marginals come from Pipeline A; dependence is added.");
     println(io, "=" ^ 100);
     println(io, "");
@@ -167,10 +182,11 @@ open(outpath, "w") do io
     println(io, "Tickers       : $(join(available, ", "))");
     println(io, "Marginals     : Per-asset CHMM-N (Gaussian emissions, K = $K), trained independently per ticker");
     println(io, "                (same fits as the CHMM-N rows of Table T2).");
-    println(io, "Dependence    : Three competing constructions");
+    println(io, "Dependence    : Four competing constructions");
     println(io, "                  SIM              : Single Index Model regressing each non-market ticker on $MARKET.");
     println(io, "                  Gaussian copula  : rank-reordering with Kendall-tau-based correlation matrix.");
     println(io, "                  Student-t copula : rank-reordering with profile-MLE nu* = $(t_copula.nu).");
+    println(io, "                  Truncated C-vine : root-centered pair-copula vine, edge family chosen by AIC.");
     println(io, "Market factor : $MARKET (drives the SIM factor path).");
     println(io, "Paths / alpha : $N_PATHS simulated paths per dependence model; KS thresholded at alpha = 0.05.");
     println(io, "");
@@ -188,12 +204,12 @@ open(outpath, "w") do io
     println(io, "");
     println(io, "1. Per-asset KS pass rates (%)");
     println(io, "-" ^ 110);
-    println(io, "Ticker    SIM IS   SIM OoS   Gauss IS   Gauss OoS    t IS      t OoS");
+    println(io, "Ticker    SIM IS   SIM OoS   Gauss IS   Gauss OoS    t IS      t OoS    Vine IS   Vine OoS");
     for j in 1:d
-        println(io, "  $(rpad(available[j],7))  $(lpad(round(ks_sim_is[j],digits=1),6))   $(lpad(round(ks_sim_oos[j],digits=1),7))    $(lpad(round(ks_gauss_is[j],digits=1),7))    $(lpad(round(ks_gauss_oos[j],digits=1),7))   $(lpad(round(ks_t_is[j],digits=1),7))    $(lpad(round(ks_t_oos[j],digits=1),7))");
+        println(io, "  $(rpad(available[j],7))  $(lpad(round(ks_sim_is[j],digits=1),6))   $(lpad(round(ks_sim_oos[j],digits=1),7))    $(lpad(round(ks_gauss_is[j],digits=1),7))    $(lpad(round(ks_gauss_oos[j],digits=1),7))   $(lpad(round(ks_t_is[j],digits=1),7))    $(lpad(round(ks_t_oos[j],digits=1),7))    $(lpad(round(ks_vine_is[j],digits=1),7))    $(lpad(round(ks_vine_oos[j],digits=1),8))");
     end
-    println(io, "  Mean     $(lpad(round(mean(ks_sim_is),digits=1),6))   $(lpad(round(mean(ks_sim_oos),digits=1),7))    $(lpad(round(mean(ks_gauss_is),digits=1),7))    $(lpad(round(mean(ks_gauss_oos),digits=1),7))   $(lpad(round(mean(ks_t_is),digits=1),7))    $(lpad(round(mean(ks_t_oos),digits=1),7))");
-    println(io, "  Median   $(lpad(round(median(ks_sim_is),digits=1),6))   $(lpad(round(median(ks_sim_oos),digits=1),7))    $(lpad(round(median(ks_gauss_is),digits=1),7))    $(lpad(round(median(ks_gauss_oos),digits=1),7))   $(lpad(round(median(ks_t_is),digits=1),7))    $(lpad(round(median(ks_t_oos),digits=1),7))");
+    println(io, "  Mean     $(lpad(round(mean(ks_sim_is),digits=1),6))   $(lpad(round(mean(ks_sim_oos),digits=1),7))    $(lpad(round(mean(ks_gauss_is),digits=1),7))    $(lpad(round(mean(ks_gauss_oos),digits=1),7))   $(lpad(round(mean(ks_t_is),digits=1),7))    $(lpad(round(mean(ks_t_oos),digits=1),7))    $(lpad(round(mean(ks_vine_is),digits=1),7))    $(lpad(round(mean(ks_vine_oos),digits=1),8))");
+    println(io, "  Median   $(lpad(round(median(ks_sim_is),digits=1),6))   $(lpad(round(median(ks_sim_oos),digits=1),7))    $(lpad(round(median(ks_gauss_is),digits=1),7))    $(lpad(round(median(ks_gauss_oos),digits=1),7))   $(lpad(round(median(ks_t_is),digits=1),7))    $(lpad(round(median(ks_t_oos),digits=1),7))    $(lpad(round(median(ks_vine_is),digits=1),7))    $(lpad(round(median(ks_vine_oos),digits=1),8))");
     println(io, "");
     println(io, "2. Cross-asset correlation reproduction (||Sigma_sim - Sigma_obs||_F over $N_PATHS paths)");
     println(io, "-" ^ 110);
@@ -201,8 +217,17 @@ open(outpath, "w") do io
     println(io, "SIM                $(lpad(round(cor_sim_is.frob_mean,digits=3),8))            $(lpad(round(cor_sim_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_sim_oos.frob_mean,digits=3),8))            $(lpad(round(cor_sim_oos.offdiag_mae,digits=3),8))");
     println(io, "Gaussian copula    $(lpad(round(cor_gauss_is.frob_mean,digits=3),8))            $(lpad(round(cor_gauss_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_gauss_oos.frob_mean,digits=3),8))            $(lpad(round(cor_gauss_oos.offdiag_mae,digits=3),8))");
     println(io, "Student-t copula   $(lpad(round(cor_t_is.frob_mean,digits=3),8))            $(lpad(round(cor_t_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_t_oos.frob_mean,digits=3),8))            $(lpad(round(cor_t_oos.offdiag_mae,digits=3),8))");
+    println(io, "Truncated C-vine   $(lpad(round(cor_vine_is.frob_mean,digits=3),8))            $(lpad(round(cor_vine_is.offdiag_mae,digits=3),8))          $(lpad(round(cor_vine_oos.frob_mean,digits=3),8))            $(lpad(round(cor_vine_oos.offdiag_mae,digits=3),8))");
     println(io, "");
-    println(io, "3. SIM regression summary (non-market assets, $MARKET as market factor)");
+    println(io, "3a. Truncated C-vine edge summary (root = $(available[vine_copula.root_index]))");
+    println(io, "-" ^ 110);
+    println(io, "Child      family       rho_hat    nu_hat");
+    for (k, j) in enumerate(vine_copula.children)
+        ν_str = isfinite(vine_copula.nus[k]) ? string(round(vine_copula.nus[k], digits=1)) : "Inf";
+        println(io, "  $(rpad(available[j],8))  $(rpad(String(vine_copula.families[k]),11))  $(lpad(round(vine_copula.rhos[k],digits=3),7))  $(lpad(ν_str,7))");
+    end
+    println(io, "");
+    println(io, "3b. SIM regression summary (non-market assets, $MARKET as market factor)");
     println(io, "-" ^ 110);
     println(io, "Ticker     alpha_hat   beta_hat   R2");
     for (k, j) in enumerate(non_market_idx)
@@ -225,14 +250,17 @@ try
     Σ_obs = cor(R_is);
     Σ_gauss_avg = zeros(d, d);
     Σ_t_avg = zeros(d, d);
+    Σ_vine_avg = zeros(d, d);
     Σ_sim_avg = zeros(d, d);
     for p in 1:N_PATHS
         Σ_gauss_avg .+= cor(gauss_paths_is[:, :, p]);
         Σ_t_avg .+= cor(t_paths_is[:, :, p]);
+        Σ_vine_avg .+= cor(vine_paths_is[:, :, p]);
         Σ_sim_avg .+= cor(sim_full_is[:, :, p]);
     end
     Σ_gauss_avg ./= N_PATHS;
     Σ_t_avg ./= N_PATHS;
+    Σ_vine_avg ./= N_PATHS;
     Σ_sim_avg ./= N_PATHS;
 
     plot_title_corr = "Fig 7 (Table T3, Pipeline B). Cross-asset correlation reproduction | " *
@@ -246,7 +274,10 @@ try
     p4 = heatmap(Σ_t_avg, title="(d) Student-t copula, nu*=$(Int(t_copula.nu)) (mean over $N_PATHS paths)",
         c=:RdBu, clims=(-1,1),
         aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    fig = plot(p1, p2, p3, p4, layout=(2,2), size=(950, 950),
+    p5 = heatmap(Σ_vine_avg, title="(e) Truncated C-vine, root=$(available[vine_copula.root_index])",
+        c=:RdBu, clims=(-1,1),
+        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
+    fig = plot(p1, p2, p3, p4, p5, layout=(3,2), size=(950, 1300),
         plot_title=plot_title_corr, plot_titlefontsize=10);
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.svg"));
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.pdf"));
@@ -258,6 +289,7 @@ try
     p_is = bar(gx .- w, ks_sim_is, bar_width=w, label="SIM", legend=:bottomright);
     bar!(p_is, gx, ks_gauss_is, bar_width=w, label="Gaussian copula");
     bar!(p_is, gx .+ w, ks_t_is, bar_width=w, label="Student-t copula (nu*=$(Int(t_copula.nu)))");
+    scatter!(p_is, gx, ks_vine_is, ms=5, mc=:black, label="Truncated C-vine");
     xticks!(p_is, gx, available);
     ylabel!(p_is, "In-sample KS pass rate (%), alpha=0.05");
     xlabel!(p_is, "Ticker");

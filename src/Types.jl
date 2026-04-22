@@ -378,4 +378,38 @@ mutable struct MyStudentTCopulaModel <: AbstractDependenceModel
     marginals::Vector{AbstractMarkovModel};
     MyStudentTCopulaModel() = new();
 end
+
+"""
+    mutable struct MyTruncatedCVineCopulaModel <: AbstractDependenceModel
+
+Truncated level-1 C-vine copula. One root asset is selected from the empirical
+dependence graph, then every remaining asset is coupled to that root through a
+fitted bivariate pair-copula. Each edge chooses between a Gaussian and
+Student-t pair-copula by AIC.
+
+This is a pragmatic vine extension for large universes: the number of fitted
+pair models grows linearly in the number of assets, while the CHMM marginals
+remain unchanged and are still preserved exactly by rank reordering.
+
+### Fields
+- `tickers::Vector{String}`: Asset tickers
+- `root_index::Int`: Index of the selected root asset in `tickers`
+- `children::Vector{Int}`: Non-root asset indices
+- `families::Vector{Symbol}`: Pair-copula family per child (`:gaussian` or `:student_t`)
+- `rhos::Vector{Float64}`: Pairwise dependence parameter per child
+- `nus::Vector{Float64}`: Degrees of freedom per child (`Inf` for Gaussian)
+- `aic::Vector{Float64}`: Best AIC per child edge
+- `marginals::Vector{AbstractMarkovModel}`: Per-asset CHMM marginals
+"""
+mutable struct MyTruncatedCVineCopulaModel <: AbstractDependenceModel
+    tickers::Vector{String};
+    root_index::Int;
+    children::Vector{Int};
+    families::Vector{Symbol};
+    rhos::Vector{Float64};
+    nus::Vector{Float64};
+    aic::Vector{Float64};
+    marginals::Vector{AbstractMarkovModel};
+    MyTruncatedCVineCopulaModel() = new();
+end
 # ----------------------------------------------------------------------------- #

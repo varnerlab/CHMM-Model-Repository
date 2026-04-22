@@ -56,10 +56,10 @@ This memo is the equity-paper companion to `CHMM-Vol-Model/DECISION-MEMO.md`. Th
 | # | Work item                                                                   | Status | Notes |
 |---|-----------------------------------------------------------------------------|--------|-------|
 | C1 | Semi-Markov CHMM with heavy-tailed sojourns (port Yu 2010 FB from vol repo) | **DONE (2026-04-22)** | `src/SemiMarkov.jl`, `run_track_c1_smchmm.jl`. 17 of 18 states pick Pareto sojourns. SM variants pass 1 % and 5 % VaR Kupiec cleanly (LR_uc drops from 3.83 to 0.82 for SM-N at 5 %). Trade-off: worse MMD and discriminator AUC on marginals (except SM-CHMM-L which wins MMD at 4.0e-5). |
-| C2 | Vine copula cross-asset extension (C-vine or D-vine, Aas 2009) on 50 to 100 assets | OPEN | Scales beyond the current 6 |
+| C2 | Vine copula cross-asset extension (C-vine or D-vine, Aas 2009) on 50 to 100 assets | OPEN (first-pass truncated C-vine implemented 2026-04-22) | `src/CrossAsset.jl::MyTruncatedCVineCopulaModel`. Viable and scalable, but on the current 6-asset panel it underperforms the flat Student-t copula on correlation MAE. |
 | C3a | Regime-conditional VaR via Viterbi decode (first-pass fix for Christoffersen) | **DONE (2026-04-22)** | `run_track_c3_conditional_var.jl`. Flat CHMM-t passes Kupiec AND Christoffersen cleanly at 1 % and 5 % (LR_uc 0.10, LR_ind 0.09 at 1 %). Closes the A8/C1 independence failure. SM-CHMM conditional VaR remains open; needs SM-aware decoder. |
 | C3 | Time-varying transition matrix $T_{ij}(t)$ via logistic-regression on VIX / realized vol / term spread | OPEN | In v9 future-work list; lower priority now that C3a closed Christoffersen for flat CHMM-t |
-| C4 | Leverage-effect emission $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ (single ablation row) | OPEN | Low-effort, captures one missing fact |
+| C4 | Leverage-effect emission $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ (single ablation row) | **DONE (2026-04-22)** | `run_track_c4_leverage_emission.jl`. Improves OoS leverage coverage pv from 0.205 to 0.308 and lowers IS discriminator AUC from 0.646 to 0.594 vs flat CHMM-N; unconditional VaR worsens, so keep as ablation only. |
 
 ### Track D: nice-to-have (OPEN, skip if time-bound)
 
@@ -218,7 +218,7 @@ The stretch plan adds **C1 (semi-Markov sojourns)** and re-pitches the paper tit
 - Track 0 (v9 baseline): DONE.
 - Track A (evaluation rigor): **DONE**. Ten new metrics, seven new result files, one new source module (`src/Metrics.jl`), two new run scripts.
 - Track B (deep-generative baseline): OPEN. Target order: B4 (MS-GARCH, easy) then B1 (QuantGAN) or B3 (diffusion).
-- Track C (model upgrades): **C1 DONE, C3a DONE**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, `run_track_c3_conditional_var.jl`, 12 new result files across `results/track_c1/` and `results/track_c3/`. C2 (vine copula), C3 proper (time-varying transitions, now lower priority), C4 (leverage emission) remain open.
+- Track C (model upgrades): **C1 DONE, C3a DONE, C4 DONE; C2 first pass implemented but still open at large-universe scale**. New source module (`src/SemiMarkov.jl`), `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, `run_track_c3_conditional_var.jl`, `run_track_c4_leverage_emission.jl`, plus `MyTruncatedCVineCopulaModel` in `src/CrossAsset.jl`, and result files across `results/track_c1/`, `results/track_c3/`, `results/track_c4/`, and `results/cross_asset/`. C3 proper (time-varying transitions, now lower priority) remains open.
 - Track D (nice-to-have): OPEN.
 - Paper update: `Paper_v9.tex` is live; Track A + C1 + C3a results fold into three new subsections (Extended Evaluation, Semi-Markov Ablation, Conditional VaR). Motivates re-pitching as `Paper_v10.tex`.
 
