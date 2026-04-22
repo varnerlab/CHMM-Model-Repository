@@ -276,7 +276,7 @@ Gates mean "do not start the next item until this one passes".
     - [x] **Scaffolded 2026-04-22.** `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root retargeted to v10 includes. v9 joins the frozen reference snapshot set with v7 / v8.
     - [x] **Retitled 2026-04-22** to *"A Regime-Switching Continuous Hidden Markov Model as a Reference Synthetic-Data Generator for Equity Returns: Extended Evaluation, Semi-Markov Ablation, and Regime-Conditional Value-at-Risk"*; abstract rewritten around the three-way operational split; 11 content em dashes swept out of the v9-inherited section files.
     - [x] **Extended Evaluation subsection 2026-04-22.** `sec:extended_evaluation` in `results_v10.tex` with six summary paragraphs and four numerical tables reproducing `results/track_a/{Table-4-Extended-Metrics,leverage_effect,aggregational_kurtosis,sim_pvalues}.txt`. Kupiec + Christoffersen discussion embedded here; full table-form LR listing planned for the Utility subsection.
-    - [ ] Semi-Markov Ablation subsection (C1).
+    - [x] **Semi-Markov Ablation subsection 2026-04-22.** `sec:sm_ablation` in `results_v10.tex` after Utility and before Cross-Asset, with Yu (2010) plug-in description, sojourn-family selection table (17 / 18 Pareto for all three emission families), SM-vs-flat VaR LR table at 1 % and 5 %, TSTR HAR tightening summary, marginal-fidelity trade-off discussion, Christoffersen-independence caveat that motivates C3a, and a concluding operational takeaway.
     - [ ] Conditional VaR subsection (C3a).
     - [ ] B1 / B3 / B4 baselines paragraphs.
     - [ ] Three-way operational split in Discussion.
@@ -344,7 +344,7 @@ Deliverables in order (all v10-paper-writeup subtasks; empirical work above is c
 1. [x] Scaffold `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` from v9; freeze v9 (2026-04-22).
 2. [x] Retitle v10 to the generator thesis, rewrite the abstract around the three-way operational split (distribution / unconditional VaR / conditional VaR), and sweep out the 11 content em dashes inherited from v9 per the project no-em-dash rule (2026-04-22).
 3. [x] Extended Evaluation subsection in `results_v10.tex` (A1 to A9) landed 2026-04-22: six new paragraphs (MMD, sig-MMD, discriminator AUC, leverage, aggregational Gaussianity, joint $\bar{pv}$), four new tables (`tab:extended_metrics`, `tab:leverage`, `tab:agg_kurt`, `tab:sim_pvalues`), and five new bib entries (`gretton2012kernel`, `chevyrev2016primer`, `ni2020conditional`, `kupiec1995techniques`, `christoffersen1998evaluating`).
-4. [ ] Semi-Markov Ablation subsection in `results_v10.tex` (C1).
+4. [x] Semi-Markov Ablation subsection in `results_v10.tex` (C1) landed 2026-04-22: `sec:sm_ablation` with six paragraphs (plug-in estimator and sojourn-family selection, VaR calibration win, TSTR HAR tightening, marginal-fidelity trade-off, Christoffersen still open, operational takeaway) and two supporting tables (`tab:sm_sojourn`, `tab:sm_var`). New `yu2010hidden` bib entry.
 5. [ ] Conditional VaR subsection in `results_v10.tex` (C3a, flat CHMM-t + Viterbi closes Kupiec + Christoffersen).
 6. [ ] B1 / B3 / B4 baselines paragraphs in the baselines section of v10.
 7. [ ] Three-way operational split in `discussion_v10.tex`.
