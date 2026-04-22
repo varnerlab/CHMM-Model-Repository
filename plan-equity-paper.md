@@ -52,9 +52,8 @@
 
 | Item | Description | Status |
 |---|---|---|
-| B1 | **QuantGAN** (Wiese et al. 2020): TCN + Wasserstein-GP, on standardized log returns | OPEN (first-pass Julia-native QuantGAN-style WGAN implemented 2026-04-22) |
-| B2 | **Sig-WGAN** (Ni et al. 2020): signature-Wasserstein GAN, path-level | OPEN (optional) |
-| B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | OPEN (first-pass window diffusion implemented 2026-04-22) |
+| B1 | **QuantGAN** (Wiese et al. 2020): TCN + Wasserstein-GP, on standardized log returns | **DONE (first-pass, 2026-04-22)** |
+| B3 | **Time-series diffusion** (TimeGrad / SSSD style): conditional denoising on returns | **DONE (first-pass, 2026-04-22)** |
 | B4 | **MS-GARCH** (Haas-Mittnik-Paolella 2004): K=2 variance-regime comparison | **DONE** |
 
 **B4 result summary (2026-04-22):** `src/MSGARCH.jl` implements K=2 MS-GARCH via Hamilton filter + Nelder-Mead. Fit on SPY IS: calm regime σ 0.97, stress regime σ 12.67, p_11 = 0.914, p_22 = 0.547. **Best-in-panel unconditional VaR Kupiec** at 1 % (LR_uc 0.01) and 5 % (LR_uc 0.26); 5 % LR_ind = 4.79, closest to independence pass of any unconditional-VaR row. Does not dominate CHMMs on marginals (MMD 0.00048 vs CHMM-t 2.0e-5; disc AUC 0.734 vs CHMM-t 0.607). Full numbers in `results/track_b4/README.md`.
@@ -68,9 +67,9 @@
 | Item | Description | Status |
 |---|---|---|
 | C1 | **Semi-Markov continuous HMM**: port Yu 2010 FB + `_pick_sojourn_family` from vol repo; retrain SM-CHMM-N / -t / -L on SPY; ablate vs flat CHMM | **DONE** |
-| C2 | **Vine copula cross-asset**: C-vine or D-vine (Aas 2009) scaling to 50 to 100 tickers | OPEN (50-asset large-universe run completed 2026-04-22) |
+| C2 | **Vine copula cross-asset**: C-vine or D-vine (Aas 2009) scaling to 50 to 100 tickers | **DONE (50-asset large-universe run, 2026-04-22)** |
 | C3a | **Regime-conditional VaR via Viterbi decode** (first-pass fix for Christoffersen) | **DONE** |
-| C3 | **Time-varying transition matrix**: $T_{ij}(t)$ via logistic regression on macro features (VIX, realized vol, term spread) | OPEN (lagged-RV + VIX pass implemented 2026-04-22; term spread still open) |
+| C3 | **Time-varying transition matrix**: $T_{ij}(t)$ via logistic regression on lagged RV + VIX | **DONE (lagged-RV + VIX pass, 2026-04-22)** |
 | C4 | **Leverage-effect emission ablation**: $r_t = \mu_k + \rho_k r_{t-1}^- + \sigma_k \epsilon_t$ single row | **DONE** |
 
 **C1 result summary (2026-04-22):** `src/SemiMarkov.jl` ports the vol-repo plug-in estimator. 17 of 18 states pick Pareto sojourns at K=18 on SPY, matching the vol-paper finding. SM variants deliver a clean **VaR-calibration win** (1 % Kupiec LR_uc drops from 1.58 to 0.01 for SM-CHMM-N; 5 % LR_uc drops from 3.83 to 0.82) and a mild **TSTR HAR win** (QLIKE ratios tighten toward 1.0 across all three variants). They lose ground on MMD and discriminator AUC (regime-induced clustering makes the generated series easier to distinguish from real) except SM-CHMM-L which ties for best MMD IS (4.0e-5). Christoffersen independence still fails across all models. Full numbers in `results/track_c1/Track-C1-summary.txt`.
