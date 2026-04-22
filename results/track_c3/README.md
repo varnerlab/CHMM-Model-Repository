@@ -2,7 +2,7 @@
 
 Regime-conditional VaR via Viterbi decode. Directly attacks the Christoffersen-independence failure surfaced in Track A (A8) and confirmed in Track C1.
 
-Produced by `run_track_c3_conditional_var.jl` and `run_track_c3_time_varying_transition.jl`.
+Produced by `run_track_c3_conditional_var.jl`, `run_track_c3_time_varying_transition.jl`, and `run_track_c3_external_covariates.jl`.
 
 ## Files
 
@@ -12,6 +12,8 @@ Produced by `run_track_c3_conditional_var.jl` and `run_track_c3_time_varying_tra
 | `Track-C3a-summary.txt` | Auto-generated PASS/FAIL digest |
 | `VaR_time_varying_transition_LR_tests.txt` | Flat-vs-time-varying transition VaR LR tests for CHMM-N / -t / -L |
 | `Track-C3-summary.txt` | Short summary of the time-varying transition run |
+| `VaR_external_covariate_transition_LR_tests.txt` | Flat-vs-external-covariate transition VaR LR tests for CHMM-N / -t / -L |
+| `Track-C3-external-summary.txt` | Short summary of the lagged-RV + VIX run |
 
 ## Method
 
@@ -59,6 +61,35 @@ Headline outcome:
 Interpretation: transition dynamics help some families, but the main paper
 headline remains `C3a`: flat `CHMM-t` with Viterbi-decoded conditional VaR is
 already the strongest risk-management row.
+
+## C3 external-covariate pass: lagged RV + VIX
+
+The repo now also includes an external-covariate variant that augments the
+transition logits with lagged log-VIX from the sibling `CHMM-Vol-Model` repo:
+
+`P(s_t = j | s_{t-1} = i, x_t) = softmax(a_ij + b_ij' x_t)`,
+
+with `x_t = [ standardized lagged RV(20), standardized lagged log(VIX) ]`.
+
+This closes the main implementation gap left by the first-pass C3 script:
+
+- External covariate now exists (`VIX`)
+- Still no term-spread covariate
+- Emissions remain fixed; only the transition row changes
+
+Headline outcome:
+
+- `CHMM-t XTV` stays clean at both 1 % and 5 % VaR
+  (`LR_uc 0.82 / 0.26`, `LR_ind 0.23 / 2.23`), but still does **not** beat the
+  flat `C3a` row.
+- `CHMM-L XTV` is the strongest mover: it improves 1 % and 5 % unconditional
+  coverage materially relative to flat `CHMM-L` while keeping independence
+  clean (`LR_ind 0.29 / 1.64`).
+- `CHMM-N XTV` gets worse on both 1 % and 5 % independence.
+
+Interpretation: adding an external volatility covariate is viable and useful as
+an ablation, but the main paper claim should still center `C3a` flat
+`CHMM-t` conditional VaR rather than the time-varying transition extensions.
 
 ## SM-CHMM is harder
 

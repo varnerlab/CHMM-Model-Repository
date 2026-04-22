@@ -90,5 +90,7 @@ Each script states its pipeline in its header.
 - `run_track_b4_msgarch.jl`          -- Track B4 MS-GARCH benchmark row.
 - `run_track_c1_smchmm.jl`           -- Track C1 semi-Markov ablation.
 - `run_track_c3_conditional_var.jl`  -- Track C3a regime-conditional VaR.
+- `run_track_c3_time_varying_transition.jl` -- Track C3 first-pass lagged-RV time-varying transitions.
+- `run_track_c3_external_covariates.jl` -- Track C3 external-covariate transitions with lagged RV + VIX.
 - `run_track_c4_leverage_emission.jl` -- Track C4 leverage-emission ablation.
 - `run_figures.jl`                   -- Re-renders the paper's main-body figures.

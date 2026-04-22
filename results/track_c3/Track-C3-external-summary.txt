@@ -1,0 +1,17 @@
+Track C3 external-covariate summary: time-varying transitions via lagged RV + VIX
+===========================================================================
+Covariates: standardized lagged RV(20) and lagged log(VIX).
+VIX input : sibling CHMM-Vol-Model/data/VIX_History.csv.
+
+CHMM-N:
+  flat  : LR_uc01=0.58 LR_ind01=5.73 | LR_uc05=0.01 LR_ind05=1.39
+  XTV   : LR_uc01=1.62 LR_ind01=7.71 | LR_uc05=0.26 LR_ind05=8.04
+CHMM-t:
+  flat  : LR_uc01=0.1 LR_ind01=0.09 | LR_uc05=0.01 LR_ind05=0.19
+  XTV   : LR_uc01=0.82 LR_ind01=0.23 | LR_uc05=0.26 LR_ind05=2.23
+CHMM-L:
+  flat  : LR_uc01=3.26 LR_ind01=0.01 | LR_uc05=3.83 LR_ind05=2.25
+  XTV   : LR_uc01=1.62 LR_ind01=0.29 | LR_uc05=0.01 LR_ind05=1.64
+
+Interpretation: use this file to compare whether external VIX conditioning
+improves on the flat C3a row or the lagged-RV-only TVT first pass.

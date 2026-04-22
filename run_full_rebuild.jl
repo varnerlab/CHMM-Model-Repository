@@ -22,8 +22,9 @@
 #   14. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
 #   15. run_track_c3_conditional_var.jl   (C3a conditional VaR)
 #   16. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
-#   17. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
-#   18. run_figures.jl                    (K=18 main-body figures)
+#   17. run_track_c3_external_covariates.jl (C3 external-covariate transitions)
+#   18. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
+#   19. run_figures.jl                    (K=18 main-body figures)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -51,6 +52,7 @@ const SCRIPTS = [
     "run_track_c1_smchmm.jl",
     "run_track_c3_conditional_var.jl",
     "run_track_c3_time_varying_transition.jl",
+    "run_track_c3_external_covariates.jl",
     "run_track_c4_leverage_emission.jl",
     "run_figures.jl",
 ];
