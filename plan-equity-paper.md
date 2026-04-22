@@ -279,7 +279,7 @@ Gates mean "do not start the next item until this one passes".
     - [x] **Semi-Markov Ablation subsection 2026-04-22.** `sec:sm_ablation` in `results_v10.tex` after Utility and before Cross-Asset, with Yu (2010) plug-in description, sojourn-family selection table (17 / 18 Pareto for all three emission families), SM-vs-flat VaR LR table at 1 % and 5 %, TSTR HAR tightening summary, marginal-fidelity trade-off discussion, Christoffersen-independence caveat that motivates C3a, and a concluding operational takeaway.
     - [x] **Conditional VaR subsection 2026-04-22.** `sec:conditional_var` in `results_v10.tex` after the SM ablation. Defines the Viterbi-decoded estimator, presents the flat-vs-conditional LR table, flags the SM-aware-decoder deferral, and slots into the three-way operational split.
     - [x] **B1 / B3 / B4 baselines paragraphs 2026-04-22.** QuantGAN, window-diffusion, and MS-GARCH paragraphs in `methods_v10.tex` `sec:benchmarks`; a matching Extended-Evaluation paragraph in `results_v10.tex` lands their numbers on the MMD / sig-MMD / AUC / $\bar{pv}$ panel.
-    - [ ] Three-way operational split in Discussion.
+    - [x] **Three-way operational split in Discussion 2026-04-22.** New paragraph in `discussion_v10.tex` between the copula discussion and the limitations list; plus a companion paragraph on the Discrete NJ / WJ 5 % VaR Kupiec failure (`LR_uc 16.81`).
     - [ ] Discrete NJ / WJ 5 % VaR Kupiec failure callout.
 
 ## 12. Reuse map from `CHMM-Vol-Model`
@@ -347,7 +347,7 @@ Deliverables in order (all v10-paper-writeup subtasks; empirical work above is c
 4. [x] Semi-Markov Ablation subsection in `results_v10.tex` (C1) landed 2026-04-22: `sec:sm_ablation` with six paragraphs (plug-in estimator and sojourn-family selection, VaR calibration win, TSTR HAR tightening, marginal-fidelity trade-off, Christoffersen still open, operational takeaway) and two supporting tables (`tab:sm_sojourn`, `tab:sm_var`). New `yu2010hidden` bib entry.
 5. [x] Conditional VaR subsection in `results_v10.tex` (C3a, flat CHMM-t + Viterbi closes Kupiec + Christoffersen) landed 2026-04-22: `sec:conditional_var` with estimator definition, flat vs conditional LR comparison table (`tab:conditional_var`), SM-CHMM deferral note, and placement in the three-way operational split.
 6. [x] B1 / B3 / B4 baselines paragraphs in the baselines section of v10 landed 2026-04-22: three new `\paragraph` blocks in `sec:benchmarks` (`sec:quantgan_methods`, `sec:diffusion_methods`, `sec:msgarch_methods`) plus a new Extended-Evaluation paragraph that lands the three baselines on the MMD / sig-MMD / AUC / $\bar{pv}$ panel. Five new bib entries: `wiese2020quantgan`, `arjovsky2017wasserstein`, `ho2020denoising`, `rasul2021autoregressive`, `haas2004new`.
-7. [ ] Three-way operational split in `discussion_v10.tex`.
+7. [x] Three-way operational split in `discussion_v10.tex` landed 2026-04-22: a new "Three-Way Operational Split" paragraph that gives one concrete recommendation per use case (distribution, unconditional VaR, conditional VaR), plus a companion "Discrete HMM + Poisson-Jump Baseline is Overly Conservative on 5 % VaR" paragraph that calls out the `alswaidan2026hybrid` Kupiec failure.
 8. [ ] DiscreteNJ / WJ 5 % VaR Kupiec failure callout in `results_v10.tex`.
 
 ## 17. Out of scope for this plan
