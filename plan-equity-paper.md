@@ -273,8 +273,8 @@ Gates mean "do not start the next item until this one passes".
 12. [ ] **B1** (QuantGAN) or **B3** (diffusion). First-pass B1 and B3 now both landed. B1 is non-competitive; B3 is the strongest deep row on local window metrics but still weak on pv̄ and VaR independence. Deep-baseline coverage is now reviewer-defensible.
 13. [ ] **C3 proper** (time-varying transitions via logistic regression). Lagged-RV and lagged-RV + `VIX` passes both landed. Outcome: viable but not a new headline over C3a; term-spread conditioning remains open.
 14. [~] **Paper writeup `Paper_v10.tex`.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR).
-    - [x] **Scaffolded 2026-04-22.** `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root root retargeted to v10 includes. v9 joins the frozen reference snapshot set with v7 / v8.
-    - [ ] Retitle to generator thesis.
+    - [x] **Scaffolded 2026-04-22.** `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root retargeted to v10 includes. v9 joins the frozen reference snapshot set with v7 / v8.
+    - [x] **Retitled 2026-04-22** to *"A Regime-Switching Continuous Hidden Markov Model as a Reference Synthetic-Data Generator for Equity Returns: Extended Evaluation, Semi-Markov Ablation, and Regime-Conditional Value-at-Risk"*; abstract rewritten around the three-way operational split; 11 content em dashes swept out of the v9-inherited section files.
     - [ ] Extended Evaluation subsection (A1 to A9).
     - [ ] Semi-Markov Ablation subsection (C1).
     - [ ] Conditional VaR subsection (C3a).
@@ -342,7 +342,7 @@ Avoid: Journal of Econometrics, Journal of Banking and Finance, Finance Research
 Deliverables in order (all v10-paper-writeup subtasks; empirical work above is complete):
 
 1. [x] Scaffold `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` from v9; freeze v9 (2026-04-22).
-2. [ ] Retitle v10 to the generator thesis and update abstract to match.
+2. [x] Retitle v10 to the generator thesis, rewrite the abstract around the three-way operational split (distribution / unconditional VaR / conditional VaR), and sweep out the 11 content em dashes inherited from v9 per the project no-em-dash rule (2026-04-22).
 3. [ ] Extended Evaluation subsection in `results_v10.tex` (A1 to A9).
 4. [ ] Semi-Markov Ablation subsection in `results_v10.tex` (C1).
 5. [ ] Conditional VaR subsection in `results_v10.tex` (C3a, flat CHMM-t + Viterbi closes Kupiec + Christoffersen).
