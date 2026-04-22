@@ -1,8 +1,8 @@
-# Track C3a results (2026-04-22)
+# Track C3 results (2026-04-22)
 
 Regime-conditional VaR via Viterbi decode. Directly attacks the Christoffersen-independence failure surfaced in Track A (A8) and confirmed in Track C1.
 
-Produced by `run_track_c3_conditional_var.jl`.
+Produced by `run_track_c3_conditional_var.jl` and `run_track_c3_time_varying_transition.jl`.
 
 ## Files
 
@@ -10,6 +10,8 @@ Produced by `run_track_c3_conditional_var.jl`.
 |---|---|
 | `VaR_conditional_LR_tests.txt` | Kupiec LR_uc + Christoffersen LR_ind at 1 % and 5 % VaR for CHMM-N / -t / -L (flat) and three SM variants under two naive conditional-VaR approximations |
 | `Track-C3a-summary.txt` | Auto-generated PASS/FAIL digest |
+| `VaR_time_varying_transition_LR_tests.txt` | Flat-vs-time-varying transition VaR LR tests for CHMM-N / -t / -L |
+| `Track-C3-summary.txt` | Short summary of the time-varying transition run |
 
 ## Method
 
@@ -31,6 +33,32 @@ At each out-of-sample time t:
 | CHMM-L | 5 % | 3.32 | 3.83 (was 3.03) | **2.25 (was 4.71)** |
 
 **CHMM-t passes Kupiec AND Christoffersen cleanly at both 1 % and 5 % VaR.** All three flat CHMMs pass Christoffersen at 5 % VaR. This closes the open Christoffersen-independence question from A8 / C1.
+
+## C3 first-pass: time-varying transitions
+
+The repo now also includes a first-pass C3 script that replaces the flat
+transition row with a lagged-realized-volatility logistic transition model
+
+`P(s_t = j | s_{t-1} = i, x_t) = softmax(a_ij + b_ij x_t)`.
+
+This is intentionally narrower than the full memo target:
+
+- Covariate: standardized lagged 20-day realized volatility only
+- No external `VIX` or term-spread data yet
+- Emissions stay fixed; only the transition row changes
+
+Headline outcome:
+
+- `CHMM-t TVT` does **not** improve meaningfully on the already-strong `C3a`
+  flat conditional-VaR result. At 1 % VaR it remains clean (`LR_uc 0.01`,
+  `LR_ind 0.13`), but the flat row was already clean (`0.10`, `0.09`).
+- `CHMM-L TVT` materially improves unconditional coverage relative to flat
+  `CHMM-L` at both 1 % and 5 % while keeping `LR_ind` below the 3.84 threshold.
+- `CHMM-N TVT` worsens independence relative to the flat C3a row.
+
+Interpretation: transition dynamics help some families, but the main paper
+headline remains `C3a`: flat `CHMM-t` with Viterbi-decoded conditional VaR is
+already the strongest risk-management row.
 
 ## SM-CHMM is harder
 

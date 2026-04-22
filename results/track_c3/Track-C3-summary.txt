@@ -1,0 +1,20 @@
+Track C3 summary: time-varying transitions via lagged realized volatility
+================================================================================
+
+Compare each TVT row against the matching flat C3a row.
+
+CHMM-N:
+  1 % VaR  flat LR_uc=0.58 LR_ind=5.73  |  TVT LR_uc=1.62 LR_ind=7.71
+  5 % VaR  flat LR_uc=0.01 LR_ind=1.39  |  TVT LR_uc=0.5 LR_ind=5.31
+
+CHMM-t:
+  1 % VaR  flat LR_uc=0.1 LR_ind=0.09  |  TVT LR_uc=0.01 LR_ind=0.13
+  5 % VaR  flat LR_uc=0.01 LR_ind=0.19  |  TVT LR_uc=0.5 LR_ind=2.56
+
+CHMM-L:
+  1 % VaR  flat LR_uc=3.26 LR_ind=0.01  |  TVT LR_uc=1.62 LR_ind=0.29
+  5 % VaR  flat LR_uc=3.83 LR_ind=2.25  |  TVT LR_uc=0.01 LR_ind=1.64
+
+Interpretation: if TVT improves LR_ind without materially worsening LR_uc,
+it supports the C3 thesis that transition dynamics, not emission shape alone,
+carry the breach-clustering signal.
