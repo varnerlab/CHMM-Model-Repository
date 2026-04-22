@@ -278,7 +278,7 @@ Gates mean "do not start the next item until this one passes".
     - [x] **Extended Evaluation subsection 2026-04-22.** `sec:extended_evaluation` in `results_v10.tex` with six summary paragraphs and four numerical tables reproducing `results/track_a/{Table-4-Extended-Metrics,leverage_effect,aggregational_kurtosis,sim_pvalues}.txt`. Kupiec + Christoffersen discussion embedded here; full table-form LR listing planned for the Utility subsection.
     - [x] **Semi-Markov Ablation subsection 2026-04-22.** `sec:sm_ablation` in `results_v10.tex` after Utility and before Cross-Asset, with Yu (2010) plug-in description, sojourn-family selection table (17 / 18 Pareto for all three emission families), SM-vs-flat VaR LR table at 1 % and 5 %, TSTR HAR tightening summary, marginal-fidelity trade-off discussion, Christoffersen-independence caveat that motivates C3a, and a concluding operational takeaway.
     - [x] **Conditional VaR subsection 2026-04-22.** `sec:conditional_var` in `results_v10.tex` after the SM ablation. Defines the Viterbi-decoded estimator, presents the flat-vs-conditional LR table, flags the SM-aware-decoder deferral, and slots into the three-way operational split.
-    - [ ] B1 / B3 / B4 baselines paragraphs.
+    - [x] **B1 / B3 / B4 baselines paragraphs 2026-04-22.** QuantGAN, window-diffusion, and MS-GARCH paragraphs in `methods_v10.tex` `sec:benchmarks`; a matching Extended-Evaluation paragraph in `results_v10.tex` lands their numbers on the MMD / sig-MMD / AUC / $\bar{pv}$ panel.
     - [ ] Three-way operational split in Discussion.
     - [ ] Discrete NJ / WJ 5 % VaR Kupiec failure callout.
 
@@ -346,7 +346,7 @@ Deliverables in order (all v10-paper-writeup subtasks; empirical work above is c
 3. [x] Extended Evaluation subsection in `results_v10.tex` (A1 to A9) landed 2026-04-22: six new paragraphs (MMD, sig-MMD, discriminator AUC, leverage, aggregational Gaussianity, joint $\bar{pv}$), four new tables (`tab:extended_metrics`, `tab:leverage`, `tab:agg_kurt`, `tab:sim_pvalues`), and five new bib entries (`gretton2012kernel`, `chevyrev2016primer`, `ni2020conditional`, `kupiec1995techniques`, `christoffersen1998evaluating`).
 4. [x] Semi-Markov Ablation subsection in `results_v10.tex` (C1) landed 2026-04-22: `sec:sm_ablation` with six paragraphs (plug-in estimator and sojourn-family selection, VaR calibration win, TSTR HAR tightening, marginal-fidelity trade-off, Christoffersen still open, operational takeaway) and two supporting tables (`tab:sm_sojourn`, `tab:sm_var`). New `yu2010hidden` bib entry.
 5. [x] Conditional VaR subsection in `results_v10.tex` (C3a, flat CHMM-t + Viterbi closes Kupiec + Christoffersen) landed 2026-04-22: `sec:conditional_var` with estimator definition, flat vs conditional LR comparison table (`tab:conditional_var`), SM-CHMM deferral note, and placement in the three-way operational split.
-6. [ ] B1 / B3 / B4 baselines paragraphs in the baselines section of v10.
+6. [x] B1 / B3 / B4 baselines paragraphs in the baselines section of v10 landed 2026-04-22: three new `\paragraph` blocks in `sec:benchmarks` (`sec:quantgan_methods`, `sec:diffusion_methods`, `sec:msgarch_methods`) plus a new Extended-Evaluation paragraph that lands the three baselines on the MMD / sig-MMD / AUC / $\bar{pv}$ panel. Five new bib entries: `wiese2020quantgan`, `arjovsky2017wasserstein`, `ho2020denoising`, `rasul2021autoregressive`, `haas2004new`.
 7. [ ] Three-way operational split in `discussion_v10.tex`.
 8. [ ] DiscreteNJ / WJ 5 % VaR Kupiec failure callout in `results_v10.tex`.
 
