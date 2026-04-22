@@ -1,0 +1,16 @@
+Table D1. Block D volatility-index generalization (VIX, K=18, 200 paths)
+==================================================================================================================================
+Model                  KS %  ADF %   HL (d)  ACF-MAE    Skew    Kurt   Hill α̂
+----------------------------------------------------------------------------------------------------------------------------------
+Observed (log VIX)        —  100.0     24.7      0.0    1.25    6.88     3.21
+CHMM-N                  8.0  100.0     15.6   0.2544    0.47   11.65      2.6
+CHMM-t                 15.5  100.0     15.2   0.2637    0.76   15.41     2.59
+CHMM-L                  6.5  100.0     13.4   0.2227    0.38   22.54     2.59
+AR(1) on log VIX        0.5  100.0     23.1   0.2769    -0.0   -0.01     6.02
+Gaussian i.i.d.         0.0  100.0      0.2   0.3773     0.0    0.01      6.0
+==================================================================================================================================
+KS %:    share of simulated paths passing 2-sample KS on log(VIX) levels at α=0.05
+ADF %:   share of simulated log-level paths rejecting unit root at α=0.05 (MacKinnon 1996)
+HL (d):  median AR(1) half-life of log(VIX) = log(2)/-log(φ), trading days
+ACF-MAE: median MAE of ACF(log VIX), lags 1..252, vs observed
+Skew/Kurt: sample moments of Δlog(VIX); Hill α̂: right-tail index on |Δlog(VIX)|, top 5.0%
