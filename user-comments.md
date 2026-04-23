@@ -20,4 +20,8 @@ In Table 3, it shows a comparison to 9 generators, so again, which one is correc
 
 I think it will be really great if we add either one or two schematics explaining the architecture of pipelines A and B, as well as the architectures of the models we present in this study. It can be one or more figures as you see fit. 
 
+Generally, figures quality and choice of colors can be improved.
+
+Figure 5 panel b, you can adjust the contrast between the color to make the simulations more apparent. Also there is no legend for the simulations. Check other figures for similar nuances. 
+
 Also, check for similar nuances to these across the paper and update teh paper plan and decision memo files accordingly. 
