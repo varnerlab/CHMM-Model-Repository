@@ -69,9 +69,17 @@ function _simulate(model, start_dist, n_is, n_oos, n_paths)
     return sis, sos;
 end
 
-# ----- Figure generators (titlefontsize=10, colorbar=true on heatmaps) -----
-const TFS = 10;   # sub-panel title font size (was 9)
-const PTFS = 12;  # overall plot title font size
+# ----- Figure generators (V2 axis labels, V13 colorblind palette, V14 density fan) -----
+const TFS = 11;                             # sub-panel title font size (was 10)
+const PTFS = 12;                            # overall plot title font size
+const _OBS_C = RGB(0.835, 0.369, 0.0);      # Okabe-Ito vermillion (observed)
+const _SIM_C = RGB(0.0, 0.447, 0.698);      # Okabe-Ito blue (simulated paths)
+const _MEAN_C = RGB(0.0, 0.620, 0.451);     # Okabe-Ito bluish green (mean over sims)
+# Shared kwargs ensure axis labels / ticks / legends stay readable and do not
+# clip after the paper LaTeX shrinks the figure to subfigure width.
+const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
+                legendfontsize=TFS-2,
+                left_margin=5Plots.mm, bottom_margin=5Plots.mm, top_margin=3Plots.mm);
 
 function save_is_comparison(sim_is, m_is, tag, K, out_path)
     acf_obs = autocor(abs.(R_is), 1:L_LAGS);
@@ -81,48 +89,50 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L_LAGS];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L_LAGS];
 
-    p_a = plot(title="(a) IS Density (KS: $(m_is.ks)%)",
-        titlefontsize=TFS, xlabel="Excess Growth Rate", ylabel="Prob. Density (AU)",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
-    density!(p_a, sim_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-$tag");
+    p_a = plot(title="(a) IS density (KS: $(m_is.ks)%)",
+        xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
+    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
+    density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
     xlims!(p_a, x_lo, x_hi);
 
-    p_b = plot(1:L_LAGS, acf_obs, lw=2, color=:red, ls=:dash, label="Observed",
-        title="(b) ACF(|Gₜ|)", titlefontsize=TFS, xlabel="Lag", ylabel="ACF",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    plot!(p_b, 1:L_LAGS, acf_m, lw=2, color=:navy, label="CHMM-$tag (mean)");
-    plot!(p_b, 1:L_LAGS, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
+    p_b = plot(1:L_LAGS, acf_obs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
+        title="(b) ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
+    plot!(p_b, 1:L_LAGS, acf_m, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_b, 1:L_LAGS, acf_10, fillrange=acf_90, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
 
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(sim_is), probs_qq);
-    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
-        title="(c) Tail Q-Q (0.1st-99.9th)", titlefontsize=TFS,
-        xlabel="Observed Quantiles", ylabel="Simulated Quantiles",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM-$tag");
+    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect)",
+        title="(c) Tail Q-Q plot (0.1st-99.9th)",
+        xlabel="Observed quantiles", ylabel="Simulated quantiles"; _STYLE...);
+    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,400),
-        plot_title="IS Comparison (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
+        plot_title="IS comparison (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");
 end
 
 function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
-    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
-        label="CHMM-$tag", title="(a) OoS KS p-values (pass: $(m_oos.ks)%)", titlefontsize=TFS,
-        xlabel="p-value", ylabel="Density",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    vline!(p_a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
+    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
+        label="CHMM-$tag",
+        title="(a) OoS KS p-values (pass: $(m_oos.ks)%)",
+        xlabel="p-value against OoS series", ylabel="Density"; _STYLE...);
+    vline!(p_a, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
 
-    p_b = plot(title="(b) OoS Density Fan", titlefontsize=TFS,
-        xlabel="Excess Growth Rate", ylabel="Prob. Density (AU)",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    for i in 1:min(50, N_PATHS)
-        density!(p_b, sim_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
+    p_b = plot(title="(b) OoS density fan",
+        xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
+    # V14 fix: give the simulated fan a single consolidated legend entry,
+    # raise alpha from 0.05 to 0.18 so the paths register against the observed
+    # curve, and pick a colorblind-safe hue distinct from the observed line.
+    _sim_paths_to_plot = min(50, N_PATHS);
+    for i in 1:_sim_paths_to_plot
+        _lbl = (i == 1) ? "CHMM-$tag simulated ($(_sim_paths_to_plot) paths)" : "";
+        density!(p_b, sim_oos[:,i], lw=1, color=_SIM_C, alpha=0.18, label=_lbl);
     end
-    density!(p_b, R_oos, lw=3, color=:red, label="Observed OoS");
+    density!(p_b, R_oos, lw=3, color=_OBS_C, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
     xlims!(p_b, oos_lo - oos_pad, oos_hi + oos_pad);
@@ -135,14 +145,14 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:length(τ_oos)];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
-    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        title="(c) OoS ACF(|Gₜ|)", titlefontsize=TFS, xlabel="Lag", ylabel="ACF",
-        xguidefontsize=TFS, yguidefontsize=TFS, legendfontsize=TFS-1);
-    plot!(p_c, τ_oos, acf_m, lw=2, color=:navy, label="CHMM-$tag (mean)");
-    plot!(p_c, τ_oos, acf_10, fillrange=acf_90, alpha=0.2, color=:navy, label="10-90th");
+    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
+        title="(c) OoS ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
+    plot!(p_c, τ_oos, acf_m, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_c, τ_oos, acf_10, fillrange=acf_90, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,400),
-        plot_title="OoS Validation (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
+        plot_title="OoS validation (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");
 end

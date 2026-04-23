@@ -241,17 +241,25 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
+    # V2/V13 style defaults (colorblind-safe palette, larger fonts + margins so
+    # axis labels are not clipped in the compiled paper).
+    _obs_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue
+    _sim_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion
+    _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green
+    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8,
+              left_margin=5Plots.mm, bottom_margin=5Plots.mm, top_margin=3Plots.mm);
+
     p_a = plot(title="(a) IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
-        titlefontsize=8, xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)");
-    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS (T=$(n_steps))");
-    density!(p_a, sim_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM-$family_tag, single sim path");
+        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
+    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed IS (T=$(n_steps))");
+    density!(p_a, sim_is[:,1], lw=2, color=_sim_c, alpha=0.85, label="CHMM-$family_tag (single sim path)");
     xlims!(p_a, x_lo, x_hi);
 
-    p_b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed |G_t|",
+    p_b = plot(1:L, acf_obs_is, lw=2, color=_obs_c, ls=:dash, label="Observed |G_t|",
         title="(b) ACF of |G_t| | lag 1..$L (trading days)",
-        titlefontsize=8, xlabel="Lag (trading days)", ylabel="ACF of |G_t|");
-    plot!(p_b, 1:L, acf_m, lw=2, color=:navy, label="CHMM-$family_tag (mean over $n_acf sims)");
-    plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="CHMM-$family_tag 10-90 percentile");
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
+    plot!(p_b, 1:L, acf_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
+    plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
 
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
@@ -259,11 +267,10 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
 
     p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect fit)",
         title="(c) Tail Q-Q plot | quantile grid 0.1% .. 99.9%",
-        titlefontsize=8,
-        xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)");
-    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM-$family_tag");
+        xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)"; _style...);
+    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_sim_c, label="CHMM-$family_tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,420),
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
         plot_title="Fig 3 (Pipeline A). IS validation | $TICKER | CHMM-$family_tag, K=$K | $N_PATHS sim paths",
         plot_titlefontsize=11);
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
@@ -271,20 +278,29 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
 end
 
 function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String, K::Int, out_dir::String)
-    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
+    # V2/V13/V14 style defaults (colorblind-safe palette, larger fonts + margins,
+    # higher contrast for the density fan, explicit legend entry for simulations).
+    _obs_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion (observed, high contrast)
+    _sim_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue (simulated paths)
+    _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green (mean over sims)
+    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8,
+              left_margin=5Plots.mm, bottom_margin=5Plots.mm, top_margin=3Plots.mm);
+
+    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.7, color=_sim_c,
         label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths)",
         title="(a) OoS KS p-values | pass rate = $(m_oos.ks)% above alpha=0.05",
-        titlefontsize=8,
-        xlabel="KS p-value against OoS series", ylabel="Density");
-    vline!(p_a, [0.05], lw=2, color=:red, ls=:dash, label="alpha = 0.05 threshold");
+        xlabel="KS p-value against OoS series", ylabel="Density"; _style...);
+    vline!(p_a, [0.05], lw=2, color=_obs_c, ls=:dash, label="alpha = 0.05 threshold");
 
     p_b = plot(title="(b) OoS return density fan | 50 sim paths vs. observed OoS (T=$(n_steps_oos))",
-        titlefontsize=8,
-        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)");
-    for i in 1:min(50, N_PATHS)
-        density!(p_b, sim_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
+        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
+    # V14: single legend entry for the simulated fan; tripled alpha for contrast.
+    _sim_paths_to_plot = min(50, N_PATHS);
+    for i in 1:_sim_paths_to_plot
+        _lbl = (i == 1) ? "CHMM-$family_tag simulated OoS ($(_sim_paths_to_plot) paths)" : "";
+        density!(p_b, sim_oos[:,i], lw=1, color=_sim_c, alpha=0.15, label=_lbl);
     end
-    density!(p_b, R_oos, lw=3, color=:red, label="Observed OoS");
+    density!(p_b, R_oos, lw=3, color=_obs_c, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
     xlims!(p_b, oos_lo - oos_pad, oos_hi + oos_pad);
@@ -297,13 +313,13 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     acf_oos_10 = [quantile(acf_oos_arch[t,:], 0.10) for t in 1:length(τ_oos)];
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
-    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS |G_t|",
+    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_obs_c, ls=:dash, label="Observed OoS |G_t|",
         title="(c) OoS ACF of |G_t| | lag 1..$(length(τ_oos)) (trading days)",
-        titlefontsize=8, xlabel="Lag (trading days)", ylabel="ACF of |G_t|");
-    plot!(p_c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM-$family_tag (mean over $n_acf sims)");
-    plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="CHMM-$family_tag 10-90 percentile");
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
+    plot!(p_c, τ_oos, acf_oos_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
+    plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1400,420),
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
         plot_title="Fig 4 (Pipeline A). OoS validation | $TICKER | CHMM-$family_tag, K=$K | " *
                    "T_OoS=$(n_steps_oos) obs, $N_PATHS sim paths",
         plot_titlefontsize=11);
