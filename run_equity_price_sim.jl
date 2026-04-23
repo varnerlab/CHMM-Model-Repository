@@ -93,7 +93,7 @@ function _price_fan_plot(ticker::String, family_label::String,
     q75 = [quantile(P_paths[i, :], 0.75) for i in 1:(n_steps + 1)];
     q95 = [quantile(P_paths[i, :], 0.95) for i in 1:(n_steps + 1)];
 
-    title_text = "Fig 6 (Pipeline A). $ticker OoS price fan | CHMM-$family_label, K=$K_MAIN\n" *
+    title_text = "Pipeline A — $ticker OoS price fan | CHMM-$family_label, K=$K_MAIN\n" *
                  "$(size(P_paths,2)) simulated paths | S0 = last IS VWAP | dt = 1/252";
     p = plot(xs, q50, label="Simulated median", lw=2, c=:blue,
              title=title_text, titlefontsize=9,
@@ -112,7 +112,7 @@ function _terminal_hist_plot(ticker::String, family_label::String,
                              P_paths::Matrix{Float64}, P_obs_end::Float64)
     terminal = P_paths[end, :];
     n_steps = size(P_paths, 1) - 1;
-    title_text = "Fig 6 (Pipeline A). $ticker terminal-price distribution | CHMM-$family_label, K=$K_MAIN\n" *
+    title_text = "Pipeline A — $ticker terminal-price distribution | CHMM-$family_label, K=$K_MAIN\n" *
                  "$(length(terminal)) simulated paths at day $n_steps OoS";
     p = histogram(terminal, bins=40, legend=:topright, label="Simulated terminal prices",
                   title=title_text, titlefontsize=9,

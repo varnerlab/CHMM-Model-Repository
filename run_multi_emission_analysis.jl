@@ -177,7 +177,7 @@ end
 
 function save_convergence(model, family_tag::String, K::Int, out_dir::String)
     p = plot(model.log_likelihood_history,
-        title="Fig 2 (Pipeline A). Baum-Welch convergence | $TICKER | CHMM-$family_tag, K=$K\n" *
+        title="Pipeline A — Baum-Welch convergence | $TICKER | CHMM-$family_tag, K=$K\n" *
               "T_IS = $(n_steps) obs | max_iter = $MAX_ITER",
         titlefontsize=9,
         xlabel="EM iteration", ylabel="Data log-likelihood",
@@ -188,7 +188,7 @@ end
 
 function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
     colors_k = cgrad(:RdYlBu, K, categorical=true);
-    p = plot(title="Fig 5 (Pipeline A). Per-state emission densities | $TICKER | CHMM-$family_tag, K=$K\n" *
+    p = plot(title="Pipeline A — Per-state emission densities | $TICKER | CHMM-$family_tag, K=$K\n" *
                   "Gray histogram = observed IS returns (T_IS = $(n_steps)); S1..S$K = fitted state emissions",
         titlefontsize=9,
         xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)", legend=:topright);
@@ -205,7 +205,7 @@ end
 function save_transition_matrix(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     T_log = log10.(T_mat .+ 1e-10);
     p = heatmap(T_log,
-        title="Fig 5 (Pipeline A). Transition matrix log10 P(s_{t+1}=j | s_t=i) | $TICKER | CHMM-$family_tag, K=$K",
+        title="Pipeline A — Transition matrix log10 P(s_{t+1}=j | s_t=i) | $TICKER | CHMM-$family_tag, K=$K",
         titlefontsize=9,
         xlabel="To state j", ylabel="From state i", color=:viridis,
         yflip=true, aspect_ratio=:equal, size=(500,450));
@@ -271,7 +271,7 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_sim_c, label="CHMM-$family_tag");
 
     fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
-        plot_title="Fig 3 (Pipeline A). IS validation | $TICKER | CHMM-$family_tag, K=$K | $N_PATHS sim paths",
+        plot_title="Pipeline A — IS validation | $TICKER | CHMM-$family_tag, K=$K | $N_PATHS sim paths",
         plot_titlefontsize=11);
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.pdf"));
@@ -320,7 +320,7 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
 
     fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
-        plot_title="Fig 4 (Pipeline A). OoS validation | $TICKER | CHMM-$family_tag, K=$K | " *
+        plot_title="Pipeline A — OoS validation | $TICKER | CHMM-$family_tag, K=$K | " *
                    "T_OoS=$(n_steps_oos) obs, $N_PATHS sim paths",
         plot_titlefontsize=11);
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.svg"));

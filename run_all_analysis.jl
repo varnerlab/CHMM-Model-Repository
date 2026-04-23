@@ -145,7 +145,8 @@ plot!(p4, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI
 plot!(p4, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
 
 fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700),
-    plot_title="Figure 1: Stylized Facts — $TICKER", plot_titlefontsize=12);
+    plot_title="Stylized Facts — $TICKER", plot_titlefontsize=12,
+    bottom_margin=6Plots.mm, left_margin=5Plots.mm);
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.svg"));
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.pdf"));
 println("  Saved Figure 1 + Table 1")
@@ -424,7 +425,8 @@ for K in K_VALUES
     scatter!(p3c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM");
 
     fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400),
-        plot_title="Figure 3: IS Comparison — $TICKER, K=$K", plot_titlefontsize=12);
+        plot_title="IS Comparison — $TICKER, K=$K", plot_titlefontsize=12,
+        bottom_margin=6Plots.mm, left_margin=5Plots.mm);
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.svg"));
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.pdf"));
 
@@ -440,8 +442,10 @@ for K in K_VALUES
 
     # (b) Density fan chart
     p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
-    for i in 1:min(50, N_PATHS)
-        density!(p4b, decoded_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.05, label="");
+    _n_fan = min(50, N_PATHS);
+    for i in 1:_n_fan
+        _lbl = (i == 1) ? "CHMM simulated ($(_n_fan) paths)" : "";
+        density!(p4b, decoded_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.18, label=_lbl);
     end
     density!(p4b, R_oos, lw=3, color=:red, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
@@ -463,7 +467,8 @@ for K in K_VALUES
     plot!(p4c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
 
     fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400),
-        plot_title="Figure 4: OoS Validation — $TICKER, K=$K", plot_titlefontsize=12);
+        plot_title="OoS Validation — $TICKER, K=$K", plot_titlefontsize=12,
+        bottom_margin=6Plots.mm, left_margin=5Plots.mm);
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.svg"));
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.pdf"));
 

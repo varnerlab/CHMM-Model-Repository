@@ -263,7 +263,7 @@ try
     Σ_vine_avg ./= N_PATHS;
     Σ_sim_avg ./= N_PATHS;
 
-    plot_title_corr = "Fig 7 (Table T3, Pipeline B). Cross-asset correlation reproduction | " *
+    plot_title_corr = "Pipeline B — Cross-asset correlation reproduction | " *
                       "K=$K marginals, $N_PATHS paths, IS window | top-left is the data";
     p1 = heatmap(Σ_obs, title="(a) Observed (IS data, T=$n_is)", c=:RdBu, clims=(-1,1), aspect_ratio=1,
         xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
