@@ -92,6 +92,28 @@ $r_t = \mu_k + \rho_k \min(r_{t-1}, 0) + \sigma_k \epsilon_t$ on top of the flat
 | D3 | Identifiability / label-switching appendix | OPEN |
 | D4 | Option pricing / implied-vol surface calibration | OUT OF SCOPE |
 
+### Track V10-Polish: v10 reviewer-comment revision pass (OPEN, opened 2026-04-22 from `user-comments.md`)
+
+Source: `CHMM-Model/user-comments.md` (user review of `Paper_v10.pdf`). These are the outstanding items that gate a clean v10 submission. All empirical tracks remain DONE; this is a paper-writeup / figure-polish pass.
+
+| Item | Area | Description | Status |
+|---|---|---|---|
+| V1 | Discrete-baseline params | The Discrete NJ / WJ baselines in `methods_v10.tex:117` use $K_{\text{disc}} = 13$, $\lambda = 3$, $\epsilon = 0.01$. User flagged this as too-few-states / weak. Re-derive the best $(K_{\text{disc}}, \lambda, \epsilon)$ from the prior-paper reference (`arxiv.org/pdf/2603.10202`, `alswaidan2026hybrid`), then re-run `run_baselines_and_cross_asset.jl` (and any Table 4 / A-panel downstream) with the corrected combination. Update `methods_v10.tex` and every numerical cell sourced from these runs. | OPEN |
+| V2 | Figure axis labels | Figures 4 and 5 (and any similar panels) have unlabeled axes. Audit every `Fig-*.svg` cited from `results_v10.tex` and ensure both x-axis and y-axis labels are set in the generating code (`run_figures.jl`, `run_all_analysis.jl`, `run_diagnostics.jl`). | OPEN |
+| V3 | Figure 4 panel alignment | The two panels of Fig 4 are visibly misaligned. Regenerate as a single subplot grid (same figure size, shared vertical alignment) rather than two stitched standalone figures. | OPEN |
+| V4 | Caption quality pass | Captions for figures and tables are generally thin. Rewrite all v10 captions to be self-contained (what the panel shows, what to look for, what the headline finding is), matching top-venue style. | OPEN |
+| V5 | Stale v6 references | `results_v10.tex:92, 107, 273` reference the "v6" OoS window ($T_{\text{OoS}} = 219$) for contrast with the current $T_{\text{OoS}} = 572$. User asked to remove these. Replace each with a version-agnostic phrasing that just states the $T_{\text{OoS}} = 572$ window and any comparative framing needed, and check other v10 section files for similar stale-version nuances. | OPEN |
+| V6 | Random seed mention | Random seed `20260422` is currently mentioned in multiple places (or inconsistently). Consolidate to a single reference in the body of the paper (e.g., one sentence in the Evaluation Protocol or Data section), drop the repeats elsewhere. | OPEN |
+| V7 | Margin overflow: sig-MMD path lift | In Section 4.6 (signature-MMD, `sec:extended_evaluation`), the sentence / inline equation starting `We lift each window to a 2D path (t/W, r_t/std(r))` overflows the paper margin. Rewrite inline math as a displayed equation or wrap the prose to fit `\textwidth`. | OPEN |
+| V8 | Margin overflow: leverage effect | The leverage-effect sentence `The observed leverage effect on the IS window, measured as avg_{k=1}^{20} corr(r^2_t, r_{t-k})` also overflows the margin. Same fix: display the average as a proper displayed equation or restructure the sentence. | OPEN |
+| V9 | "Reproduced from" caption trim | Several table captions include statements like "reproduced from \ldots"; remove these where they add no information. Audit `tab:*` captions in `results_v10.tex` / `methods_v10.tex`. | OPEN |
+| V10 | Section 4.3 model-count mismatch | The Section 4.3 title says "seven-model comparison" (`results_v10.tex:80`: "validation results for the seven generators") but the user counted 8 rows in the actual comparison. Recount the rows in Table~\ref{tab:model_comparison} and set the title / lead-in prose to the correct integer. | OPEN |
+| V11 | Table 3 generator count | Table 3 caption says "comparison to 9 generators" while the text / title implies a different count. Reconcile Table 3's generator count with the surrounding narrative (one authoritative number across caption + body). | OPEN |
+| V12 | Pipeline A / B schematic | Add one or two schematic figures (TikZ or SVG) that diagram (i) the architecture of Pipelines A and B (single-asset CHMM vs copula-injected multi-asset) and (ii) the architecture of the models in the comparison (flat CHMM, SM-CHMM, discrete HMM, GARCH, MS-GARCH, GAN, diffusion). Slot between the Introduction and the Methods section, or at the top of Methods. | OPEN |
+| V13 | Figure quality / palette audit | General pass on all `figs/*.svg`: consistent palette (colorblind-safe, max ~6 colors), consistent font size for labels/ticks, consistent line widths, higher-contrast density fans. Update `run_figures.jl` defaults once and regenerate everything. | OPEN |
+| V14 | Figure 5 panel b contrast + legend | Specifically: the simulated-path overlay in Fig 5 panel (b) blends into the observed curve (low contrast) and has no legend. Fix contrast (palette swap or alpha adjustment) and add a legend labeling "Observed" vs "Simulated (k paths)". Audit other density-fan / overlay panels for the same issues. | OPEN |
+| V15 | Cross-section nuance sweep | Catch-all: sweep all v10 section files for the same class of issues (stale version references, overflowing math, unlabeled axes, misleading titles, thin captions). Do this last, after V1 through V14 have landed. | OPEN |
+
 ---
 
 ## 1. Thesis
@@ -272,7 +294,8 @@ Gates mean "do not start the next item until this one passes".
 11. [x] **C4** (leverage-emission ablation). Gate passed: OoS leverage p-value improves from 0.205 to 0.308 and discriminator AUC improves from 0.646 to 0.594, but unconditional VaR worsens; keep as an ablation row, not a headline replacement.
 12. [ ] **B1** (QuantGAN) or **B3** (diffusion). First-pass B1 and B3 now both landed. B1 is non-competitive; B3 is the strongest deep row on local window metrics but still weak on pv̄ and VaR independence. Deep-baseline coverage is now reviewer-defensible.
 13. [ ] **C3 proper** (time-varying transitions via logistic regression). Lagged-RV and lagged-RV + `VIX` passes both landed. Outcome: viable but not a new headline over C3a; term-spread conditioning remains open.
-14. [x] **Paper writeup `Paper_v10.tex` DONE 2026-04-22.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR). All landed in `Paper_v10.tex` and the corresponding `sections/*_v10.tex` files. Next gating step: local LaTeX compile check and a reading pass for cross-references.
+14. [x] **Paper writeup `Paper_v10.tex` first-pass DONE 2026-04-22.** Required subsections: Extended Evaluation (A1 to A9), Semi-Markov Ablation (C1), Conditional VaR closes Christoffersen (C3a), DiscreteNJ/WJ 5 % VaR failure (A8), three-way operational split (distribution / unconditional VaR / conditional VaR). All landed in `Paper_v10.tex` and the corresponding `sections/*_v10.tex` files.
+15. [ ] **v10 revision pass (Track V10-Polish, opened 2026-04-22 from `user-comments.md`).** V1 through V15 items listed above; these gate a clean v10 submission and must land before the paper is considered done. Biggest-impact subset: V1 (correct DiscreteNJ / WJ parameters, re-run downstream tables), V12 (Pipeline A / B + model schematics), V7 / V8 (margin overflows in §4.6 sig-MMD and leverage effect), V10 / V11 (model-count reconciliation in §4.3 title and Table 3 caption).
     - [x] **Scaffolded 2026-04-22.** `Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root retargeted to v10 includes. v9 joins the frozen reference snapshot set with v7 / v8.
     - [x] **Retitled 2026-04-22** to *"A Regime-Switching Continuous Hidden Markov Model as a Reference Synthetic-Data Generator for Equity Returns: Extended Evaluation, Semi-Markov Ablation, and Regime-Conditional Value-at-Risk"*; abstract rewritten around the three-way operational split; 11 content em dashes swept out of the v9-inherited section files.
     - [x] **Extended Evaluation subsection 2026-04-22.** `sec:extended_evaluation` in `results_v10.tex` with six summary paragraphs and four numerical tables reproducing `results/track_a/{Table-4-Extended-Metrics,leverage_effect,aggregational_kurtosis,sim_pvalues}.txt`. Kupiec + Christoffersen discussion embedded here; full table-form LR listing planned for the Utility subsection.
@@ -337,7 +360,19 @@ Avoid: Journal of Econometrics, Journal of Banking and Finance, Finance Research
 - Track C1: `src/SemiMarkov.jl` module, `MySemiMarkovContinuousHMM` type, `run_track_c1_smchmm.jl`, 9 result files under `results/track_c1/`. SM variants upgrade VaR calibration and TSTR vol forecasting at the cost of marginal fidelity.
 - Paper v10 scaffold: `CHMM-paper/paper/Paper_v10.tex`, `References_v10.bib`, and all `sections/*_v10.tex` files copied from v9. Root retargeted to v10 includes. v9 joins the frozen reference snapshot set. CHANGELOG updated with v9 and v10 entries.
 
-**Next concrete step:** All empirical work for v10 is done; the outstanding deliverable is the v10 writeup itself. Order: retitle to the generator thesis, then land the Extended Evaluation, Semi-Markov Ablation, and Conditional VaR subsections in that order; then the B1 / B3 / B4 baselines paragraphs, the three-way operational split, and the DiscreteNJ / WJ 5 % VaR failure callout. Term-spread conditioning (C3) and Sig-WGAN (B2) stay on the nice-to-have list but are not gates for v10.
+**Next concrete step (revised 2026-04-22 after user review of `Paper_v10.pdf`, captured in `user-comments.md`):** the v10 writeup first pass is complete, but the user has surfaced 15 revision-pass items (Track V10-Polish: V1 through V15) that must land before v10 can be considered submission-ready. Sequence:
+
+1. V1 (correct DiscreteNJ / WJ $K_{\text{disc}} / \lambda / \epsilon$ per `arxiv.org/pdf/2603.10202`; re-run `run_baselines_and_cross_asset.jl` and any A-track script that consumes those rows; propagate new numbers into `methods_v10.tex` and every affected table) — empirical-impact item, do first.
+2. V10, V11 (model-count reconciliation in §4.3 title and Table 3 caption).
+3. V5, V6 (strip stale "v6 OoS window" references; consolidate random seed mention to a single body sentence).
+4. V7, V8 (margin overflows in §4.6 sig-MMD path-lift and leverage-effect sentences).
+5. V9 (trim "reproduced from \ldots" table captions).
+6. V4 (caption rewrite pass across figures and tables).
+7. V2, V3, V13, V14 (figure axis labels, Fig 4 panel alignment, palette / contrast pass, Fig 5 panel b contrast + simulations legend).
+8. V12 (Pipeline A / B + model architecture schematics; new TikZ or SVG figures).
+9. V15 (final cross-section nuance sweep; catch anything analogous to V1 through V14 that the first eight items missed).
+
+Term-spread conditioning (C3) and Sig-WGAN (B2) stay on the nice-to-have list but are not gates for v10.
 
 Deliverables in order (all v10-paper-writeup subtasks; empirical work above is complete):
 
@@ -349,6 +384,22 @@ Deliverables in order (all v10-paper-writeup subtasks; empirical work above is c
 6. [x] B1 / B3 / B4 baselines paragraphs in the baselines section of v10 landed 2026-04-22: three new `\paragraph` blocks in `sec:benchmarks` (`sec:quantgan_methods`, `sec:diffusion_methods`, `sec:msgarch_methods`) plus a new Extended-Evaluation paragraph that lands the three baselines on the MMD / sig-MMD / AUC / $\bar{pv}$ panel. Five new bib entries: `wiese2020quantgan`, `arjovsky2017wasserstein`, `ho2020denoising`, `rasul2021autoregressive`, `haas2004new`.
 7. [x] Three-way operational split in `discussion_v10.tex` landed 2026-04-22: a new "Three-Way Operational Split" paragraph that gives one concrete recommendation per use case (distribution, unconditional VaR, conditional VaR), plus a companion "Discrete HMM + Poisson-Jump Baseline is Overly Conservative on 5 % VaR" paragraph that calls out the `alswaidan2026hybrid` Kupiec failure.
 8. [x] DiscreteNJ / WJ 5 % VaR Kupiec failure callout in `results_v10.tex` landed 2026-04-22: new `par:discrete_var_failure` paragraph in the Utility subsection that explains why the discrete baselines are absent from Table~\ref{tab:var_es}, reports the Kupiec LR 16.81 (p < 0.001) and Christoffersen LR 13.22 OoS, and shows the continuous CHMM family closing the 5 % Kupiec gap (LR_uc $\le 3.83$ across all three variants).
+9. [ ] **v10 revision pass** (Track V10-Polish, V1 through V15). Driven by `user-comments.md` (2026-04-22). Key subtasks:
+   - [ ] V1: fix DiscreteNJ / WJ $(K_{\text{disc}}, \lambda, \epsilon)$ per `arxiv.org/pdf/2603.10202` and re-run every downstream table that consumes those rows.
+   - [ ] V2: add axis labels to every v10 figure that is missing them (starting with Fig 4 and Fig 5).
+   - [ ] V3: align the two panels of Fig 4 in a single subplot grid.
+   - [ ] V4: rewrite every figure and table caption in v10 to be self-contained and informative.
+   - [ ] V5: strip stale "v6 OoS window" references (currently `results_v10.tex:92, 107, 273`).
+   - [ ] V6: consolidate the random seed mention to a single sentence in the body.
+   - [ ] V7: fix the margin overflow on the sig-MMD path-lift sentence in §4.6.
+   - [ ] V8: fix the margin overflow on the leverage-effect sentence.
+   - [ ] V9: trim "reproduced from \ldots" from table captions that don't need it.
+   - [ ] V10: reconcile §4.3 title ("seven-model comparison") with the actual generator count in Table~\ref{tab:model_comparison}.
+   - [ ] V11: reconcile Table 3 caption ("comparison to 9 generators") with the actual row count.
+   - [ ] V12: add one or two schematic figures (TikZ / SVG) for Pipeline A / B and for the generator-family architectures.
+   - [ ] V13: unify figure palette, font size, line widths across `figs/*.svg`; push defaults into `run_figures.jl`.
+   - [ ] V14: fix contrast and add a simulations legend to Fig 5 panel (b); audit other overlay panels.
+   - [ ] V15: final cross-section nuance sweep for anything analogous to V1 through V14.
 
 ## 17. Out of scope for this plan
 
