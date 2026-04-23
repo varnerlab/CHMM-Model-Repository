@@ -23,7 +23,7 @@ Scripts:
 - `run_baselines_and_cross_asset.jl`
 - `run_multi_emission_analysis.jl` (SPY-only K-sweep and family sweep)
 - `run_equity_price_sim.jl`
-- `run_v7_full_rebuild.jl` (walk-forward + VaR/ES + block-bootstrap power + nu diagnostics)
+- `run_full_rebuild.jl` (walk-forward + VaR/ES + block-bootstrap power + nu diagnostics, via `run_diagnostics.jl`)
 
 Outputs currently used in the paper:
 
@@ -35,8 +35,8 @@ Outputs currently used in the paper:
 | **Table T2 (per-ticker CHMM-N / t / L)**                 | `results/SPY/Table-T2-Per-Ticker-Emission-Families.txt`                       | 6 tickers, single-index     |
 | Per-K / per-family figures (Convergence, IS, OoS, Trans) | `results/SPY/K*/...`, `results/SPY/multi_emission/K18/*/...` | SPY only                    |
 | Price fans + terminal distributions                      | `results/equity_price_sim/Fig-{TICKER}-*`                    | 6 tickers, single-index     |
-| VaR / ES back-test                                       | `results/v7/utility/VaR_ES_Backtest.txt`                     | SPY only                    |
-| Walk-forward                                             | `results/v7/walk_forward/WalkForward.txt`                    | Defensives only (JNJ, JPM)  |
+| VaR / ES back-test                                       | `results/diagnostics/utility/VaR_ES_Backtest.txt`            | SPY only                    |
+| Walk-forward                                             | `results/diagnostics/walk_forward/WalkForward.txt`           | Defensives only (JNJ, JPM)  |
 
 ### Pipeline B. Cross-asset extension (SIM + Gaussian copula + Student-t copula)
 
@@ -55,7 +55,7 @@ Outputs currently used in the paper:
 | **Table T2 (SIM + Gaussian + t-copula)**               | `results/cross_asset/Table-T3-Cross-Asset-Dependence.txt`| 6 tickers, cross-asset  |
 | Fig 6 (cross-asset correlation heatmap)                | `results/cross_asset/Fig-Cross-Asset-Correlation.*`      | 6 tickers, cross-asset  |
 | Per-asset IS KS bar chart (SIM / Gauss / t-cop)        | `results/cross_asset/Fig-Cross-Asset-KS-Dist.*`          | 6 tickers, cross-asset  |
-| Copula profile-MLE ν search                            | `results/v7/copula_profile/*`                            | 6 tickers, cross-asset  |
+| Copula profile-MLE ν search                            | `results/diagnostics/copula_profile/*`                   | 6 tickers, cross-asset  |
 
 ### The collision
 
@@ -108,7 +108,7 @@ Rename to eliminate the "two Table T2" collision.
    pipeline would require a defensible treatment of joint path draws, which is
    neither needed for the argument nor standard in this literature. Single-
    index is also the only choice that matches what `run_equity_price_sim.jl`
-   and `run_v7_full_rebuild.jl` already produce.
+   and `run_full_rebuild.jl` already produce.
 
 4. **Cross-asset is where the SIM/copula extension genuinely earns its space.**
    It adds a **different** metric (cross-asset correlation reproduction via
@@ -137,7 +137,7 @@ Rename to eliminate the "two Table T2" collision.
 | Fig 5     | Emission PDFs + transition heatmap (SPY, K=18, CHMM-N)                       | A                               | `results/SPY/multi_emission/K18/N/Fig-Emission-PDFs*`          |
 | Fig 6     | Price fans (6 tickers × 3 families)                                          | A                               | `results/equity_price_sim/Fig-*-PriceFan-*`                    |
 | **Fig 7** | **Cross-asset correlation heatmap (Observed / SIM / Gaussian / Student-t)**  | **B**                           | `results/cross_asset/Fig-Cross-Asset-Correlation*`             |
-| Appendix  | VaR/ES back-test, walk-forward, block-bootstrap power, copula profile, nu diagnostics, GRU comparison, Ryden K=2 | Mixed (A + B) | `results/v7/...`                                               |
+| Appendix  | VaR/ES back-test, walk-forward, block-bootstrap power, copula profile, nu diagnostics, GRU comparison, Ryden K=2 | Mixed (A + B) | `results/diagnostics/...`                                      |
 
 ### Renaming action items (safe, mechanical)
 

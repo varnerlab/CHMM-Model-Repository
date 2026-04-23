@@ -1,3 +1,5 @@
+> **Scope note.** This is a paper-upgrade planning artifact, not reproducibility documentation. It sequences the v9 → v10 upgrade of the companion paper (`CHMM-paper`) and will go stale as that paper advances. For how to reproduce the model and its results, see the repo root `README.md`.
+
 # Plan: CHMM-Model + CHMM-paper, upgrade from v9 "publishable" to "top-tier synthetic-data generator paper"
 
 **Status:** v0, 2026-04-22. Companion to `CHMM-Vol-Model/plan-vol-paper.md` and `CHMM-Model/DECISION-MEMO.md` (sibling file in this repo).
@@ -114,6 +116,14 @@ Source: `CHMM-Model/user-comments.md` (user review of `Paper_v10.pdf`). These ar
 | V14 | Figure 5 panel b contrast + legend | **DONE 2026-04-22.** Density-fan alpha raised from $0.05$ to $0.18$, path colour switched to the colorblind-safe blue, and a single consolidated legend entry `"CHMM-N simulated (50 paths)"` attached to the first density call (subsequent paths use `label=""`). Observed OoS line now uses the high-contrast vermillion (same palette as V13). No other density-fan panels in the main body needed the same fix (Fig 3 panel (a) uses only a single simulated curve, not a 50-path fan). | **DONE** |
 | V15 | Cross-section nuance sweep | **DONE 2026-04-22.** Found and fixed five residual stale-number cites overlooked during V1's rewrite wave: CHMM-t IS kurtosis in `introduction_v10.tex:21`, `discussion_v10.tex:74`, `results_v10.tex:147`, and `supplemental_v10.tex:883` (all `17.34 \to 14.57`, plus the `126\%` overshoot in the discussion recomputed to $\sim 90\%$); and one stale explanation at `results_v10.tex:507` about "$K_{\text{disc}} = 13$ bin-centroid quantization dominating the jump effect" rewritten to cite the actual $K_{\text{disc}} = 90$ / $\epsilon = 5 \times 10^{-5}$ / $\lambda = 67$ regime (fewer than one jump per IS or OoS window at our sample lengths). Known residuals (intentionally deferred, not new): (1) 15 `Overfull \hbox` warnings remain in tables with `\resizebox{\textwidth}{!}`, tight columns, or long references -- all under $20$pt except two ($62$pt near line 354 of the combined doc, $48$pt near 982); none break layout. (2) Appendix supplemental panels (`tab:sensitivity`, `tab:bin_t`, `tab:block_bootstrap`, `tab:nu_bracket`) retain small $K = 18$-era inconsistencies with the main body because their generator scripts were not re-run in V1; documented here for a dedicated appendix rerun. (3) Second V12 schematic (generator-family architectures) remains deferred pending reviewer feedback. | **DONE** |
 | V16 | `siunitx` migration for numeric tables | Migrate Tables 2, 4 extended-metrics, leverage, agg-kurt, sim-pvalues, cross-asset, and the $K$-sweep supplemental table to `\usepackage{siunitx}` with per-column `S[table-format=...]` so decimal points align across rows. Invasive (touches every numeric cell); defer until after V10--V15 land. Pairs with the project-macro library introduced in V10/V11. | OPEN |
+
+### Post-v10 external-event items (OPEN, not a v10 submission gate)
+
+These items do not gate v10 submission. They are queued for a future revision once an external event fires. Tracked alongside V10-Polish only so nothing is forgotten.
+
+| Item | Area | Description | Status |
+|---|---|---|---|
+| E1 | Vol companion citation | Once the semi-Markov / vol companion paper (sibling `SM-CHMM-AR-Paper` / `CHMM-Vol-Paper`) is posted to arXiv, cite it in the equity paper. Replace the current narrative forward references in `discussion_v10.tex` and in `methods_v10.tex` `sec:sm_ablation` with a formal `\cite{...}` entry (bib key to be chosen when the arXiv ID is known). Also soften companion-facing wording in this repo so nothing reads as if the vol paper is already published: `README.md:122` (SM-CHMM-AR-Model / SM-CHMM-AR-Paper bullet) and `run_track_c1_smchmm.jl:534` (Track C1 summary header line). Trigger: user signals when the arXiv preprint is live. Decision on 2026-04-22: defer all citation work until then; the equity paper's semi-Markov section stands on Yu (2010) alone in the interim. | OPEN |
 
 ---
 

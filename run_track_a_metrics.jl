@@ -568,7 +568,7 @@ end
 # Summary digest
 # --------------------------------------------------------------------------------------- #
 open(joinpath(TRACK_A_DIR, "Track-A-summary.txt"), "w") do io
-    println(io, "Track A summary digest (Paper v9 -> v10 evaluation rigor)");
+    println(io, "Track A summary digest (extended distributional and tail-fidelity metrics)");
     println(io, "="^90);
     println(io, "");
     println(io, "Setup:  SPY, IS n=$n_is, OoS n=$n_oos; seed=$SEED; $N_PATHS paths/model; K=$K_MAIN.");

@@ -1,6 +1,6 @@
-# Track A results (2026-04-22)
+# Track A results
 
-Evaluation-rigor extension to Paper v9 per `../../DECISION-MEMO.md` and `../../plan-equity-paper.md`.
+Extended distributional and tail-fidelity evaluation of the CHMM family against the baseline panel: MMD / signature-MMD / discriminator AUC, leverage-effect profile, aggregational kurtosis across horizons, joint simulation-based p-values, and Kupiec / Christoffersen VaR LR tests.
 
 All tables produced by `run_track_a_metrics.jl` and `run_track_a_utility.jl`. Seed `20260422`, N_PATHS = 1000 paths/model, K = 18 for CHMM-N / -t / -L.
 

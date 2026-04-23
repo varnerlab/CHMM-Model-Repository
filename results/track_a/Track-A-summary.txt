@@ -1,4 +1,4 @@
-Track A summary digest (Paper v9 -> v10 evaluation rigor)
+Track A summary digest (extended distributional and tail-fidelity metrics)
 ==========================================================================================
 
 Setup:  SPY, IS n=2516, OoS n=572; seed=20260422; 1000 paths/model; K=18.

@@ -1,3 +1,5 @@
+> **Scope note.** This is a paper-upgrade planning artifact, not reproducibility documentation. It captures the v9 → v10 scope decision for the companion paper (`CHMM-paper`) and will go stale as that paper advances. For how to reproduce the model and its results, see the repo root `README.md`. For the implementation plan that executes the OPEN items below, see the sibling `plan-equity-paper.md`.
+
 # Decision Memo: Can `CHMM-Model` + `CHMM-paper` be pushed from v9 "publishable" to "top-tier synthetic-data generator paper"?
 
 _Prepared 2026-04-22, after a full review of `CHMM-Model` source, `CHMM-paper/paper/Paper_v9.tex`, the sibling `CHMM-Vol-Model` / `CHMM-Vol-Paper` repos, and the current literature on synthetic financial time-series generators (QuantGAN, TimeGAN, Sig-WGAN, TimeGrad, neural SDE, vine copulas)._
@@ -93,6 +95,14 @@ Source: `CHMM-Model/user-comments.md`. All items scoped against `Paper_v10.pdf` 
 | V14 | Fix Fig 5 panel (b): raise contrast on simulated-path overlay vs observed, add a legend for "Observed" vs "Simulated"; audit other overlay panels                                                                             | **DONE 2026-04-22** | Density-fan alpha raised from $0.05$ to $0.18$; paths switched to Okabe-Ito blue; observed to vermillion; single consolidated legend entry `"CHMM-N simulated (50 paths)"` on the first density call. No other main-body density fans needed the same fix. |
 | V15 | Final cross-section nuance sweep: scan all v10 section files for stale version references, margin overflows, unlabeled axes, misleading titles, thin captions                                                                 | **DONE 2026-04-22** | Five residual stale-number cites fixed: CHMM-t IS kurtosis $17.34 \to 14.57$ in four places, overshoot percentage $126\% \to \sim 90\%$, stale "$K_{\text{disc}} = 13$ quantization" explanation at `results_v10.tex:507` rewritten to the correct $\epsilon = 5 \times 10^{-5}$ / $\lambda = 67$ regime. Known residuals: 15 `Overfull \hbox` warnings (non-breaking); appendix-panel inconsistencies from pre-V1 seed runs; generator-family schematic deferred. |
 | V16 | `siunitx` migration for numeric tables (Tables 2, 4, leverage, agg-kurt, sim-pvalues, cross-asset, $K$-sweep): per-column `S[table-format=...]` so decimals align                                                              | OPEN   | Invasive (touches every numeric cell); defer until after V10--V15. Pairs with the project-macro library introduced in V10/V11                  |
+
+### Post-v10 external-event items (OPEN, not a v10 submission gate)
+
+These items do not gate the v10 submission. They are queued for a future revision of the paper once an external event fires.
+
+| # | Work item | Status | Trigger |
+|---|---|---|---|
+| E1 | Cite the semi-Markov / vol companion paper (sibling `SM-CHMM-AR-Paper` / `CHMM-Vol-Paper`) in the equity paper. Replace the current narrative forward references in `discussion_v10.tex` and in `methods_v10.tex` `sec:sm_ablation` with a formal `\cite{...}` entry (bib key to be set once the arXiv ID is known). Soften companion-facing wording in this repo so nothing implies the vol paper is already published: `README.md:122` (SM-CHMM-AR-Model / SM-CHMM-AR-Paper bullet), `run_track_c1_smchmm.jl:534` (Track C1 summary header). | OPEN | External: vol paper posted to arXiv. User will signal when the preprint is live. Decision made 2026-04-22 to defer any citation work until then; the equity paper's semi-Markov content stands on the Yu (2010) citation alone in the interim. |
 
 ---
 
