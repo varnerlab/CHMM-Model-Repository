@@ -27,10 +27,11 @@ const K = 18;
 const MAX_ITER = 60;
 const RESULTS_DIR = joinpath(@__DIR__, "results");
 
-# Discrete baseline hyper-parameters (from prior paper arXiv:2603.10202)
-const EPSILON_JUMP = 0.01;
-const LAMBDA_JUMP = 3.0;
-const DISCRETE_K = 13;      # bin count from prior paper
+# Discrete baseline hyper-parameters (from prior paper arXiv:2603.10202,
+# Notebook 3 `3-HMM-WithJumps-Simulation-Notebook.ipynb`, final SPY run)
+const EPSILON_JUMP = 0.00005;   # fraction of steps with a jump event
+const LAMBDA_JUMP = 67.0;       # mean number of jump events (Poisson)
+const DISCRETE_K = 90;          # number_of_states from prior paper
 
 # ========================================================================================= #
 # LOAD DATA

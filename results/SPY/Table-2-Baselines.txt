@@ -7,27 +7,20 @@ Pipeline   : A. Single-index trained CHMM; SPY fit independently, no cross-asset
 Ticker     : SPY only (six-ticker generalization is in Table T2).
 Paths      : 1000 simulated paths per model; alpha = 0.05 for KS / AD.
 Baselines  : Bootstrap, Gaussian i.i.d., Laplace i.i.d., Discrete HMM (no jumps = NJ,
-             with jumps = WJ, K=13 bins, epsilon=0.01, lambda=3.0 from prior paper), GARCH(1,1).
+             with jumps = WJ, K=90 bins, epsilon=5.0e-5, lambda=67.0 from prior paper), GARCH(1,1).
 CHMM       : CHMM-N (Gaussian), CHMM-t (Student-t per-state nu), CHMM-L (Laplace). K=18, no jumps.
-
-How this differs from Table T2 and Table T3:
-  Table 2    : this table. SPY only, compares CHMM against seven standard baselines.
-  Table T2   : results/SPY/Table-T2-Per-Ticker-Emission-Families.txt. Same Pipeline A,
-               extends CHMM-N / t / L to six tickers. No baselines, no dependence.
-  Table T3   : results/cross_asset/Table-T3-Cross-Asset-Dependence.txt. Pipeline B,
-               adds SIM and copula dependence on top of the per-asset CHMM-N marginals.
 ======================================================================================================================================================
 
                 | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 Observed        |           |           |            |            |   7.68 |          |          |        |        |           |
-Bootstrap       |     99.6 |     99.4 |      91.0  |      94.2  |   7.43 |    6.66  |  0.0627 | 0.065  | 0.05 |    100.0  |     76.8
-Gaussian        |      0.0 |      0.0 |       2.0  |       0.0  |   -0.0 |   -0.02  |  0.0627 | 0.411  | 0.1541 |     13.1  |     21.2
-Laplace         |     98.9 |     97.2 |      87.2  |      91.9  |   2.96 |    2.86  |  0.0627 | 0.122  | 0.0816 |     77.8  |     71.7
-Discrete NJ     |      0.0 |      0.0 |      38.1  |      65.9  |   0.64 |    0.63  |  0.0617 | 0.314  | 0.381 |     38.4  |     66.7
-Discrete WJ     |      0.0 |      0.0 |      36.2  |      54.3  |   0.52 |    0.51  |  0.0618 | 0.326  | 0.3848 |     41.4  |     66.7
-GARCH(1,1)      |     23.1 |      8.5 |      58.3  |      55.5  |   6.97 |    3.08  |  0.0492 | 0.245  | 0.103 |     50.5  |     85.9
-CHMM-N (K=18)   |     94.7 |     86.5 |      84.0  |      76.5  |   5.02 |    4.42  |  0.0513 |  0.11  | 0.0808 |    100.0  |     91.9
-CHMM-t (K=18)   |     94.7 |     89.9 |      83.4  |      79.0  |  17.34 |   10.24  |  0.0554 | 0.102  | 0.0758 |    100.0  |     92.9
-CHMM-L (K=18)   |     95.2 |     93.2 |      80.4  |      79.9  |   6.76 |    6.27  |  0.0564 | 0.102  | 0.0797 |    100.0  |     81.8
+Bootstrap       |     99.9 |     99.7 |      91.0  |      93.8  |   7.54 |     6.8  |  0.0628 | 0.066  | 0.0501 |    100.0  |     77.8
+Gaussian        |      0.0 |      0.0 |       1.2  |       0.0  |  -0.01 |   -0.02  |  0.0627 | 0.413  | 0.1543 |     13.1  |     21.2
+Laplace         |     99.1 |     97.3 |      86.1  |      91.7  |   2.96 |    2.83  |  0.0627 | 0.123  | 0.0816 |     77.8  |     69.7
+Discrete NJ     |     98.3 |     98.3 |      85.2  |      89.9  |   3.53 |    3.44  |  0.0618 |  0.11  | 0.1605 |    100.0  |     93.9
+Discrete WJ     |     97.9 |     96.5 |      83.9  |      85.4  |   3.49 |     3.4  |  0.0598 | 0.117  | 0.1621 |    100.0  |     89.9
+GARCH(1,1)      |     25.9 |     10.0 |      58.2  |      56.0  |   6.97 |    2.88  |  0.0484 | 0.248  | 0.1033 |     51.5  |     87.9
+CHMM-N (K=18)   |     93.8 |     86.6 |      84.2  |      77.9  |   4.99 |    4.51  |  0.0507 | 0.112  | 0.081 |    100.0  |     90.9
+CHMM-t (K=18)   |     93.7 |     88.9 |      85.9  |      80.0  |  14.57 |    9.74  |  0.0548 | 0.103  | 0.0762 |    100.0  |     93.9
+CHMM-L (K=18)   |     93.2 |     91.2 |      79.3  |      79.3  |   6.75 |    6.29  |  0.0565 | 0.101  | 0.0795 |    100.0  |     81.8
 ======================================================================================================================================================

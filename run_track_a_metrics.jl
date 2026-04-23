@@ -35,9 +35,11 @@ const N_PATHS      = 1000;          # A10: unified path count
 const L_LAGS       = 252;
 const K_MAIN       = 18;
 const MAX_ITER     = 60;
-const DISCRETE_K   = 13;
-const EPSILON_JUMP = 0.01;
-const LAMBDA_JUMP  = 3.0;
+# Discrete baseline hyper-parameters (from prior paper arXiv:2603.10202,
+# Notebook 3 `3-HMM-WithJumps-Simulation-Notebook.ipynb`, final SPY run)
+const DISCRETE_K   = 90;         # number_of_states from prior paper
+const EPSILON_JUMP = 0.00005;    # fraction of steps with a jump event
+const LAMBDA_JUMP  = 67.0;       # mean number of jump events (Poisson)
 
 const WINDOW_LEN   = 20;            # window length for MMD, sig-MMD, disc AUC
 const N_WINDOWS    = 500;

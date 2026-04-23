@@ -12,8 +12,8 @@ A9  pv̄ IS by model:
      Bootstrap    pv̄=0.228   pv̄ OoS=0.466
      Gaussian     pv̄=0.0   pv̄ OoS=0.116
      Laplace      pv̄=0.001   pv̄ OoS=0.156
-     DiscreteNJ   pv̄=0.002   pv̄ OoS=0.163
-     DiscreteWJ   pv̄=0.0   pv̄ OoS=0.164
+     DiscreteNJ   pv̄=0.016   pv̄ OoS=0.376
+     DiscreteWJ   pv̄=0.029   pv̄ OoS=0.384
      GARCH        pv̄=0.54   pv̄ OoS=0.468
      CHMM-N       pv̄=0.39   pv̄ OoS=0.539
      CHMM-t       pv̄=0.324   pv̄ OoS=0.661
