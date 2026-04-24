@@ -1,21 +1,21 @@
-# Re-render Fig-3-IS-Comparison and Fig-4-OoS-Validation for the K=18 SPY
-# fits of all three emission families, plus the transition-matrix heatmaps,
-# with titlefontsize=10 (previously 9) and an explicit colorbar on every
-# transition-matrix heatmap (review 6.5).
+# Re-render Fig-3-IS-Comparison-K<N> and Fig-4-OoS-Validation-K<N> for the
+# K-sweep (CHMM-N / Gaussian emissions) at the same style and size as
+# run_figures.jl, so the appendix K-sweep panels can be displayed at full
+# \textwidth without label clipping after LaTeX shrink.
 
 using Pkg; Pkg.activate(".");
 include("Include.jl");
 using Random
 const SEED = 20260420;
-Random.seed!(SEED);
 
 const TICKER = "SPY";
-const K = 18; const MAX_ITER = 60;
+const K_VALUES = [3, 6, 9, 12, 15, 21];
+const MAX_ITER = 60;
 const N_PATHS = 1000; const L_LAGS = 252;
 const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
 mkpath(PAPER_FIGS_DIR);
 
-# Load SPY data
+# --- Data load (identical to run_figures.jl) ---
 train = MyPortfolioDataSet() |> x -> x["dataset"];
 max_days = nrow(train["AAPL"]);
 dataset = Dict{String,DataFrame}();
@@ -31,33 +31,26 @@ x_lo_raw = quantile(R_is, 0.005); x_hi_raw = quantile(R_is, 0.995);
 x_pad = 0.20 * (x_hi_raw - x_lo_raw);
 x_lo = x_lo_raw - x_pad; x_hi = x_hi_raw + x_pad;
 
-println("SPY IS=$n_is OoS=$n_oos. Figs -> $PAPER_FIGS_DIR");
+println("SPY IS=$n_is OoS=$n_oos. K_VALUES=$K_VALUES. Figs -> $PAPER_FIGS_DIR");
 
-# ----- Metric helper (eval_metrics returns ks_pvals + ks etc.) -----
 function eval_metrics(observed, sim_archive; L_val=L_LAGS)
     np = size(sim_archive, 2); n_o = length(observed);
-    μ_o = mean(observed); σ_o = std(observed);
-    kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
     L_use = min(L_val, n_o - 1);
-    acf_o = autocor(abs.(observed), 1:L_use);
-    ks_pass = 0; ad_pass = 0; ks_pvals = Float64[];
+    ks_pass = 0; ks_pvals = Float64[];
     for i in 1:np
         sim = sim_archive[:, i];
         pval_ks = pvalue(ApproximateTwoSampleKSTest(observed, sim));
         push!(ks_pvals, pval_ks);
         if pval_ks > 0.05; ks_pass += 1; end
-        pval_ad = pvalue(KSampleADTest(observed, sim));
-        if pval_ad > 0.05; ad_pass += 1; end
     end
-    return (ks=round(100*ks_pass/np, digits=1),
-            ad=round(100*ad_pass/np, digits=1),
-            ks_pvals=ks_pvals);
+    return (ks=round(100*ks_pass/np, digits=1), ks_pvals=ks_pvals);
 end
 
 function _stationary(model, K::Int)
     T = zeros(K, K); for i in 1:K; T[i, :] = probs(model.transition[i]); end
     π = (T^1000)[1, :]; return T, Categorical(π);
 end
+
 function _simulate(model, start_dist, n_is, n_oos, n_paths)
     sis = Array{Float64,2}(undef, n_is, n_paths); sos = Array{Float64,2}(undef, n_oos, n_paths);
     for i in 1:n_paths
@@ -69,16 +62,12 @@ function _simulate(model, start_dist, n_is, n_oos, n_paths)
     return sis, sos;
 end
 
-# ----- Figure generators (V2 axis labels, V13 colorblind palette, V14 density fan) -----
-const TFS = 11;                             # sub-panel title font size (was 10)
-const PTFS = 12;                            # overall plot title font size
-const _OBS_C = RGB(0.835, 0.369, 0.0);      # Okabe-Ito vermillion (observed)
-const _SIM_C = RGB(0.0, 0.447, 0.698);      # Okabe-Ito blue (simulated paths)
-const _MEAN_C = RGB(0.0, 0.620, 0.451);     # Okabe-Ito bluish green (mean over sims)
-# Shared kwargs ensure axis labels / ticks / legends stay readable and do not
-# clip after the paper LaTeX shrinks the figure to subfigure width. Margins
-# are set project-wide in plots_defaults.jl (loaded via Include.jl); do not
-# redeclare them here.
+# Style constants — keep in sync with run_figures.jl
+const TFS = 11;
+const PTFS = 12;
+const _OBS_C = RGB(0.835, 0.369, 0.0);
+const _SIM_C = RGB(0.0, 0.447, 0.698);
+const _MEAN_C = RGB(0.0, 0.620, 0.451);
 const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
@@ -125,9 +114,6 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     p_b = plot(title="(b) OoS density fan",
         xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
-    # V14 fix: give the simulated fan a single consolidated legend entry,
-    # raise alpha from 0.05 to 0.18 so the paths register against the observed
-    # curve, and pick a colorblind-safe hue distinct from the observed line.
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot
         _lbl = (i == 1) ? "CHMM-$tag simulated ($(_sim_paths_to_plot) paths)" : "";
@@ -158,53 +144,21 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     savefig(fig, out_path * ".svg");
 end
 
-function save_transition_heatmap(T_mat, tag, K, out_path)
-    T_log = log10.(T_mat .+ 1e-10);
-    p = heatmap(T_log,
-        title="Transition Matrix log₁₀ (CHMM-$tag, K=$K)",
-        titlefontsize=TFS,
-        xlabel="To State", ylabel="From State",
-        xguidefontsize=TFS, yguidefontsize=TFS,
-        color=:viridis, yflip=true, aspect_ratio=:equal,
-        size=(520, 470),
-        colorbar=true,
-        colorbar_title="log₁₀ T_{ij}",
-        colorbar_titlefontsize=TFS);
-    savefig(p, out_path * ".pdf");
-    savefig(p, out_path * ".svg");
-end
-
-# ----- Fit + simulate + render for each family -----
-for (tag, build_fn) in [
-    ("N", () -> build(MyContinuousHiddenMarkovModel, (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
-    ("t", () -> build(MyStudentTHiddenMarkovModel,   (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
-    ("L", () -> build(MyLaplaceHiddenMarkovModel,    (observations=R_is, number_of_states=K, max_iter=MAX_ITER)))]
-    println("\n[$tag] Training CHMM-$tag at K=$K...")
+for K in K_VALUES
+    println("\n[K=$K] Training CHMM-N at K=$K (max_iter=$MAX_ITER)...")
     Random.seed!(SEED);
-    model = build_fn();
-    T_mat, sd = _stationary(model, K);
+    model = build(MyContinuousHiddenMarkovModel,
+        (observations=R_is, number_of_states=K, max_iter=MAX_ITER));
+    _, sd = _stationary(model, K);
     sis, sos = _simulate(model, sd, n_is, n_oos, N_PATHS);
     m_is  = eval_metrics(R_is,  sis);
     m_oos = eval_metrics(R_oos, sos);
 
-    save_is_comparison(sis, m_is, tag, K,
-        joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K-$tag"));
-    save_oos_validation(sos, m_oos, tag, K,
-        joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K-$tag"));
-    save_transition_heatmap(T_mat, tag, K,
-        joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K-$tag"));
-    println("  [$tag] Figures written.")
-
-    # Also write the main-body unsuffixed versions from the Gaussian family (main-body figures)
-    if tag == "N"
-        save_is_comparison(sis, m_is, tag, K,
-            joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));
-        save_oos_validation(sos, m_oos, tag, K,
-            joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K"));
-        save_transition_heatmap(T_mat, tag, K,
-            joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K"));
-        println("  [$tag] Main-body Fig-*-K18 (unsuffixed) also rewritten.")
-    end
+    save_is_comparison(sis, m_is, "N", K,
+        joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));
+    save_oos_validation(sos, m_oos, "N", K,
+        joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K"));
+    println("  [K=$K] IS KS=$(m_is.ks)%  OoS KS=$(m_oos.ks)%  → figures written.")
 end
 
-println("\nDone. Figures regenerated with titlefontsize=$TFS and explicit colorbars.")
+println("\nDone. K-sweep figures regenerated at size=(1500,450), titlefontsize=$TFS.")

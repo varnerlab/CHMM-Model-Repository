@@ -19,6 +19,7 @@ using DataFrames;
 using JLD2;
 using FileIO;
 using Plots;
+include(joinpath(_ROOT, "plots_defaults.jl"));
 using Colors;
 using StatsPlots;
 using HypothesisTests;

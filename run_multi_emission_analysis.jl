@@ -246,8 +246,7 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     _obs_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue
     _sim_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion
     _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green
-    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8,
-              left_margin=5Plots.mm, bottom_margin=5Plots.mm, top_margin=3Plots.mm);
+    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
     p_a = plot(title="(a) IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
         xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
@@ -283,8 +282,7 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     _obs_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion (observed, high contrast)
     _sim_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue (simulated paths)
     _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green (mean over sims)
-    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8,
-              left_margin=5Plots.mm, bottom_margin=5Plots.mm, top_margin=3Plots.mm);
+    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
     p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.7, color=_sim_c,
         label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths)",

@@ -146,7 +146,7 @@ plot!(p4, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
 
 fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700),
     plot_title="Stylized Facts — $TICKER", plot_titlefontsize=12,
-    bottom_margin=6Plots.mm, left_margin=5Plots.mm);
+    );
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.svg"));
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.pdf"));
 println("  Saved Figure 1 + Table 1")
@@ -426,7 +426,7 @@ for K in K_VALUES
 
     fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400),
         plot_title="IS Comparison — $TICKER, K=$K", plot_titlefontsize=12,
-        bottom_margin=6Plots.mm, left_margin=5Plots.mm);
+        );
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.svg"));
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.pdf"));
 
@@ -468,7 +468,7 @@ for K in K_VALUES
 
     fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400),
         plot_title="OoS Validation — $TICKER, K=$K", plot_titlefontsize=12,
-        bottom_margin=6Plots.mm, left_margin=5Plots.mm);
+        );
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.svg"));
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.pdf"));
 
