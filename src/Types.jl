@@ -143,12 +143,15 @@ end
 """
     mutable struct MySemiMarkovContinuousHMM <: AbstractMarkovModel
 
-Semi-Markov continuous HMM with state-dependent AR(1) emissions (Track C1,
-ported from `CHMM-Vol-Model`). Each state k carries an AR(1) conditional
-mean plus a residual drawn from the model's chosen family, and an explicit
-sojourn-duration distribution (negative-binomial or truncated discrete
-Pareto). Between-state transitions have zero diagonal per Yu (2010): the
-diagonal is absorbed into the sojourn distribution.
+Semi-Markov continuous HMM with state-dependent AR(1) emissions. Ported
+from the companion `SM-CHMM-AR-Model` repository
+(https://github.com/altashly1/SM-CHMM-AR-Model; companion code for
+Alswaidan, Jin & Varner 2026, "Long Memory from Markov Mixing"). Each
+state k carries an AR(1) conditional mean plus a residual drawn from the
+model's chosen family, and an explicit sojourn-duration distribution
+(negative-binomial or truncated discrete Pareto). Between-state
+transitions have zero diagonal per Yu (2010): the diagonal is absorbed
+into the sojourn distribution.
 
 For equity returns the AR(1) φ_k is typically near zero (returns are white
 noise) but the per-state sojourn distribution is load-bearing: heavy-tailed

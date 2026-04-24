@@ -1,11 +1,19 @@
 # ========================================================================================= #
 # SemiMarkov.jl
 #
-# Track C1 port from CHMM-Vol-Model/src/Compute.jl:1300..1755.
 # Semi-Markov continuous HMM with state-dependent AR(1) emissions (Gaussian / Student-t /
 # Laplace residuals) and explicit per-state sojourn distributions (NB or truncated Pareto).
 #
-# Plug-in estimator per Yu (2010) §IV plus the vol-paper plan Section 5:
+# Ported from the companion SM-CHMM-AR-Model repository (companion code for
+# Alswaidan, Jin & Varner, 2026, "Long Memory from Markov Mixing: A Semi-Markov
+# Regime-Switching Generator for the CBOE Volatility Index"):
+#   https://github.com/altashly1/SM-CHMM-AR-Model
+# Within that repo the corresponding source is `src/Compute.jl` lines ~1328 onward
+# (SM-CHMM-AR plug-in machinery). Here we use only the plug-in estimator as an
+# ablation baseline for SPY; the joint-EM SM-CHMM-AR of the companion paper is
+# not ported.
+#
+# Plug-in estimator per Yu (2010) §IV:
 #   1. Fit matching flat CHMM family via `build` (Baum-Welch initialization).
 #   2. Viterbi-decode the in-sample state sequence.
 #   3. Reorder states by emission location so state 1 is calm and state K is crisis.

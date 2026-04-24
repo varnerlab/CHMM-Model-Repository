@@ -122,6 +122,22 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 - [`SM-CHMM-AR-Model`](https://github.com/altashly1/SM-CHMM-AR-Model) / [`SM-CHMM-AR-Paper`](https://github.com/altashly1/SM-CHMM-AR-Paper) — companion VIX / semi-Markov extension
 - [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl) — discrete HMM core package from the prior paper
 
+### Shared code with `SM-CHMM-AR-Model`
+
+The two companion repositories share code in both directions:
+
+- `src/SemiMarkov.jl` and the `MySemiMarkovContinuousHMM` type in
+  `src/Types.jl` are **ported from `SM-CHMM-AR-Model`** (truncated discrete
+  Pareto sojourns, plug-in estimator, AR(1) residual fits). Used here only
+  as the SPY SM ablation baseline; the joint-EM SM-CHMM-AR is not ported.
+- Conversely, the flat-CHMM machinery in this repo's `src/Compute.jl`
+  (Baum-Welch for Gaussian / Student-t ECM with per-state $\nu$ /
+  closed-form weighted-Laplace M-step, forward/backward, Viterbi, simulate)
+  is re-used verbatim in `SM-CHMM-AR-Model/src/Compute.jl` (lines 1--1327
+  there).
+
+Each repo is self-contained for reproducibility of its associated paper.
+
 ## Disclaimer
 
 For research and educational purposes only. Not financial advice.
