@@ -313,7 +313,8 @@ for (i, (tag, obs_v, obs_e, key)) in enumerate([
 
     scatter!(var_fig, xs, meds, yerror=(meds .- los, his .- meds),
         subplot=i, title=tag, ms=6, color=:navy, label="sim median [5-95]",
-        xticks=(xs, model_names));
+        xticks=(xs, model_names),
+        ylabel="Annualized log excess growth rate");
     hline!(var_fig, [obs_line], subplot=i, color=:red, lw=2, ls=:dash, label="observed");
 end
 savefig(var_fig, joinpath(util_dir, "VaR_ES_Backtest.pdf"));
