@@ -221,7 +221,7 @@ end
 """
     simulate_msgarch(m::MyMSGARCHModel, n_steps::Int) -> Vector{Float64}
 
-Generate a return series from a fitted MS-GARCH model. Both regime chains' σ² are rolled
+Generate a return series from a fitted MS-GARCH model. Each regime's σ² is rolled
 forward at each step; at each t we sample s_t from the Markov chain and draw r_t from the
 active regime's conditional Normal.
 """
@@ -248,4 +248,145 @@ function simulate_msgarch(m::MyMSGARCHModel, n_steps::Int)::Vector{Float64}
         s = rand(Categorical(m.T[s, :]));
     end
     return returns;
+end
+
+# ========================================================================================= #
+# K = 3 extension (revision response to referee M7; "a single two-regime specification is
+# not sufficient to represent that family"). Parameterises the K x K transition matrix by
+# the K(K-1) off-diagonal logits of a softmax-normalised row, following the same
+# unconstrained optimisation style as the K=2 logit-stick representation.
+# ========================================================================================= #
+
+# Transition-matrix packing for K = 3: 6 free parameters representing the three rows.
+# We use diagonal-dominant parameterisation: each row k is (p_{k,1}, p_{k,2}, p_{k,3})
+# where the two off-diagonal entries are exp(η_{k,j}) / (1 + Σ exp(η_{k,l})) and the
+# diagonal is the residual, enforcing p_{k,k} > 0.5 tendency via the init.
+function _unpack_T3(logits::Vector{Float64})::Matrix{Float64}
+    # logits layout: 2 per row, total 6. Row k has logits (η_{k,j1}, η_{k,j2}) for the
+    # two non-diagonal columns; the diagonal entry is 1 / (1 + Σ exp(η)).
+    T = zeros(3, 3);
+    for k in 1:3
+        η1 = logits[2*(k-1) + 1];
+        η2 = logits[2*(k-1) + 2];
+        e1 = exp(η1); e2 = exp(η2);
+        denom = 1.0 + e1 + e2;
+        # Non-diagonal columns j1, j2 are (k mod 3)+1 and ((k+1) mod 3)+1.
+        j1 = (k % 3) + 1;
+        j2 = ((k + 1) % 3) + 1;
+        T[k, k] = 1.0 / denom;
+        T[k, j1] = e1 / denom;
+        T[k, j2] = e2 / denom;
+    end
+    return T;
+end
+
+function _msgarch_nll_k3(params::Vector{Float64}, obs::Vector{Float64}, μ::Float64)
+    ω = [params[1], params[4], params[7]];
+    α = [params[2], params[5], params[8]];
+    β = [params[3], params[6], params[9]];
+    for k in 1:3
+        if ω[k] <= 0 || α[k] < 0 || β[k] < 0 || (α[k] + β[k]) >= 0.999
+            return 1e10;
+        end
+    end
+    T = _unpack_T3(params[10:15]);
+    ll, _, _ = _hamilton_filter_msgarch(obs, ω, α, β, μ, T);
+    if !isfinite(ll); return 1e10; end
+    return -ll;
+end
+
+"""
+    fit_msgarch_k3(obs; max_iter=2000) -> MyMSGARCHModel
+
+Three-regime MS-GARCH(1,1), fit by Nelder-Mead over 15 parameters: three regime
+triples (ω, α, β) plus six transition-matrix logits. Grid-initialised over (calm /
+medium / stress) volatility ratios. Regime canonicalisation sorts states by
+unconditional variance ascending (state 1 = calm, state 3 = stress).
+"""
+function fit_msgarch_k3(obs::Vector{Float64}; max_iter::Int=3000)::MyMSGARCHModel
+    μ = mean(obs);
+    var_obs = var(obs);
+
+    best_nll = Inf; best_params = zeros(15);
+    for α_try in [0.05, 0.10]
+        for β_try in [0.85, 0.90]
+            denom = (1 - α_try - β_try);
+            if denom < 0.05; continue; end
+            # Three regimes at 0.5x, 1.0x, 2.5x the unconditional variance
+            for (r1, r2, r3) in [(0.4, 1.0, 3.0), (0.5, 1.2, 2.5), (0.3, 1.0, 4.0)]
+                ω1 = var_obs * denom * r1; ω2 = var_obs * denom * r2; ω3 = var_obs * denom * r3;
+                # Diagonal-dominant transition init: diagonal ~0.9, each off-diagonal ~0.05.
+                # Off-diagonal logit so that off-diag prob ~0.05 -> logit = log(0.05 / 0.90)
+                η_init = log(0.05 / 0.90);
+                logits = fill(η_init, 6);
+                p = [ω1, α_try, β_try, ω2, α_try, β_try, ω3, α_try, β_try,
+                     logits[1], logits[2], logits[3], logits[4], logits[5], logits[6]];
+                nll = _msgarch_nll_k3(p, obs, μ);
+                if nll < best_nll; best_nll = nll; best_params = copy(p); end
+            end
+        end
+    end
+
+    best, _ = begin
+        d = length(best_params);
+        simplex = [copy(best_params) for _ in 1:(d + 1)];
+        for i in 2:(d + 1)
+            step = abs(simplex[i][i-1]) > 1e-12 ? simplex[i][i-1] * 0.12 : 0.05;
+            simplex[i][i-1] += step;
+        end
+        for _ in 1:max_iter
+            vals = [_msgarch_nll_k3(s, obs, μ) for s in simplex];
+            order = sortperm(vals);
+            simplex = simplex[order];
+            vals = vals[order];
+            if abs(vals[end] - vals[1]) < 1e-6; break; end
+            centroid = sum(simplex[1:d]) ./ d;
+            reflected = centroid .+ (centroid .- simplex[end]);
+            f_r = _msgarch_nll_k3(reflected, obs, μ);
+            if f_r < vals[1]
+                expanded = centroid .+ 2.0 .* (reflected .- centroid);
+                f_e = _msgarch_nll_k3(expanded, obs, μ);
+                simplex[end] = f_e < f_r ? expanded : reflected;
+            elseif f_r < vals[d]
+                simplex[end] = reflected;
+            else
+                contracted = centroid .+ 0.5 .* (simplex[end] .- centroid);
+                f_c = _msgarch_nll_k3(contracted, obs, μ);
+                if f_c < vals[end]
+                    simplex[end] = contracted;
+                else
+                    for i in 2:(d + 1)
+                        simplex[i] = simplex[1] .+ 0.5 .* (simplex[i] .- simplex[1]);
+                    end
+                end
+            end
+        end
+        vals = [_msgarch_nll_k3(s, obs, μ) for s in simplex];
+        simplex[argmin(vals)], minimum(vals);
+    end
+
+    ω = [best[1], best[4], best[7]];
+    α = [best[2], best[5], best[8]];
+    β = [best[3], best[6], best[9]];
+    T = _unpack_T3(best[10:15]);
+
+    # Canonicalise states by ascending unconditional variance.
+    uv = [ω[k] / max(1 - α[k] - β[k], 1e-6) for k in 1:3];
+    order = sortperm(uv);
+    ω = ω[order]; α = α[order]; β = β[order];
+    P = zeros(3, 3);
+    for i in 1:3, j in 1:3
+        P[i, j] = T[order[i], order[j]];
+    end
+    T = P;
+
+    ll, σ2_hist, γ = _hamilton_filter_msgarch(obs, ω, α, β, μ, T);
+
+    m = MyMSGARCHModel();
+    m.K = 3;
+    m.ω = ω; m.α = α; m.β = β; m.μ = μ; m.T = T;
+    m.σ2_histories = σ2_hist;
+    m.gamma = γ;
+    m.log_likelihood = ll;
+    return m;
 end

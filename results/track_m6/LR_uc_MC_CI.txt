@@ -1,0 +1,27 @@
+======================================================================================================================================================
+Track M6 sub-ask (b). MC confidence interval on Kupiec LR_uc at n = 572 (referee M6 response).
+======================================================================================================================================================
+
+Procedure. For each (model, observed breach rate p) pair, simulate B = 10000 i.i.d. Bernoulli(p) breach
+sequences of length 572 and compute Kupiec LR_uc against α = 0.05 on each. The resulting
+bootstrap distribution of LR_uc is the MC noise band that the observed LR_uc inhabits.
+
+Model                  | p_obs  | LR_obs | mean LR | std LR | q05   | q25   | q50   | q75   | q95   | p_boot
+------------------------------------------------------------------------------------------------------------------------------------------------------
+CHMM-N (flat)          | 0.033  | 3.83   | 4.9     | 3.92   | 0.26  | 1.74  | 3.83  | 6.9   | 12.86 | 0.479 
+SM-CHMM-N (plug-in)    | 0.042  | 0.82   | 1.79    | 2.23   | 0.01  | 0.26  | 0.82  | 2.33  | 5.76  | 0.58  
+CHMM-t (flat)          | 0.033  | 3.83   | 4.9     | 3.92   | 0.26  | 1.74  | 3.83  | 6.9   | 12.86 | 0.479 
+SM-CHMM-t (plug-in)    | 0.038  | 1.74   | 2.9     | 2.97   | 0.01  | 0.5   | 1.8   | 3.83  | 9.59  | 0.5   
+CHMM-L (flat)          | 0.035  | 3.03   | 3.98    | 3.57   | 0.1   | 1.23  | 3.03  | 5.76  | 11.14 | 0.457 
+SM-CHMM-L (plug-in)    | 0.035  | 3.03   | 3.98    | 3.57   | 0.1   | 1.23  | 3.03  | 5.76  | 11.14 | 0.457 
+======================================================================================================================================================
+
+Pairwise flat-vs-SM overlap (P(LR_uc under SM rate < LR_uc under flat rate)):
+
+  CHMM-N (flat)          (p=0.033)   vs   SM-CHMM-N (plug-in)    (p=0.042)   :   0.76
+  CHMM-t (flat)          (p=0.033)   vs   SM-CHMM-t (plug-in)    (p=0.038)   :   0.65
+  CHMM-L (flat)          (p=0.035)   vs   SM-CHMM-L (plug-in)    (p=0.035)   :   0.473
+
+Reading: a value near 0.5 means the two LR_uc bootstrap distributions are essentially indistinguishable at n = 572.
+         A value above 0.7 means the SM rate produces a meaningfully smaller LR_uc than the flat rate in the
+         majority of MC replications, so the calibration improvement is genuine rather than noise.

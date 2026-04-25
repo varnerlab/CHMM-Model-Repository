@@ -404,21 +404,33 @@ end
 
 """
     baum_welch_student_t(observations, number_of_states; max_iter=30, tol=1e-4,
-                         ν_init=6.0, ν_bounds=(2.1, 50.0)) -> Tuple
+                         ν_init=6.0, ν_bounds=(2.1, 50.0), ν_shrink_rate=0.0) -> Tuple
 
 ECM (Expectation-Conditional-Maximization) estimation for a continuous HMM
 with per-state Student-t emissions t_ν_k(μ_k, σ_k). The E-step augments the
 standard forward-backward with the latent precision
 u_{t,k} = (ν_k + 1) / (ν_k + ((o_t - μ_k)/σ_k)^2)
 and the M-step updates (μ_k, σ_k) in closed form given u_{t,k}; ν_k is
-updated by a one-dimensional golden-section search on the Q-function over
-ν_bounds, following Peel & McLachlan (2000).
+updated by a one-dimensional golden-section search on the penalised
+Q-function over ν_bounds.
+
+The penalised objective is
+
+    Q_pen(ν) = Q(ν) - ν_shrink_rate / ν
+
+which corresponds to an exponential prior on 1/ν (equivalently a Pareto-like
+shrinkage of ν toward the Gaussian limit ν → ∞). Setting ν_shrink_rate = 0
+recovers the standard Peel & McLachlan (2000) / Liu & Rubin (1995) ECM
+with no shrinkage. The revision response to referee comment M10 of the JoFE
+submission uses this parameter to pull heavy-tailed states back toward
+moderate tail weight and reduce the CHMM-t IS kurtosis overshoot.
 
 Returns (T, μ, σ, ν, π, ll_history, gamma).
 """
 function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::Int64;
     max_iter::Int64=30, tol::Float64=1e-4,
-    ν_init::Float64=6.0, ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0))
+    ν_init::Float64=6.0, ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0),
+    ν_shrink_rate::Float64=0.0)
 
     N = length(observations);
     K = number_of_states;
@@ -444,13 +456,17 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
     # Helper: Student-t log-density.
     _logpdf_t(x, μ, σ, ν) = logpdf(LocationScale(μ, σ, TDist(ν)), x);
 
-    # Helper: Q-function of ν_k (up to constants independent of ν_k).
-    # Q(ν) = Σ_t γ_t(k) * [logpdf_t(o_t; μ_k, σ_k, ν)]
+    # Helper: Q-function of ν_k (up to constants independent of ν_k), with
+    # optional 1/ν shrinkage penalty.
+    # Q_pen(ν) = Σ_t γ_t(k) * [logpdf_t(o_t; μ_k, σ_k, ν)] - ν_shrink_rate / ν
     function _q_of_nu(ν, γk, o, μ, σ)
         acc = 0.0; n = length(o);
         d = LocationScale(μ, σ, TDist(ν));
         @inbounds for t in 1:n
             acc += γk[t] * logpdf(d, o[t]);
+        end
+        if ν_shrink_rate > 0.0
+            acc -= ν_shrink_rate / ν;
         end
         return acc;
     end

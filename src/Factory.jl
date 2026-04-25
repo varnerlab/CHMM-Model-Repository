@@ -145,6 +145,9 @@ Trains a continuous HMM with per-state Student-t emissions via ECM
 - `max_iter::Int=30` (optional): EM iteration cap
 - `ν_init::Float64=6.0` (optional): initial degrees of freedom per state
 - `ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0)` (optional): bracket for 1D ν search
+- `ν_shrink_rate::Float64=0.0` (optional): rate of an exponential shrinkage
+  prior on 1/ν_k in the penalised ECM Q-function; larger values pull ν_k
+  toward the Gaussian limit ν → ∞. Default 0 recovers the unpenalised ECM.
 """
 function build(model::Type{MyStudentTHiddenMarkovModel}, data::NamedTuple)::MyStudentTHiddenMarkovModel
 
@@ -153,10 +156,12 @@ function build(model::Type{MyStudentTHiddenMarkovModel}, data::NamedTuple)::MySt
     max_iterations = haskey(data, :max_iter) ? data.max_iter : 30;
     ν_init = haskey(data, :ν_init) ? data.ν_init : 6.0;
     ν_bounds = haskey(data, :ν_bounds) ? data.ν_bounds : (2.1, 50.0);
+    ν_shrink_rate = haskey(data, :ν_shrink_rate) ? data.ν_shrink_rate : 0.0;
 
     T_matrix, μ_vec, σ_vec, ν_vec, π_vec, ll_hist, γ =
         baum_welch_student_t(obs, n_states;
-                             max_iter=max_iterations, ν_init=ν_init, ν_bounds=ν_bounds);
+                             max_iter=max_iterations, ν_init=ν_init, ν_bounds=ν_bounds,
+                             ν_shrink_rate=ν_shrink_rate);
 
     m = model();
     m.states = collect(1:n_states);

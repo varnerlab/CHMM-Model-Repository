@@ -1,0 +1,20 @@
+========================================================================================================================
+Track Minor 6. K_disc = 13 centroid Discrete HMM (referee Minor 6 response).
+========================================================================================================================
+
+Setup     : Discrete HMM, 13 quantile bins, centroid emissions, no jumps. SPY IS = 2516, OoS = 572, N_paths = 500.
+Reference : Bin-T NJ in tab:model_comparison uses K_disc = 13 with bin-conditional Student-t emissions; this row uses centroid emissions to isolate the bin-count effect.
+
+metric              value
+------------------------------------
+IS KS pass rate %   0.0
+OoS KS pass rate %  35.4
+IS AD pass rate %   0.0
+OoS AD pass rate %  63.4
+sim excess kurt     0.632   (observed 7.686)
+ACF-MAE             0.0596
+========================================================================================================================
+
+Reading: comparing this row to Bin-T NJ in tab:model_comparison isolates the emission-family effect
+(centroid vs bin-conditional Student-t at the same bin count K_disc = 13). The kurtosis gap from this row
+(near 0 under centroids) to Bin-T NJ's 26.18 is the contribution of the within-bin Student-t tails.

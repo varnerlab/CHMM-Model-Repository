@@ -1,0 +1,26 @@
+======================================================================================================================================================
+Track C3b. Filter-based one-step-ahead regime-conditional VaR (M3 revision response). Kupiec + Christoffersen LR tests.
+======================================================================================================================================================
+
+Setup  : π_t(k) = P(s_t = k | r_{1:t}, θ_IS) via forward filter under IS-fit flat CHMM.
+         VaR_t(α) = α-quantile of mixture Σ_k π_t(k) F_k, where F_k is the state-k emission CDF.
+         Breach: 1{r_t ≤ VaR_t(α)}. VaR_t is measurable w.r.t. {r_1, ..., r_t}, so this
+         is a one-step-ahead backtest (contrast with C3a Viterbi smoother).
+Target : α ∈ {0.01, 0.05}. LR_uc ~ χ²(1) (crit 3.84). LR_ind ~ χ²(1) (crit 3.84).
+Data   : SPY OoS window (572 daily observations, 2024-01-04 to 2026-04-20).
+
+Model    | medVaR01  | br%01  | LR_uc01 | p_uc01 | LR_ind01 | p_ind01 | medVaR05  | br%05  | LR_uc05 | p_uc05 | LR_ind05 | p_ind05
+------------------------------------------------------------------------------------------------------------------------------------------------------
+CHMM-N   | -4.992    | 0.2    | 5.99    | 0.014  | 0.0      | 0.953   | -2.859    | 1.4    | 21.59   | 0.0    | 2.81     | 0.094  
+CHMM-t   | -5.697    | 0.2    | 5.99    | 0.014  | 0.0      | 0.953   | -2.619    | 1.4    | 21.59   | 0.0    | 8.74     | 0.003  
+CHMM-L   | -5.479    | 0.2    | 5.99    | 0.014  | 0.0      | 0.953   | -2.508    | 1.2    | 24.34   | 0.0    | 9.95     | 0.002  
+======================================================================================================================================================
+
+Reading: LR_uc tests breach rate = α (unconditional coverage);
+         LR_ind tests independence of consecutive breaches.
+         Both should be below 3.84 (χ²(1) 95% critical value) for a passing one-step-ahead conditional VaR.
+         Compare these LR_ind values against C3a (Viterbi smoother, reported in `VaR_conditional_LR_tests.txt`)
+         and against Track A A8 (unconditional VaR, reported in `VaR_LR_tests.txt`).
+         M5 caveat: at T_OoS = 572 and α = 0.01 the expected breach count is ≈ 5.7,
+         so Christoffersen independence is substantially underpowered; small LR_ind values should be
+         read as 'consistent with independence' rather than as resolved rankings.

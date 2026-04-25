@@ -1,0 +1,29 @@
+============================================================================================================================================
+Track M9. Skew-t / skew-Laplace emission ablation (referee M9 response).
+============================================================================================================================================
+
+Fernandez-Steel skewing: f(x; μ, σ, γ) = (2/(σ(γ+1/γ))) * f_0((x-μ)/σ * γ^{-sign(x-μ)}),
+  γ < 1 = left-skew, γ > 1 = right-skew, γ = 1 recovers symmetric.
+Observed SPY IS: skewness -0.752  excess kurtosis 7.686  (2516 obs).
+
+(a) K = 1 symmetric t vs skew-t:
+  Symmetric t MLE : μ = 0.1953   σ = 2.4747   ν = 2.824
+  Skew-t γ MLE    : γ = 0.9747  (γ < 1 indicates left-skew, consistent with observed SPY skewness -0.752)
+  Simulated symmetric t  : skewness = 1.453   kurtosis = 43.757
+  Simulated skew-t       : skewness = -5.688   kurtosis = 148.506
+
+(b) K = 18 plug-in skew-CHMM-{t, L}:
+  Skew-CHMM-t per-state γ_k: min 0.958, median 1.001, max 1.017; left-skew states 0 / 18, right-skew states 0 / 18
+  Skew-CHMM-L per-state γ_k: min 0.975, median 0.996, max 1.046; left-skew states 0 / 18, right-skew states 0 / 18
+
+Variant                | sim_skew   | sim_kurt   | IS_KS%  
+----------------------------------------------------------------------
+CHMM-t (sym, K=18)     | -0.667     | 15.519     | 96.4    
+CHMM-t (skew, K=18)    | -0.728     | 15.18      | 95.0    
+CHMM-L (sym, K=18)     | -0.505     | 6.77       | 96.0    
+CHMM-L (skew, K=18)    | -0.608     | 6.909      | 94.2    
+============================================================================================================================================
+
+Reading: the plug-in approach uses the symmetric CHMM fit (transitions + per-state (μ, σ, ν) or (μ, b))
+and only adds a per-state γ_k by weighted MLE on the EM posterior; it is a one-shot skew correction,
+not full joint EM, but gives the referee the within-state-asymmetry ablation they asked about.

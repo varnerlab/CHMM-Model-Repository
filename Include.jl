@@ -44,3 +44,5 @@ include(joinpath(_PATH_TO_SRC, "Visualize.jl"));
 include(joinpath(_PATH_TO_SRC, "Metrics.jl"));
 include(joinpath(_PATH_TO_SRC, "SemiMarkov.jl"));
 include(joinpath(_PATH_TO_SRC, "MSGARCH.jl"));
+include(joinpath(_PATH_TO_SRC, "GARCHFamily.jl"));
+include(joinpath(_PATH_TO_SRC, "SkewEmissions.jl"));
