@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_minor6_kdisc13_centroid.jl
+# run_kdisc13_centroid_ablation.jl
 #
 # Track Minor 6 (revision response): the existing Bin-T NJ row in Table 3 changes both the
 # bin count (K_disc = 90 → 13) AND the emission family (centroid → bin-conditional
@@ -12,7 +12,7 @@
 #
 # Output:
 #   results/track_minor6/Kdisc13_Centroid.txt
-#   ../CHMM-paper/results/revision/minor6_kdisc13_centroid.csv
+#   ../CHMM-paper/results/robustness/kdisc13_centroid_ablation.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -31,8 +31,8 @@ const N_PATHS   = 500;
 const K_DISC    = 13;
 
 const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor6");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
-mkpath(TRACK_DIR); mkpath(PAPER_REVISION_DIR);
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track Minor 6: K_disc = $K_DISC centroid Discrete HMM (referee Minor 6)")
@@ -178,7 +178,7 @@ open(joinpath(TRACK_DIR, "Kdisc13_Centroid.txt"), "w") do io
     println(io, "(near 0 under centroids) to Bin-T NJ's 26.18 is the contribution of the within-bin Student-t tails.");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "minor6_kdisc13_centroid.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "kdisc13_centroid_ablation.csv"), "w") do io
     println(io, "model,K_disc,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,sim_kurt,ACF_MAE");
     println(io, "Discrete NJ centroid,$K_DISC,$(round(100*is_ks, digits=2)),$(round(100*oos_ks, digits=2)),$(round(100*is_ad, digits=2)),$(round(100*oos_ad, digits=2)),$(round(sim_kurt, digits=3)),$(round(acf, digits=5))");
 end
@@ -186,5 +186,5 @@ end
 println("\n" * "="^72);
 println("  Track Minor 6 complete.");
 println("  Text: $(joinpath(TRACK_DIR, "Kdisc13_Centroid.txt"))");
-println("  CSV : $(joinpath(PAPER_REVISION_DIR, "minor6_kdisc13_centroid.csv"))");
+println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "kdisc13_centroid_ablation.csv"))");
 println("="^72);

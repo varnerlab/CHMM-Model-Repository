@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m7_garch_suite.jl
+# run_garch_suite.jl
 #
 # Track M7 (revision response to referee comment M7): expand the paper's GARCH-family
 # baseline panel beyond the single GARCH(1,1) + two-regime MS-GARCH currently reported.
@@ -22,7 +22,7 @@
 #
 # Outputs:
 #   results/track_m7/GARCH_Suite.txt
-#   ../CHMM-paper/results/revision/M7_garch_suite.csv
+#   ../CHMM-paper/results/robustness/garch_suite.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -40,9 +40,9 @@ const DT        = 1/252;
 const N_PATHS   = 1000;
 
 const TRACK_M7_DIR       = joinpath(_ROOT, "results", "track_m7");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M7_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M7: expanded GARCH-family baseline panel (referee M7)")
@@ -270,7 +270,7 @@ open(joinpath(TRACK_M7_DIR, "GARCH_Suite.txt"), "w") do io
     println(io, "="^170);
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M7_garch_suite.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "garch_suite.csv"), "w") do io
     println(io, "model,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,sim_kurt,ACF_MAE,br01_pct,LRuc01,LRind01,br05_pct,LRuc05,LRind05");
     for r in results
         println(io, "$(r.name),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(100*r.is_ad, digits=2)),$(round(100*r.oos_ad, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(100*r.br01, digits=2)),$(round(r.LRuc01, digits=3)),$(round(r.LRind01, digits=3)),$(round(100*r.br05, digits=2)),$(round(r.LRuc05, digits=3)),$(round(r.LRind05, digits=3))");
@@ -280,5 +280,5 @@ end
 println("\n" * "="^72);
 println("  Track M7 complete.");
 println("  Text report : $(joinpath(TRACK_M7_DIR, "GARCH_Suite.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M7_garch_suite.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "garch_suite.csv"))");
 println("="^72);

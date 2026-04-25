@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m10_nu_shrinkage.jl
+# run_nu_shrinkage_sweep.jl
 #
 # Track M10 (revision response to referee comment M10):
 # Penalised ECM for CHMM-t with an exponential shrinkage prior on 1/ν_k, targeting the
@@ -14,7 +14,7 @@
 #
 # Outputs:
 #   results/track_m10/NU_Shrinkage_Sweep.txt
-#   ../CHMM-paper/results/revision/M10_nu_shrinkage.csv
+#   ../CHMM-paper/results/robustness/nu_shrinkage_sweep.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -36,9 +36,9 @@ const N_PATHS   = 1000;
 const SHRINK_GRID = [0.0, 5.0, 20.0, 50.0, 100.0, 200.0];
 
 const TRACK_M10_DIR      = joinpath(_ROOT, "results", "track_m10");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M10_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M10: CHMM-t penalised ECM with 1/ν shrinkage (referee M10)")
@@ -234,7 +234,7 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output: CSV for paper import
 # --------------------------------------------------------------------------------------- #
-open(joinpath(PAPER_REVISION_DIR, "M10_nu_shrinkage.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "nu_shrinkage_sweep.csv"), "w") do io
     println(io, "rate,nu_med,nu_min,nu_max,sim_kurt,IS_KS_pct,br01_pct,LRuc01,pUC01,LRind01,pInd01,br05_pct,LRuc05,pUC05,LRind05,pInd05");
     for r in results
         println(io, "$(r.rate),$(round(r.ν_med, digits=3)),$(round(r.ν_min, digits=3)),$(round(r.ν_max, digits=3)),$(round(r.sim_kurt, digits=3)),$(round(100*r.is_ks, digits=2)),$(round(100*r.br01, digits=2)),$(round(r.LRuc01, digits=3)),$(round(r.pUC01, digits=4)),$(round(r.LRind01, digits=3)),$(round(r.pInd01, digits=4)),$(round(100*r.br05, digits=2)),$(round(r.LRuc05, digits=3)),$(round(r.pUC05, digits=4)),$(round(r.LRind05, digits=3)),$(round(r.pInd05, digits=4))");
@@ -244,5 +244,5 @@ end
 println("\n" * "="^72);
 println("  Track M10 complete.");
 println("  Text report : $(joinpath(TRACK_M10_DIR, "NU_Shrinkage_Sweep.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M10_nu_shrinkage.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "nu_shrinkage_sweep.csv"))");
 println("="^72);

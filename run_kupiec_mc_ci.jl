@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m6_var_ci.jl
+# run_kupiec_mc_ci.jl
 #
 # Track M6 sub-ask (b) (revision response to referee comment M6): MC confidence interval
 # on the unconditional Kupiec LR_uc statistic at T_OoS = 572 days, addressing the
@@ -18,7 +18,7 @@
 #
 # Outputs:
 #   results/track_m6/LR_uc_MC_CI.txt
-#   ../CHMM-paper/results/revision/M6_var_ci.csv
+#   ../CHMM-paper/results/robustness/kupiec_mc_ci.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -52,9 +52,9 @@ const OBS_LR_UC = Dict(
 );
 
 const TRACK_M6_DIR       = joinpath(_ROOT, "results", "track_m6");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M6_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M6: MC confidence interval on LR_uc at n=$T_OOS, B=$B (referee M6)")
@@ -171,7 +171,7 @@ open(joinpath(TRACK_M6_DIR, "LR_uc_MC_CI.txt"), "w") do io
     println(io, "         majority of MC replications, so the calibration improvement is genuine rather than noise.");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M6_var_ci.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "kupiec_mc_ci.csv"), "w") do io
     println(io, "model,p_obs,LR_obs,mean_LR_boot,std_LR_boot,q05,q25,q50,q75,q95,bootstrap_pvalue");
     for r in results
         println(io, "$(r.name),$(round(r.p_obs, digits=4)),$(r.LR_obs),$(round(r.mean_LR, digits=4)),$(round(r.std_LR, digits=4)),$(round(r.q05, digits=4)),$(round(r.q25, digits=4)),$(round(r.q50, digits=4)),$(round(r.q75, digits=4)),$(round(r.q95, digits=4)),$(round(r.p_value_boot, digits=4))");
@@ -186,5 +186,5 @@ end
 println("\n" * "="^72);
 println("  Track M6 (b) complete.");
 println("  Text report : $(joinpath(TRACK_M6_DIR, "LR_uc_MC_CI.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M6_var_ci.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "kupiec_mc_ci.csv"))");
 println("="^72);

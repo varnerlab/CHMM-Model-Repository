@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m5_lr_ind_null.jl
+# run_lr_ind_bootstrap_null.jl
 #
 # Track M5 (revision response to referee comment M5): bootstrap null distribution of the
 # Christoffersen independence LR statistic at n = 572, α ∈ {0.01, 0.05}, to quantify how
@@ -19,7 +19,7 @@
 #
 # Outputs:
 #   results/track_m5/LR_ind_Bootstrap_Null.txt
-#   ../CHMM-paper/results/revision/M5_lr_ind_null.csv
+#   ../CHMM-paper/results/robustness/lr_ind_bootstrap_null.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -56,9 +56,9 @@ const OBSERVED = Dict(
 );
 
 const TRACK_M5_DIR       = joinpath(_ROOT, "results", "track_m5");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M5_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M5: Christoffersen LR_ind bootstrap null at n=$T_OOS, B=$B (referee M5)")
@@ -168,7 +168,7 @@ open(joinpath(TRACK_M5_DIR, "LR_ind_Bootstrap_Null.txt"), "w") do io
     println(io, "which is where the genuine independence-failure signal actually lives.");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M5_lr_ind_null.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "lr_ind_bootstrap_null.csv"), "w") do io
     println(io, "alpha,q50,q90,q95,q99,empirical_size_at_3_84,frac_zero_lr,zero_breach_count,one_breach_count");
     for α in ALPHAS
         r = results[α];
@@ -188,5 +188,5 @@ end
 println("\n" * "="^72);
 println("  Track M5 complete.");
 println("  Text report : $(joinpath(TRACK_M5_DIR, "LR_ind_Bootstrap_Null.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M5_lr_ind_null.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "lr_ind_bootstrap_null.csv"))");
 println("="^72);

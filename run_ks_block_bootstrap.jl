@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m2_ks_bootstrap.jl
+# run_ks_block_bootstrap.jl
 #
 # Track M2 (revision response to referee comment M2): two complementary fixes for the
 # headline KS pass-rate metric.
@@ -22,7 +22,7 @@
 #
 # Outputs:
 #   results/track_m2/KS_Bootstrap_Recalibration.txt
-#   ../CHMM-paper/results/revision/M2_ks_bootstrap.csv
+#   ../CHMM-paper/results/robustness/ks_block_bootstrap.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -44,9 +44,9 @@ const B_BOOT    = 1000;
 const BLOCK_LENGTHS = [5, 10, 20];
 
 const TRACK_M2_DIR       = joinpath(_ROOT, "results", "track_m2");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M2_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M2: KS p-value distribution + block-bootstrap recalibration (referee M2)")
@@ -258,7 +258,7 @@ open(joinpath(TRACK_M2_DIR, "KS_Bootstrap_Recalibration.txt"), "w") do io
     println(io, "         statistic D < block-bootstrap 95% null quantile (which accounts for clustering in the IS).");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M2_ks_bootstrap.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "ks_block_bootstrap.csv"), "w") do io
     println(io, "generator,asymp_pass_pct,mean_pv,median_pv,pv_q05,pv_q25,pv_q75,pv_q95,ks_q05,ks_q50,ks_q95,block5_pass_pct,block10_pass_pct,block20_pass_pct");
     for r in panel
         println(io, "$(r.name),$(round(100*r.asymp_pass_rate, digits=2)),$(round(r.mean_pv, digits=4)),$(round(r.median_pv, digits=4)),$(round(r.pv_q05, digits=4)),$(round(r.pv_q25, digits=4)),$(round(r.pv_q75, digits=4)),$(round(r.pv_q95, digits=4)),$(round(r.ks_q05, digits=4)),$(round(r.ks_q50, digits=4)),$(round(r.ks_q95, digits=4)),$(round(100*r.block_pass[5], digits=2)),$(round(100*r.block_pass[10], digits=2)),$(round(100*r.block_pass[20], digits=2))");
@@ -274,5 +274,5 @@ end
 println("\n" * "="^72);
 println("  Track M2 complete.");
 println("  Text report : $(joinpath(TRACK_M2_DIR, "KS_Bootstrap_Recalibration.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M2_ks_bootstrap.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "ks_block_bootstrap.csv"))");
 println("="^72);

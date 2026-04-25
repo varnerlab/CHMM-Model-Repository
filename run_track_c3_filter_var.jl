@@ -25,7 +25,7 @@
 #
 # Outputs:
 #   results/track_c3/VaR_filter_LR_tests.txt
-#   ../CHMM-paper/results/revision/M3_filter_var_backtest.csv
+#   ../CHMM-paper/results/robustness/filter_var_backtest.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -42,9 +42,9 @@ const K_MAIN    = 18;
 const MAX_ITER  = 60;
 
 const TRACK_C3_DIR     = joinpath(_ROOT, "results", "track_c3");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_C3_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track C3b: filter-based one-step-ahead regime-conditional VaR (M3)")
@@ -274,9 +274,9 @@ open(joinpath(TRACK_C3_DIR, "VaR_filter_LR_tests.txt"), "w") do io
 end
 
 # --------------------------------------------------------------------------------------- #
-# Output: CSV for direct import into the paper (CHMM-paper/results/revision/)
+# Output: CSV for direct import into the paper (CHMM-paper/results/robustness/)
 # --------------------------------------------------------------------------------------- #
-open(joinpath(PAPER_REVISION_DIR, "M3_filter_var_backtest.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "filter_var_backtest.csv"), "w") do io
     println(io, "model,alpha,br_pct,LR_uc,p_uc,LR_ind,p_ind,T_OoS,med_VaR");
     for m in MODELS
         r = results[m];
@@ -288,5 +288,5 @@ end
 println("\n" * "="^72);
 println("  Track C3b complete.");
 println("  Text report : $(joinpath(TRACK_C3_DIR, "VaR_filter_LR_tests.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M3_filter_var_backtest.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "filter_var_backtest.csv"))");
 println("="^72);

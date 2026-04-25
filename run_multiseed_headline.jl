@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_minor10_multiseed.jl
+# run_multiseed_headline.jl
 #
 # Track Minor 10 (revision response): the paper reports headline statistics under a single
 # global seed. The referee asks for a Monte Carlo robustness summary across 10-20 seed
@@ -12,7 +12,7 @@
 #
 # Output:
 #   results/track_minor10/MultiSeed.txt
-#   ../CHMM-paper/results/revision/minor10_multiseed.csv
+#   ../CHMM-paper/results/robustness/multiseed_headline.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -34,8 +34,8 @@ const BASE_SEED = 20260422;
 const SEED_GRID = [BASE_SEED + 100*k for k in 1:10];
 
 const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor10");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
-mkpath(TRACK_DIR); mkpath(PAPER_REVISION_DIR);
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track Minor 10: 10-seed Monte Carlo on headline metrics (referee Minor 10)")
@@ -203,7 +203,7 @@ open(joinpath(TRACK_DIR, "MultiSeed.txt"), "w") do io
     println(io, "="^150);
 end
 
-open(joinpath(PAPER_REVISION_DIR, "minor10_multiseed.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"), "w") do io
     println(io, "model,seed,IS_KS_pct,OoS_KS_pct,sim_kurt,ACF_MAE,br01_pct,LRuc01,br05_pct,LRuc05");
     for fam in [:n, :t, :l]
         fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
@@ -223,5 +223,5 @@ end
 println("\n" * "="^72);
 println("  Track Minor 10 complete.");
 println("  Text: $(joinpath(TRACK_DIR, "MultiSeed.txt"))");
-println("  CSV : $(joinpath(PAPER_REVISION_DIR, "minor10_multiseed.csv"))");
+println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"))");
 println("="^72);

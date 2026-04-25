@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m8_k_selection.jl
+# run_k_selection_validation.jl
 #
 # Track M8 (revision response to referee comment M8): clean K-selection on a pre-OoS
 # validation slice, decoupled from the 2024-2026 OoS window used for VaR backtesting.
@@ -20,7 +20,7 @@
 #
 # Outputs:
 #   results/track_m8/K_Selection_Validation.txt
-#   ../CHMM-paper/results/revision/M8_k_selection.csv
+#   ../CHMM-paper/results/robustness/k_selection_validation.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -40,9 +40,9 @@ const MAX_ITER  = 60;
 const K_GRID    = [3, 6, 9, 12, 15, 18, 21];
 
 const TRACK_M8_DIR       = joinpath(_ROOT, "results", "track_m8");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M8_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M8: pre-OoS validation K-selection (referee M8)")
@@ -266,7 +266,7 @@ open(joinpath(TRACK_M8_DIR, "K_Selection_Validation.txt"), "w") do io
     end
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M8_k_selection.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "k_selection_validation.csv"), "w") do io
     println(io, "model,K,p,est_ll,val_ll,val_ll_per_obs,val_KS_pct,AIC,BIC,HQC,CAIC");
     for r in results_n
         println(io, "CHMM-N,$(r.K),$(r.p),$(round(r.est_ll, digits=3)),$(round(r.val_ll, digits=3)),$(round(r.val_ll_per_obs, digits=5)),$(round(100*r.val_ks, digits=2)),$(round(r.AIC, digits=3)),$(round(r.BIC, digits=3)),$(round(r.HQC, digits=3)),$(round(r.CAIC, digits=3))");
@@ -279,5 +279,5 @@ end
 println("\n" * "="^72);
 println("  Track M8 complete.");
 println("  Text report : $(joinpath(TRACK_M8_DIR, "K_Selection_Validation.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M8_k_selection.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "k_selection_validation.csv"))");
 println("="^72);

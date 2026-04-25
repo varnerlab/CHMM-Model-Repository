@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m9_skew_emissions.jl
+# run_skew_emissions_ablation.jl
 #
 # Track M9 (revision response to referee comment M9): emission-family ablation for
 # within-state skewness. SPY IS skewness is -0.75; the paper's three symmetric emission
@@ -23,7 +23,7 @@
 #
 # Outputs:
 #   results/track_m9/Skew_Emissions.txt
-#   ../CHMM-paper/results/revision/M9_skew_emissions.csv
+#   ../CHMM-paper/results/robustness/skew_emissions_ablation.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -43,9 +43,9 @@ const K_MAIN    = 18;
 const MAX_ITER  = 60;
 
 const TRACK_M9_DIR       = joinpath(_ROOT, "results", "track_m9");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M9_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M9: skew-t / skew-Laplace emission ablation (referee M9)")
@@ -340,7 +340,7 @@ open(joinpath(TRACK_M9_DIR, "Skew_Emissions.txt"), "w") do io
     println(io, "not full joint EM, but gives the referee the within-state-asymmetry ablation they asked about.");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M9_skew_emissions.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "skew_emissions_ablation.csv"), "w") do io
     println(io, "variant,sim_skew,sim_kurt,IS_KS_pct,obs_skew,obs_kurt");
     # K = 1 rows
     println(io, "K=1 sym-t,$(round(k1_results.sim_sym_skew, digits=4)),$(round(k1_results.sim_sym_kurt, digits=4)),NA,$(round(obs_skew, digits=4)),$(round(obs_kurt, digits=4))");
@@ -354,5 +354,5 @@ end
 println("\n" * "="^72);
 println("  Track M9 complete.");
 println("  Text report : $(joinpath(TRACK_M9_DIR, "Skew_Emissions.txt"))");
-println("  Paper CSV   : $(joinpath(PAPER_REVISION_DIR, "M9_skew_emissions.csv"))");
+println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "skew_emissions_ablation.csv"))");
 println("="^72);

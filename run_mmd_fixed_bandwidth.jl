@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_minor4_mmd_bandwidth.jl
+# run_mmd_fixed_bandwidth.jl
 #
 # Track Minor 4 (revision response): the existing MMD calculation uses median-heuristic
 # bandwidth γ computed from the pooled (observed + simulated) window matrix, which makes
@@ -14,7 +14,7 @@
 #
 # Output:
 #   results/track_minor4/MMD_Bandwidth_Fix.txt
-#   ../CHMM-paper/results/revision/minor4_mmd_bandwidth.csv
+#   ../CHMM-paper/results/robustness/mmd_fixed_bandwidth.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -36,8 +36,8 @@ const W         = 20;        # window length
 const N_WINDOWS = 500;       # MMD sample size per side
 
 const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor4");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
-mkpath(TRACK_DIR); mkpath(PAPER_REVISION_DIR);
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track Minor 4: fixed observed-sample MMD bandwidth (referee Minor 4)")
@@ -176,7 +176,7 @@ open(joinpath(TRACK_DIR, "MMD_Bandwidth_Fix.txt"), "w") do io
     println(io, "         The fixed-γ column uses the observed-only bandwidth and is the cross-generator-comparable metric the referee asked for.");
 end
 
-open(joinpath(PAPER_REVISION_DIR, "minor4_mmd_bandwidth.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "mmd_fixed_bandwidth.csv"), "w") do io
     println(io, "model,mmd_legacy,mmd_fixed,gamma_fixed");
     for r in results
         println(io, "$(r.name),$(@sprintf("%.6e", r.mmd_legacy)),$(@sprintf("%.6e", r.mmd_fixed)),$(round(γ_fixed, digits=6))");
@@ -186,5 +186,5 @@ end
 println("\n" * "="^72);
 println("  Track Minor 4 complete.");
 println("  Text: $(joinpath(TRACK_DIR, "MMD_Bandwidth_Fix.txt"))");
-println("  CSV : $(joinpath(PAPER_REVISION_DIR, "minor4_mmd_bandwidth.csv"))");
+println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "mmd_fixed_bandwidth.csv"))");
 println("="^72);

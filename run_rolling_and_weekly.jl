@@ -1,5 +1,5 @@
 # ========================================================================================= #
-# run_track_m4_rolling_and_weekly.jl
+# run_rolling_and_weekly.jl
 #
 # Track M4 (revision response to referee comment M4): broaden the empirical base beyond the
 # single 572-day OoS window on SPY. This session covers two of the three M4 sub-asks:
@@ -15,13 +15,13 @@
 #
 # The third M4 sub-ask (multiple indices: MSCI World, DAX, Nikkei, FTSE) requires a
 # separate Alpaca fetch of URTH / EWG / EWJ / EWU daily bars; handled in
-# `run_track_m4_indices.jl` once credentials are verified.
+# `run_indices_panel.jl` once credentials are verified.
 #
 # Outputs:
 #   results/track_m4/M4_Rolling_Origin.txt
 #   results/track_m4/M4_Weekly.txt
-#   ../CHMM-paper/results/revision/M4_rolling_origin.csv
-#   ../CHMM-paper/results/revision/M4_weekly.csv
+#   ../CHMM-paper/results/robustness/rolling_origin_oos.csv
+#   ../CHMM-paper/results/robustness/weekly_frequency.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -42,9 +42,9 @@ const K_MAIN    = 18;
 const MAX_ITER  = 60;
 
 const TRACK_M4_DIR       = joinpath(_ROOT, "results", "track_m4");
-const PAPER_REVISION_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "revision"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_M4_DIR);
-mkpath(PAPER_REVISION_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track M4 (a, b): rolling-origin OoS + weekly-frequency robustness (M4)")
@@ -271,7 +271,7 @@ open(joinpath(TRACK_M4_DIR, "M4_Rolling_Origin.txt"), "w") do io
     end
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M4_rolling_origin.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "rolling_origin_oos.csv"), "w") do io
     println(io, "window,model,is_start,is_end,oos_start,oos_end,is_n,oos_n,is_ks_pct,oos_ks_pct,br01_pct,LRuc01,LRind01,br05_pct,LRuc05,LRind05");
     for r in rolling_results
         println(io, "$(r.window),$(r.model),$(r.is_start),$(r.is_end),$(r.oos_start),$(r.oos_end),$(r.is_n),$(r.oos_n),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(100*r.br01, digits=2)),$(round(r.LRuc01, digits=3)),$(round(r.LRind01, digits=3)),$(round(100*r.br05, digits=2)),$(round(r.LRuc05, digits=3)),$(round(r.LRind05, digits=3))");
@@ -299,7 +299,7 @@ open(joinpath(TRACK_M4_DIR, "M4_Weekly.txt"), "w") do io
     println(io, "="^120);
 end
 
-open(joinpath(PAPER_REVISION_DIR, "M4_weekly.csv"), "w") do io
+open(joinpath(PAPER_ROBUSTNESS_DIR, "weekly_frequency.csv"), "w") do io
     println(io, "model,K,obs_kurt,IS_KS_pct,sim_kurt,ACF_MAE");
     for r in weekly_results
         println(io, "$(r.model),$(r.K),$(round(r.obs_kurt, digits=3)),$(round(100*r.is_ks, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5))");
@@ -310,5 +310,5 @@ println("\n" * "="^72);
 println("  Track M4 (a, b) complete.");
 println("  Rolling-origin text: $(joinpath(TRACK_M4_DIR, "M4_Rolling_Origin.txt"))");
 println("  Weekly text        : $(joinpath(TRACK_M4_DIR, "M4_Weekly.txt"))");
-println("  Paper CSVs         : $PAPER_REVISION_DIR/M4_rolling_origin.csv, $PAPER_REVISION_DIR/M4_weekly.csv");
+println("  Paper CSVs         : $PAPER_ROBUSTNESS_DIR/rolling_origin_oos.csv, $PAPER_ROBUSTNESS_DIR/weekly_frequency.csv");
 println("="^72);
