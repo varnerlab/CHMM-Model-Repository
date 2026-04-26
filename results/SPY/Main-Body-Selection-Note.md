@@ -2,7 +2,7 @@
 
 ## Best single model: **K = 18**
 
-Based on the updated K-sweep (K ∈ {3, 6, 9, 12, 15, 18, 21}) reported in `Table-T1-State-Resolution-Sensitivity.txt`, K=18 dominates or ties on the distributional metrics that matter most to the JDIQ synthetic-data-quality framing, while remaining comparable on ACF reproduction:
+Based on the updated K-sweep (K ∈ {3, 6, 9, 12, 15, 18, 21}) reported in `Table-T1-State-Resolution-Sensitivity.txt`, K=18 dominates or ties on the distributional metrics that matter most to the synthetic-data-quality framing, while remaining comparable on ACF reproduction:
 
 | Metric          | Winner | K=3   | K=6   | K=9   | K=12  | K=15  | **K=18** | K=21  |
 |-----------------|--------|-------|-------|-------|-------|-------|----------|-------|

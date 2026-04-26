@@ -421,9 +421,8 @@ The penalised objective is
 which corresponds to an exponential prior on 1/ν (equivalently a Pareto-like
 shrinkage of ν toward the Gaussian limit ν → ∞). Setting ν_shrink_rate = 0
 recovers the standard Peel & McLachlan (2000) / Liu & Rubin (1995) ECM
-with no shrinkage. The revision response to referee comment M10 of the JoFE
-submission uses this parameter to pull heavy-tailed states back toward
-moderate tail weight and reduce the CHMM-t IS kurtosis overshoot.
+with no shrinkage. Setting ν_shrink_rate > 0 pulls heavy-tailed states back
+toward moderate tail weight and reduces the CHMM-t IS kurtosis overshoot.
 
 Returns (T, μ, σ, ν, π, ll_history, gamma).
 """

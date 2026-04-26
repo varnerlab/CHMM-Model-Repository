@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # GARCHFamily.jl
 #
-# Additional GARCH-family baselines requested by the JoFE revision (referee M7):
+# Additional GARCH-family baselines:
 #   - EGARCH(1,1) with Gaussian innovations (asymmetric, leverage effect)
 #   - GJR-GARCH(1,1) with Gaussian innovations (asymmetric leverage via sign dummy)
 #   - GARCH(1,1) with Student-t innovations (heavy-tailed competitor to CHMM-t)

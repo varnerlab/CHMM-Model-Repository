@@ -1,8 +1,7 @@
 # ========================================================================================= #
 # SkewEmissions.jl
 #
-# Fernandez-Steel skew densities for the CHMM emission-family ablation requested by the
-# JoFE revision (referee M9).
+# Fernandez-Steel skew densities for the CHMM emission-family ablation.
 #
 # Fernandez-Steel construction: given a symmetric base density f_0 (standardised Student-t
 # or Laplace), the skewed density at skew parameter γ > 0 is

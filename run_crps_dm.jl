@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_crps_dm.jl
 #
-# Track M11. CRPS + Diebold-Mariano on the headline panel (Digital Finance revision item 2).
+# Track M11. CRPS + Diebold-Mariano on the headline panel (revision item 2).
 #
 # Each generator's archive is a marginal (unconditional) predictive ensemble at every t in
 # the held-out OoS window. The sample CRPS for observation y_t against ensemble x_{t,1..N}

@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_non_us_asset.jl
 #
-# Track M12. Non-US asset class extension (Digital Finance revision item 5).
+# Track M12. Non-US asset class extension (revision item 5).
 #
 # Adds GLD (SPDR Gold Trust ETF, commodity asset class with non-equity underlying)
 # to the existing six-ticker universe (SPY, NVDA, JNJ, JPM, AAPL, QQQ) and reports:

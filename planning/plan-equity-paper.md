@@ -4,7 +4,7 @@
 
 **Status:** v0, 2026-04-22. Companion to `CHMM-Vol-Model/plan-vol-paper.md` and `CHMM-Model/DECISION-MEMO.md` (sibling file in this repo).
 
-**Goal:** move the equity-returns generator paper from mid-tier (v9 as-is is submittable to a specialist finance venue) to top-tier (ACM ICAIF, Journal of Financial Data Science, TMLR). The scaffold stays; what changes is *evaluation breadth*, *one serious deep baseline*, *downstream utility beyond VaR*, and (stretch) *semi-Markov sojourns ported from the vol repo*.
+**Goal:** move the equity-returns generator paper from mid-tier (v9 as-is is releasable as a specialist finance preprint) to top-tier-quality release. The scaffold stays; what changes is *evaluation breadth*, *one serious deep baseline*, *downstream utility beyond VaR*, and (stretch) *semi-Markov sojourns ported from the vol repo*.
 
 **Scope boundary carried over from v9:** no option pricing, no implied-vol surface calibration, no Hawkes process, no variational Bayes, no particle filters. The one new estimation kernel the stretch plan introduces is Yu (2010) explicit-duration forward-backward, ported directly from `CHMM-Vol-Model/src/Compute.jl:1821-1961`.
 
@@ -139,7 +139,7 @@ This reframes v9's "three emissions reproduce stylized facts" into the synthetic
 
 **Fallback, if C1 ships:** *A semi-Markov regime-switching continuous HMM for equity synthesis, with heavy-tailed sojourn distributions that provide mean reversion (Markov inner chain) plus crisis-regime persistence (Pareto sojourn tail), ported from the CBOE-VIX model in the companion paper.*
 
-**Rejected:** a deep-learning framing. The paper's strength is transparency, interpretability, and reproducibility; reviewers at ICAIF and JFDS value those over one more GAN variant. B-track baselines are negative-control rows, not claims.
+**Rejected:** a deep-learning framing. The paper's strength is transparency, interpretability, and reproducibility; reviewers in this audience value those over one more GAN variant. B-track baselines are negative-control rows, not claims.
 
 ## 2. Data
 
@@ -264,7 +264,7 @@ Strategy (A5) is the one most likely to land the paper a trading-desk readership
 
 **Pipeline B v2 (C2, 50 to 100 assets, vine copula):** C-vine or D-vine. Report correlation MAE, tail-dependence coefficient $\lambda_L, \lambda_U$ match, portfolio-level VaR on an equal-weight portfolio across the universe.
 
-## 10. Paper structure (target 25 to 30 pages for ACM ICAIF long-paper or JFDS)
+## 10. Paper structure (target 25 to 30 pages for the long-form release)
 
 Working title (primary thesis): *"A Regime-Switching Continuous HMM as a Reference Synthetic-Data Generator for Equity Returns"*.
 
@@ -286,7 +286,7 @@ Fallback title (if C1 ships): *"Semi-Markov Continuous HMMs for Equity Return Sy
 | 12 | Discussion and future work | 2 | MS-GARCH-HMM, Hawkes transitions, online EM (`online-CHMM`), option pricing |
 | 13 | References | 1 | |
 
-Total: ~28 pages. Core-minus-utility is 24 pages (drops §9); core-minus-cross-asset is 25 pages (keeps flat copula only). The 28-page target is comfortable for ICAIF long papers and JFDS.
+Total: ~28 pages. Core-minus-utility is 24 pages (drops §9); core-minus-cross-asset is 25 pages (keeps flat copula only).
 
 ## 11. Work order (timeline-agnostic, gate-based)
 
@@ -343,17 +343,11 @@ Concrete ports, cross-referenced against existing vol repo paths.
 | Reviewer asks "why not neural SDE?" | Cite Kidger, Foster, Li, Lyons (2021) in related work; frame as complementary (black-box, universal approximator) vs CHMM (interpretable, regime-semantic). Neural SDE can be a B-track row if we have budget. |
 | v10 upgrades push the paper past 30 pages | Drop §10 vine copula or §11 robustness into an online appendix. Core paper (Sections 1 to 9) is 22 pp. |
 
-## 14. Venue strategy
+## 14. Release strategy
 
-See `DECISION-MEMO.md` §6 for the full ranked list. Summary:
-
-- **Primary target: ACM ICAIF.** Fast turnaround, ACM proceedings, exactly this readership. Core paper at 22 to 25 pp fits the long-paper format. Aim for a deadline in the next cycle; Track A alone is sufficient to submit.
-- **Secondary: Journal of Financial Data Science** (Portfolio Management Research). Non-Elsevier, high-prestige quant audience, values the full-size journal version (25 to 30 pp) with C2 vine copula included.
-- **Backup: TMLR** (Transactions on Machine Learning Research). Rolling, rigorous, open access. Good home if we want to emphasize the methods side (ECM on per-state $\nu_k$, Yu 2010 FB port) over the finance side.
-
-Workshops (in parallel, for timestamping + reviewer feedback): NeurIPS ML for Finance, ICML Time Series, ICAIF side workshops.
-
-Avoid: Journal of Econometrics, Journal of Banking and Finance, Finance Research Letters (all Elsevier per user policy).
+The current target is an arXiv preprint with a 20-page main-body cap and an
+unconstrained appendix. No specific journal venue has been selected; venue
+selection is deferred until after the preprint is posted.
 
 ## 15. Scope boundaries
 
@@ -418,5 +412,5 @@ Deliverables in order (all v10-paper-writeup subtasks; empirical work above is c
 - Equity-volatility-joint modeling beyond the flat copula and (planned) vine copula.
 - Options surface calibration.
 - Online EM (`online-CHMM` sibling repo is the vehicle for that).
-- ICAIF short-paper fork (`CHMM-icaif-*` sibling repos); those are on their own track and not coordinated here.
+- Conference-format short-paper fork (`CHMM-icaif-*` sibling repos); those are on their own track and not coordinated here.
 - VIX-specific content; that is `CHMM-Vol-Paper`'s domain.

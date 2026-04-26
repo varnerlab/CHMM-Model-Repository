@@ -56,7 +56,7 @@ Each script also has a header comment naming its example output path and
 
 ## Cross-repo follow-up
 
-The CHMM-paper devnotes (`revision-code-todo.md`, `revision-plan-JoFE.md`)
+The CHMM-paper devnotes (`revision-code-todo.md`, `revision-plan.md`)
 mention the old script names. After Layer B those references become stale —
 need a small additional pass to update them too.
 
@@ -75,7 +75,7 @@ need a small additional pass to update them too.
 4. **Layer B** — `git mv` 11 script files; update each script's header comment
    that names itself.
 5. **Cross-repo follow-up** — update CHMM-paper devnotes (`revision-code-todo.md`,
-   `revision-plan-JoFE.md`) to reference new script names.
+   `revision-plan.md`) to reference new script names.
 6. **Final grep verification** — confirm zero references to old script names
    or `results/revision` paths anywhere in CHMM-Model or CHMM-paper.
 

@@ -44,7 +44,6 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
 | `diagnostics/nu_diagnostics/...`                                        | A        | SPY, CHMM-t nu behavior      | Appendix                  |
 | `diagnostics/ryden_k2/...`                                              | A        | SPY, Ryden K=2 comparison    | Appendix                  |
 | `diagnostics/utility/VaR_ES_Backtest.*`                                 | A        | SPY                          | Appendix VaR / ES         |
-| `diagnostics/walk_forward/WalkForward.txt`                              | A        | JNJ, JPM                     | Appendix walk-forward     |
 | `track_a/...`                                                           | A        | SPY, extended evaluation     | Table 4 extension / app.  |
 | `track_b1/...`                                                          | A        | SPY, QuantGAN-style baseline | Table 4 extension / app.  |
 | `track_b3/...`                                                          | A        | SPY, diffusion baseline      | Table 4 extension / app.  |

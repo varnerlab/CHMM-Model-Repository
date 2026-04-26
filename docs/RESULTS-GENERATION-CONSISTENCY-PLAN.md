@@ -36,7 +36,6 @@ Outputs currently used in the paper:
 | Per-K / per-family figures (Convergence, IS, OoS, Trans) | `results/SPY/K*/...`, `results/SPY/multi_emission/K18/*/...` | SPY only                    |
 | Price fans + terminal distributions                      | `results/equity_price_sim/Fig-{TICKER}-*`                    | 6 tickers, single-index     |
 | VaR / ES back-test                                       | `results/diagnostics/utility/VaR_ES_Backtest.txt`            | SPY only                    |
-| Walk-forward                                             | `results/diagnostics/walk_forward/WalkForward.txt`           | Defensives only (JNJ, JPM)  |
 
 ### Pipeline B. Cross-asset extension (SIM + Gaussian copula + Student-t copula)
 

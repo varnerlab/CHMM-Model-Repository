@@ -108,7 +108,7 @@ These items do not gate the v10 submission. They are queued for a future revisio
 
 ## 1. Verdict in one sentence
 
-**After Track A (DONE 2026-04-22) the paper is at or near ACM ICAIF / JFDS / TMLR submission quality on evaluation rigor.** CHMM-t / -L / -N dominate nearly every new metric: smallest MMD, smallest discriminator AUC (0.607 IS for CHMM-t, vs 0.78-0.80 for i.i.d. baselines), highest OoS joint p-value coverage (CHMM-L 0.692, CHMM-t 0.661, CHMM-N 0.539), and CHMM-N's synth-trained HAR matches the real-trained benchmark out-of-sample on QLIKE (1.519 vs 1.521). Discrete HMM + jumps baseline FAILS 5 % VaR Kupiec (breach rate 1.75 %, LR_uc 16.81): the new tests surface a concrete weakness of the prior-paper baseline that v9 did not expose. Remaining upgrade for full top-tier status: one serious deep-generative baseline (B1 QuantGAN or B3 diffusion) and one C-track model extension (C1 semi-Markov port from vol repo, or C2 vine copula cross-asset). Track A alone already lifts the paper from v9 "publishable" to "defensible" on the evaluation panel.
+**After Track A (DONE 2026-04-22) the paper is at or near top-tier release quality on evaluation rigor.** CHMM-t / -L / -N dominate nearly every new metric: smallest MMD, smallest discriminator AUC (0.607 IS for CHMM-t, vs 0.78-0.80 for i.i.d. baselines), highest OoS joint p-value coverage (CHMM-L 0.692, CHMM-t 0.661, CHMM-N 0.539), and CHMM-N's synth-trained HAR matches the real-trained benchmark out-of-sample on QLIKE (1.519 vs 1.521). Discrete HMM + jumps baseline FAILS 5 % VaR Kupiec (breach rate 1.75 %, LR_uc 16.81): the new tests surface a concrete weakness of the prior-paper baseline that v9 did not expose. Remaining upgrade for full top-tier status: one serious deep-generative baseline (B1 QuantGAN or B3 diffusion) and one C-track model extension (C1 semi-Markov port from vol repo, or C2 vine copula cross-asset). Track A alone already lifts the paper from v9 "publishable" to "defensible" on the evaluation panel.
 
 ### Track A headline findings (2026-04-22)
 
@@ -208,25 +208,11 @@ Long answer:
 
 **Recommendation.** Do NOT add AR(p) on returns to v10. Spend that budget on C1 (semi-Markov sojourns, which dominates AR(1) for persistence fidelity anyway) plus the C4 leverage-emission single-ablation row. If a later paper wants an AR direction it should be either in the vol framing (`CHMM-Vol-Paper` already does this well) or a dedicated MS-GARCH-in-HMM follow-up.
 
-## 6. Journal strategy (no Elsevier, ACM / IEEE acceptable)
+## 6. Release strategy
 
-Ranked by fit to the *synthetic-data-generator* framing.
-
-**Tier 1 (target these):**
-1. **ACM ICAIF** (International Conference on AI in Finance). ACM proceedings, exactly this readership, fast turnaround. This paper *is* an ICAIF paper.
-2. **Journal of Financial Data Science** (Portfolio Management Research). High prestige in quant, non-Elsevier, values reproducible generator work.
-3. **TMLR** (Transactions on Machine Learning Research). Rolling, rigorous, open access; good home for a methods-plus-strong-empirics paper.
-
-**Tier 2 (viable):**
-4. ACM Transactions on Modeling and Computer Simulation (TOMACS).
-5. Quantitative Finance (Taylor & Francis; not Elsevier).
-6. Digital Finance (Springer).
-7. IEEE Transactions on Neural Networks and Learning Systems (if B-track baselines land seriously).
-8. Risks (MDPI, fast open-access).
-
-**Timestamping via workshops, in parallel with tier 1:** NeurIPS ML for Finance, ICML Time Series, ICAIF side workshops.
-
-**Avoid:** Journal of Econometrics, Journal of Banking and Finance, Finance Research Letters, Pattern Recognition, Expert Systems with Applications (all Elsevier).
+The release target for the current revision pass is an arXiv preprint. No
+specific journal venue has been selected; venue selection is deferred until
+after the preprint is posted.
 
 ## 7. Path forward
 
@@ -241,11 +227,11 @@ The minimum viable upgrade plan for a top-tier submission is **Track A + one B-t
 
 The stretch plan adds **C1 (semi-Markov sojourns)** and re-pitches the paper title as "A semi-Markov regime-switching continuous HMM for equity return synthesis". That earns the paper a narrative upgrade (not just a stylized-facts panel but a structural model), and it ports cleanly from the vol repo since the Yu 2010 machinery is already proven there.
 
-**C2 (vine copula) is the headline multi-asset upgrade** and the main reason a reviewer would pick this paper over any other HMM-based generator: it is the only generator family that scales to 100 assets while keeping exact marginals and interpretable regimes. If only one C-track item lands, choose C1 or C2 based on venue: C1 for methods venues (TMLR, ICAIF methods track), C2 for finance venues (JFDS, Quantitative Finance).
+**C2 (vine copula) is the headline multi-asset upgrade** and the main reason a reviewer would pick this paper over any other HMM-based generator: it is the only generator family that scales to 100 assets while keeping exact marginals and interpretable regimes. If only one C-track item lands, choose C1 for methods framings and C2 for finance framings.
 
 ## 8. One-line answer to "can this become top-tier?"
 
-**Yes, within one focused track of work.** Track A alone moves the paper from mid-tier to ICAIF/JFDS quality, and is now DONE (2026-04-22). Track A + one B row + C1 or C2 makes it a genuinely strong submission to the best non-Elsevier generator venues. Nothing here requires a fundamental rewrite; the v9 scaffold already carries the load, and the missing pieces are standard additions that the vol repo has already proven feasible in Julia at the same scale.
+**Yes, within one focused track of work.** Track A alone moves the paper from mid-tier to top-tier quality on evaluation rigor, and is now DONE (2026-04-22). Track A + one B row + C1 or C2 makes it a genuinely strong release. Nothing here requires a fundamental rewrite; the v9 scaffold already carries the load, and the missing pieces are standard additions that the vol repo has already proven feasible in Julia at the same scale.
 
 ### Status snapshot (2026-04-22 end-of-session, after B1/B3/C2/C3/C4)
 
@@ -336,5 +322,5 @@ Results in `results/track_c1/`. SM-CHMM variants fit with the plug-in estimator 
 
 - `CHMM-Vol-Model` and `CHMM-Vol-Paper` (sibling): VIX-only, already draft-complete. Source of Yu 2010 FB, Christoffersen LR, sojourn-family sweep machinery to port.
 - `CHMM-paper`: v9 LaTeX draft.
-- `CHMM-icaif-Model` / `CHMM-icaif-paper`: older scoped-down ICAIF fork. Not the main vehicle; v9 is.
+- `CHMM-icaif-Model` / `CHMM-icaif-paper`: older scoped-down conference-format fork. Not the main vehicle; v9 is.
 - `online-CHMM`: prospective online-EM extension; out of scope for this memo.

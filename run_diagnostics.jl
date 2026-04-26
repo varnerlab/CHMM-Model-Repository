@@ -8,7 +8,6 @@
 #   [4.2] CHMM-t nu_k diagnostics             -> results/diagnostics/nu_diagnostics/
 #   [4.3] OoS KS power calibration            -> results/diagnostics/ks_power/
 #   [4.4] Ryden K=2 random-init replication   -> results/diagnostics/ryden_k2/
-#   [4.5] Walk-forward JPM/JNJ rolling fit    -> results/diagnostics/walk_forward/
 #   [4.6] Copula profile log-L plot           -> results/diagnostics/copula_profile/
 #   [5.2] Block-bootstrap benchmark row       -> results/diagnostics/block_bootstrap/
 #   [8.1] Discrete bin-conditional Student-t  -> results/diagnostics/bin_t/
@@ -575,96 +574,6 @@ open(joinpath(ryden_dir, "Ryden_K2_Init.txt"), "w") do io
     println(io, "  the random-init runs illustrate the sensitivity that motivated the widely-cited 1998 verdict.");
 end
 println("  [4.4] Done.")
-
-# ========================================================================================= #
-# [4.5] Walk-forward rolling window for JPM / JNJ
-# ========================================================================================= #
-println("\n[4.5] Walk-forward rolling fit for JPM and JNJ...")
-
-wf_dir = joinpath(DIAG_DIR, "walk_forward"); mkpath(wf_dir);
-
-# Quarterly refit: 63 trading days per quarter
-const Q_LEN = 63;
-
-function walk_forward_metrics(R_is_series, R_oos_series, K; seed=SEED)
-    n_oos_local = length(R_oos_series);
-    n_q = cld(n_oos_local, Q_LEN);
-    pred_paths = Array{Float64,2}(undef, n_oos_local, N_PATHS_OOS);
-    running_is = copy(R_is_series);
-    running_cursor = 1;
-    for q in 1:n_q
-        q_start = running_cursor;
-        q_end = min(running_cursor + Q_LEN - 1, n_oos_local);
-        q_length = q_end - q_start + 1;
-
-        Random.seed!(seed + q);
-        local_model = build(MyContinuousHiddenMarkovModel, (
-            observations=running_is, number_of_states=K, max_iter=MAX_ITER));
-        _, local_sd = _stationary(local_model, K);
-
-        # Generate N_PATHS paths of q_length and stash them
-        for i in 1:N_PATHS_OOS
-            s0 = rand(local_sd);
-            st = local_model(s0, q_length);
-            for j in 1:q_length
-                pred_paths[q_start + j - 1, i] = rand(local_model.emission[st[j]]);
-            end
-        end
-        # Expand the IS window with actual observed OoS returns for the next refit
-        append!(running_is, R_oos_series[q_start:q_end]);
-        running_cursor = q_end + 1;
-    end
-    return eval_full(R_oos_series, pred_paths);
-end
-
-println("  JNJ fixed IS fit...")
-Random.seed!(SEED + 30);
-jnj_fixed = build(MyContinuousHiddenMarkovModel, (
-    observations=R_jnj_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
-_, jnj_sd = _stationary(jnj_fixed, K_MAIN);
-jnj_is_sim, jnj_oos_sim = _simulate_chmm_paths(jnj_fixed, jnj_sd, length(R_jnj_is), length(R_jnj_oos), N_PATHS);
-m_jnj_fixed_is  = eval_full(R_jnj_is,  jnj_is_sim);
-m_jnj_fixed_oos = eval_full(R_jnj_oos, jnj_oos_sim);
-
-println("  JNJ walk-forward...")
-m_jnj_wf = walk_forward_metrics(R_jnj_is, R_jnj_oos, K_MAIN; seed=SEED + 40);
-
-println("  JPM fixed IS fit...")
-Random.seed!(SEED + 50);
-jpm_fixed = build(MyContinuousHiddenMarkovModel, (
-    observations=R_jpm_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
-_, jpm_sd = _stationary(jpm_fixed, K_MAIN);
-jpm_is_sim, jpm_oos_sim = _simulate_chmm_paths(jpm_fixed, jpm_sd, length(R_jpm_is), length(R_jpm_oos), N_PATHS);
-m_jpm_fixed_is  = eval_full(R_jpm_is,  jpm_is_sim);
-m_jpm_fixed_oos = eval_full(R_jpm_oos, jpm_oos_sim);
-
-println("  JPM walk-forward...")
-m_jpm_wf = walk_forward_metrics(R_jpm_is, R_jpm_oos, K_MAIN; seed=SEED + 60);
-
-open(joinpath(wf_dir, "WalkForward.txt"), "w") do io
-    println(io, "Walk-forward (quarterly refit) versus fixed-IS CHMM-N on defensives");
-    println(io, "="^110);
-    println(io, rpad("Ticker/mode",22), " | ",
-                rpad("KS IS",7), " | ", rpad("AD IS",7), " | ",
-                rpad("KS OoS",7), " | ", rpad("AD OoS",7), " | ",
-                rpad("Kurt IS",7), " | ", rpad("Kurt OoS",7), " | ",
-                rpad("ACF-MAE",7), " | ", rpad("W1",7), " | ", rpad("H",7));
-    println(io, "-"^110);
-    for (tag, mis, mos) in [
-        ("JNJ fixed-IS", m_jnj_fixed_is, m_jnj_fixed_oos),
-        ("JNJ walk-forward", m_jnj_fixed_is, m_jnj_wf),
-        ("JPM fixed-IS", m_jpm_fixed_is, m_jpm_fixed_oos),
-        ("JPM walk-forward", m_jpm_fixed_is, m_jpm_wf)]
-        println(io, rpad(tag, 22), " | ",
-                    rpad(mis.ks, 7), " | ", rpad(mis.ad, 7), " | ",
-                    rpad(mos.ks, 7), " | ", rpad(mos.ad, 7), " | ",
-                    rpad(mis.kurt, 7), " | ", rpad(mos.kurt, 7), " | ",
-                    rpad(mis.acf_mae, 7), " | ", rpad(mis.w1, 7), " | ", rpad(mis.hell, 7));
-    end
-    println(io);
-    println(io, "Walk-forward uses quarterly ($(Q_LEN)-day) refits of CHMM-N at K = $K_MAIN; each refit observes the actual OoS returns of the prior quarter.");
-end
-println("  [4.5] Done.")
 
 # ========================================================================================= #
 # [4.6] Copula profile log-likelihood plot
