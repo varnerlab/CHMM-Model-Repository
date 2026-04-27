@@ -297,7 +297,8 @@ end
 
 # VaR/ES figure: ordered comparison
 var_fig = plot(layout=(2,2), size=(1100,800),
-    left_margin=18Plots.mm,
+    left_margin=22Plots.mm,
+    bottom_margin=14Plots.mm,
     plot_title="VaR and ES back-test (SPY, $N_PATHS paths)");
 
 model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
