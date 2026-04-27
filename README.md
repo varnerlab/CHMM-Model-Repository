@@ -97,10 +97,13 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |-- run_multi_emission_analysis.jl        # Pipeline A: three-emission CHMM + benchmarks
 |-- run_baselines_and_cross_asset.jl      # Pipeline A baselines + Pipeline B setup
 |-- run_cross_asset_sim_copula.jl         # Pipeline B: SIM, Gaussian copula, Student-t copula
-|-- run_gru_baseline.jl                   # GRU + Gaussian head baseline
 |-- run_diagnostics.jl                    # Diagnostic metrics
-|-- run_figures.jl                        # Paper figures (Fig 1, Fig 2)
-|-- run_track_*.jl                        # Additional tracks (utility, QuantGAN, diffusion, etc.)
+|-- run_figures.jl                        # Paper figures
+|-- run_track_b1_quantgan.jl              # QuantGAN deep-generative baseline row
+|-- run_track_b4_msgarch.jl               # MS-GARCH K=2/3 rows in extended panel
+|-- run_track_c1_smchmm.jl                # Semi-Markov CHMM rows in extended panel
+|-- run_track_c2_large_universe.jl        # Large-universe cross-asset scaling
+|-- run_garch_suite.jl, run_ks_block_bootstrap.jl, ...   # Standalone CSV producers (results/robustness/*.csv)
 |-- src/
 |   |-- Types.jl                          # HMM / GARCH / copula type definitions
 |   |-- Files.jl                          # JLD2 data loaders
@@ -108,12 +111,12 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |   |-- Compute.jl                        # Baum-Welch, ECM, GARCH MLE, simulation
 |   |-- CrossAsset.jl                     # SIM and Gaussian / Student-t copula generators
 |   |-- Visualize.jl                      # Plotting utilities
-|-- Notebooks/                            # Interactive analysis notebooks
-|-- data/                                 # JLD2 datasets
+|-- data/                                 # JLD2 datasets (active IS / OoS bundles)
 |-- results/                              # Generated metrics tables (per-ticker, per-K)
 |-- figs/                                 # Generated SVG / PDF figures
 |-- test/                                 # Test suite
 |-- docs/                                 # Documenter.jl docs
+|-- _attic_v10/                           # Archived journal-revision-era runners, results, and docs
 ```
 
 ## Related Repositories
