@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_non_us_asset.jl
 #
-# Track M12. Non-US asset class extension (revision item 5).
 #
 # Adds GLD (SPDR Gold Trust ETF, commodity asset class with non-equity underlying)
 # to the existing six-ticker universe (SPY, NVDA, JNJ, JPM, AAPL, QQQ) and reports:
@@ -14,8 +13,8 @@
 #
 # Inputs : standard CHMM-SP500-Train-10yr.jld2 + CHMM-SP500-OoS-Remainder.jld2 (both
 #          already contain GLD; verified via diagnostic).
-# Outputs: results/track_m12/Non_US_Asset.txt
-#          results/track_m12/Per_Pair_OffDiag_MAE.txt
+# Outputs: results/non_us_asset/Non_US_Asset.txt
+#          results/non_us_asset/Per_Pair_OffDiag_MAE.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -35,13 +34,13 @@ const NEW_ASSET     = "GLD";
 const ASSETS        = vcat(ASSETS_BASE, [NEW_ASSET]);
 const MARKET        = "SPY";
 
-const TRACK_M12_DIR = joinpath(_ROOT, "results", "track_m12");
-mkpath(TRACK_M12_DIR);
-const OUT_PATH      = joinpath(TRACK_M12_DIR, "Non_US_Asset.txt");
-const PAIRS_PATH    = joinpath(TRACK_M12_DIR, "Per_Pair_OffDiag_MAE.txt");
+const OUT_DIR = joinpath(_ROOT, "results", "non_us_asset");
+mkpath(OUT_DIR);
+const OUT_PATH      = joinpath(OUT_DIR, "Non_US_Asset.txt");
+const PAIRS_PATH    = joinpath(OUT_DIR, "Per_Pair_OffDiag_MAE.txt");
 
 println("="^88);
-println("  Track M12. Non-US asset class extension (commodity: $NEW_ASSET).");
+println("  Non-US asset class extension (commodity: $NEW_ASSET).");
 println("  Universe: $ASSETS");
 println("  Seed: $SEED");
 println("="^88);
@@ -264,7 +263,7 @@ println("\n[write] $OUT_PATH");
 
 open(OUT_PATH, "w") do io
     println(io, "="^110);
-    println(io, "Track M12. Non-US asset class extension (commodity: $NEW_ASSET).");
+    println(io, "Non-US asset class extension (commodity: $NEW_ASSET).");
     println(io, "="^110);
     println(io);
     println(io, "Setup     : seed=$SEED; $N_PATHS simulated paths per generator; K=$K_MAIN; α=0.05 for KS.");
@@ -311,7 +310,7 @@ end
 println("\n[write] $PAIRS_PATH");
 open(PAIRS_PATH, "w") do io
     println(io, "="^110);
-    println(io, "Track M12 (companion). Per-pair off-diagonal MAE on the 7-ticker universe.");
+    println(io, "Per-pair off-diagonal MAE on the 7-ticker universe.");
     println(io, "="^110);
     println(io);
     println(io, "For each ticker pair (i, j), reports |Σ_sim_avg[i,j] − Σ_obs[i,j]| separately for IS and OoS.");

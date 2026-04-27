@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_skew_emissions_ablation.jl
 #
-# Track M9 (revision response to referee comment M9): emission-family ablation for
+# emission-family ablation for
 # within-state skewness. SPY IS skewness is -0.75; the paper's three symmetric emission
 # families (Gaussian, Student-t, Laplace) recover that skewness only through asymmetric
 # state occupancy of symmetric emissions. This track reports two ablations:
@@ -22,7 +22,7 @@
 # improve the match to observed SPY skewness?"
 #
 # Outputs:
-#   results/track_m9/Skew_Emissions.txt
+#   results/skew_emissions_ablation/Skew_Emissions.txt
 #   ../CHMM-paper/results/robustness/skew_emissions_ablation.csv
 # ========================================================================================= #
 
@@ -42,13 +42,13 @@ const N_PATHS   = 500;
 const K_MAIN    = 18;
 const MAX_ITER  = 60;
 
-const TRACK_M9_DIR       = joinpath(_ROOT, "results", "track_m9");
+const OUT_DIR       = joinpath(_ROOT, "results", "skew_emissions_ablation");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M9_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M9: skew-t / skew-Laplace emission ablation (referee M9)")
+println("  Skew-t / skew-Laplace emission ablation")
 println("  Seed $SEED, K=$K_MAIN, N_paths=$N_PATHS")
 println("="^72)
 
@@ -306,9 +306,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M9_DIR, "Skew_Emissions.txt"), "w") do io
+open(joinpath(OUT_DIR, "Skew_Emissions.txt"), "w") do io
     println(io, "="^140);
-    println(io, "Track M9. Skew-t / skew-Laplace emission ablation (referee M9 response).");
+    println(io, "Skew-t / skew-Laplace emission ablation.");
     println(io, "="^140);
     println(io, "");
     println(io, "Fernandez-Steel skewing: f(x; μ, σ, γ) = (2/(σ(γ+1/γ))) * f_0((x-μ)/σ * γ^{-sign(x-μ)}),");
@@ -352,7 +352,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "skew_emissions_ablation.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M9 complete.");
-println("  Text report : $(joinpath(TRACK_M9_DIR, "Skew_Emissions.txt"))");
+println("  skew-emissions ablation complete.");
+println("  Text report : $(joinpath(OUT_DIR, "Skew_Emissions.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "skew_emissions_ablation.csv"))");
 println("="^72);

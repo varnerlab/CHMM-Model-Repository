@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_crps_dm.jl
 #
-# Track M11. CRPS + Diebold-Mariano on the headline panel (revision item 2).
 #
 # Each generator's archive is a marginal (unconditional) predictive ensemble at every t in
 # the held-out OoS window. The sample CRPS for observation y_t against ensemble x_{t,1..N}
@@ -15,8 +14,8 @@
 # Diebold-Mariano statistic on the per-t CRPS loss differential d_t = CRPS_t^A - CRPS_t^B
 # uses a Newey-West HAC variance with Bartlett kernel and bandwidth h = floor(T^(1/3)).
 #
-# Inputs : results/track_a/sim_archive_cache.jld2  (cached by run_track_a_metrics.jl)
-# Outputs: results/track_m11/CRPS_DM.txt
+# Inputs : results/_attic_v10/track_a/sim_archive_cache.jld2  (legacy harness cache)
+# Outputs: results/crps_dm/CRPS_DM.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -30,20 +29,20 @@ const TICKER     = "SPY";
 const RISK_FREE  = 0.0;
 const DT         = 1/252;
 
-const TRACK_A_DIR  = joinpath(_ROOT, "results", "track_a");
-const TRACK_M11_DIR = joinpath(_ROOT, "results", "track_m11");
-mkpath(TRACK_M11_DIR);
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const OUT_DIR          = joinpath(_ROOT, "results", "crps_dm");
+mkpath(OUT_DIR);
 
-const ARCHIVE_PATH = joinpath(TRACK_A_DIR, "sim_archive_cache.jld2");
-const OUT_PATH     = joinpath(TRACK_M11_DIR, "CRPS_DM.txt");
+const ARCHIVE_PATH = SIM_ARCHIVE_PATH;
+const OUT_PATH     = joinpath(OUT_DIR, "CRPS_DM.txt");
 
 println("="^88)
-println("  Track M11. CRPS + Diebold-Mariano on the headline panel.")
+println("  CRPS + Diebold-Mariano on the headline panel.")
 println("  Seed: $SEED")
 println("="^88)
 
 if !isfile(ARCHIVE_PATH)
-    error("Archive cache not found at $ARCHIVE_PATH. Run run_track_a_metrics.jl first.");
+    error("Legacy harness archive cache not found at $ARCHIVE_PATH; restore from _attic_v10/.");
 end
 
 # --------------------------------------------------------------------------------------- #
@@ -191,11 +190,11 @@ println("\n[write] $OUT_PATH");
 
 open(OUT_PATH, "w") do io
     println(io, "="^110);
-    println(io, "Track M11. CRPS + Diebold-Mariano on the headline panel.");
+    println(io, "CRPS + Diebold-Mariano on the headline panel.");
     println(io, "="^110);
     println(io);
     println(io, "Setup    : SPY daily log excess growth; IS n=$n_is, OoS n=$n_oos; seed=$SEED.");
-    println(io, "Ensemble : N_paths=1000 unconditional simulated paths per generator (cached in track_a).");
+    println(io, "Ensemble : N_paths=1000 unconditional simulated paths per generator (legacy harness cache).");
     println(io, "CRPS     : sample CRPS via the unbiased sorted-ensemble identity.");
     println(io, "DM       : Newey-West HAC variance, Bartlett kernel, bandwidth h = floor(T^(1/3)).");
     println(io);
@@ -246,7 +245,7 @@ println();
 println("[done] CRPS + DM results written to $OUT_PATH");
 
 # Also save a JLD2 with the per-t loss series for downstream use.
-const JLD_OUT = joinpath(TRACK_M11_DIR, "crps_loss_series.jld2");
+const JLD_OUT = joinpath(OUT_DIR, "crps_loss_series.jld2");
 save(JLD_OUT, "crps_loss_oos", crps_loss, "crps_loss_is", crps_loss_is, "dm_results", dm_results,
      "model_order", MODEL_ORDER, "reference_models", REFERENCE_MODELS);
 println("[done] Per-t loss series saved to $JLD_OUT");

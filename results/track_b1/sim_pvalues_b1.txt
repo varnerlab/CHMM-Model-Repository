@@ -1,7 +1,0 @@
-Track B1. Joint p-value coverage pv̄ with QuantGAN row.
-Model      | pv̄ IS   | pv̄ OoS
-GARCH      | 0.54    | 0.468  
-QuantGAN   | 0.013   | 0.289  
-CHMM-N     | 0.39    | 0.539  
-CHMM-t     | 0.324   | 0.661  
-CHMM-L     | 0.14    | 0.692  

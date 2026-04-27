@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_nu_shrinkage_sweep.jl
 #
-# Track M10 (revision response to referee comment M10):
 # Penalised ECM for CHMM-t with an exponential shrinkage prior on 1/ν_k, targeting the
 # IS excess-kurtosis overshoot of the unpenalised CHMM-t (14.57 simulated vs 7.68 observed).
 #
@@ -13,7 +12,7 @@
 # Christoffersen LR statistics at α ∈ {0.01, 0.05}.
 #
 # Outputs:
-#   results/track_m10/NU_Shrinkage_Sweep.txt
+#   results/nu_shrinkage_sweep/NU_Shrinkage_Sweep.txt
 #   ../CHMM-paper/results/robustness/nu_shrinkage_sweep.csv
 # ========================================================================================= #
 
@@ -35,13 +34,13 @@ const N_PATHS   = 1000;
 
 const SHRINK_GRID = [0.0, 5.0, 20.0, 50.0, 100.0, 200.0];
 
-const TRACK_M10_DIR      = joinpath(_ROOT, "results", "track_m10");
+const OUT_DIR      = joinpath(_ROOT, "results", "nu_shrinkage_sweep");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M10_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M10: CHMM-t penalised ECM with 1/ν shrinkage (referee M10)")
+println("  CHMM-t penalised ECM ν-shrinkage sweep")
 println("  Seed $SEED, K=$K_MAIN, rates=$(SHRINK_GRID)")
 println("="^72)
 
@@ -185,16 +184,16 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output: text report
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M10_DIR, "NU_Shrinkage_Sweep.txt"), "w") do io
+open(joinpath(OUT_DIR, "NU_Shrinkage_Sweep.txt"), "w") do io
     println(io, "="^140);
-    println(io, "Track M10. CHMM-t penalised ECM with exponential 1/ν shrinkage. Sweep over shrinkage rate.");
+    println(io, "CHMM-t penalised ECM with exponential 1/ν shrinkage. Sweep over shrinkage rate.");
     println(io, "="^140);
     println(io, "");
     println(io, "Penalty   : Q_pen(ν) = Q(ν) - rate / ν, maximised by golden-section search.");
     println(io, "            Rate = 0 recovers the unpenalised ECM of Peel & McLachlan (2000).");
     println(io, "Target    : bring simulated IS excess kurtosis from 14.57 (unpenalised) toward observed $(round(obs_kurt, digits=2)) without degrading IS KS.");
     println(io, "Data      : SPY IS ($n_is obs), OoS ($n_oos obs). N_paths = $N_PATHS.");
-    println(io, "Filter VaR: one-step-ahead forward-filter mixture α-quantile, as in Track C3b (referee M3 response).");
+    println(io, "Filter VaR: one-step-ahead forward-filter mixture α-quantile, as in Track C3b .");
     println(io, "");
     println(io, rpad("rate", 7), " | ",
                 rpad("ν_med", 6), " | ",
@@ -242,7 +241,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "nu_shrinkage_sweep.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M10 complete.");
-println("  Text report : $(joinpath(TRACK_M10_DIR, "NU_Shrinkage_Sweep.txt"))");
+println("  nu-shrinkage sweep complete.");
+println("  Text report : $(joinpath(OUT_DIR, "NU_Shrinkage_Sweep.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "nu_shrinkage_sweep.csv"))");
 println("="^72);

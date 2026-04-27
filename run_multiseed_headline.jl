@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_multiseed_headline.jl
 #
-# Track Minor 10 (revision response): the paper reports headline statistics under a single
 # global seed. The referee asks for a Monte Carlo robustness summary across 10-20 seed
 # replicates for the headline pass-rate and VaR-LR statistics.
 #
@@ -11,7 +10,7 @@
 # pooled-archive VaR at α ∈ {0.01, 0.05}.
 #
 # Output:
-#   results/track_minor10/MultiSeed.txt
+#   results/multiseed_headline/MultiSeed.txt
 #   ../CHMM-paper/results/robustness/multiseed_headline.csv
 # ========================================================================================= #
 
@@ -33,12 +32,12 @@ const MAX_ITER  = 60;
 const BASE_SEED = 20260422;
 const SEED_GRID = [BASE_SEED + 100*k for k in 1:10];
 
-const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor10");
+const TRACK_DIR        = joinpath(_ROOT, "results", "multiseed_headline");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track Minor 10: 10-seed Monte Carlo on headline metrics (referee Minor 10)")
+println("  10-seed Monte Carlo on headline metrics ")
 println("="^72)
 
 println("\n[data] Loading SPY IS + OoS...");
@@ -182,7 +181,7 @@ end
 # --------------------------------------------------------------------------------------- #
 open(joinpath(TRACK_DIR, "MultiSeed.txt"), "w") do io
     println(io, "="^150);
-    println(io, "Track Minor 10. Multi-seed Monte Carlo on headline metrics (referee Minor 10 response).");
+    println(io, "Multi-seed Monte Carlo on headline metrics .");
     println(io, "="^150);
     println(io, "");
     println(io, "Setup : $(length(SEED_GRID)) global seeds (base $BASE_SEED, increment 100), N_paths = $N_PATHS per seed, K = $K_MAIN.");
@@ -221,7 +220,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track Minor 10 complete.");
+println("  complete.");
 println("  Text: $(joinpath(TRACK_DIR, "MultiSeed.txt"))");
 println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"))");
 println("="^72);

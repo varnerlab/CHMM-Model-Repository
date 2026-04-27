@@ -10,12 +10,12 @@
 #   2.  run_multi_emission_analysis.jl       (K x family sensitivity)
 #   3.  run_baselines_and_cross_asset.jl     (headline Pipeline A panel + per-ticker)
 #   4.  run_cross_asset_sim_copula.jl        (Pipeline B Student-t copula)
-#   5.  run_track_c2_large_universe.jl       (large-universe dependence scaling)
+#   5.  run_cross_asset_large_universe.jl    (large-universe dependence scaling)
 #   6.  run_diagnostics.jl                   (utility, nu diagnostics, K-selection, ...)
 #   7.  run_equity_price_sim.jl              (price fans + terminal distributions)
-#   8.  run_track_b1_quantgan.jl             (QuantGAN deep-generative baseline row)
-#   9.  run_track_b4_msgarch.jl              (MS-GARCH K=2/3 rows in extended panel)
-#  10.  run_track_c1_smchmm.jl               (SM-CHMM rows in extended panel)
+#   8.  run_quantgan_baseline.jl             (QuantGAN deep-generative baseline row)
+#   9.  run_msgarch_baselines.jl             (MS-GARCH K=2/3 rows in extended panel)
+#  10.  run_smchmm_baseline.jl               (SM-CHMM rows in extended panel)
 #  11.  run_figures.jl                       (K=18 main-body figures)
 #
 # Earlier journal-revision stages (Track A extended evaluation, Track B3 diffusion,
@@ -40,12 +40,12 @@ const SCRIPTS = [
     "run_multi_emission_analysis.jl",
     "run_baselines_and_cross_asset.jl",
     "run_cross_asset_sim_copula.jl",
-    "run_track_c2_large_universe.jl",
+    "run_cross_asset_large_universe.jl",
     "run_diagnostics.jl",
     "run_equity_price_sim.jl",
-    "run_track_b1_quantgan.jl",
-    "run_track_b4_msgarch.jl",
-    "run_track_c1_smchmm.jl",
+    "run_quantgan_baseline.jl",
+    "run_msgarch_baselines.jl",
+    "run_smchmm_baseline.jl",
     "run_figures.jl",
 ];
 

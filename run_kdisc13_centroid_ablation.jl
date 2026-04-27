@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_kdisc13_centroid_ablation.jl
 #
-# Track Minor 6 (revision response): the existing Bin-T NJ row in Table 3 changes both the
 # bin count (K_disc = 90 → 13) AND the emission family (centroid → bin-conditional
 # Student-t). To isolate the bin-count effect from the emission-family effect the referee
 # asks for a parallel K_disc = 13 row with the standard centroid emissions (no Student-t).
@@ -11,7 +10,7 @@
 # tab:model_comparison.
 #
 # Output:
-#   results/track_minor6/Kdisc13_Centroid.txt
+#   results/kdisc13_centroid_ablation/Kdisc13_Centroid.txt
 #   ../CHMM-paper/results/robustness/kdisc13_centroid_ablation.csv
 # ========================================================================================= #
 
@@ -30,12 +29,12 @@ const DT        = 1/252;
 const N_PATHS   = 500;
 const K_DISC    = 13;
 
-const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor6");
+const TRACK_DIR        = joinpath(_ROOT, "results", "kdisc13_centroid_ablation");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track Minor 6: K_disc = $K_DISC centroid Discrete HMM (referee Minor 6)")
+println("  K_disc = $K_DISC centroid Discrete HMM ")
 println("="^72)
 
 println("\n[data] Loading SPY IS + OoS...");
@@ -54,8 +53,8 @@ n_oos = length(R_oos);
 println("  IS $n_is, OoS $n_oos");
 
 # --------------------------------------------------------------------------------------- #
-# Discrete HMM at K_disc = 13, centroid emissions, no jumps (mirrors run_track_a_metrics.jl
-# §"Discrete HMM (NJ + WJ)" but with K_disc = 13 rather than 90)
+# Discrete HMM at K_disc = 13, centroid emissions, no jumps (mirrors the legacy
+# harness Discrete HMM (NJ + WJ) construction with K_disc = 13 rather than 90)
 # --------------------------------------------------------------------------------------- #
 println("\n[fit] Discrete NJ at K_disc = $K_DISC, centroid emissions...");
 qprobs = range(0.0, 1.0, length=K_DISC + 1) |> collect;
@@ -157,7 +156,7 @@ println("  sim kurt $(round(sim_kurt, digits=3))    ACF-MAE $(round(acf, digits=
 # --------------------------------------------------------------------------------------- #
 open(joinpath(TRACK_DIR, "Kdisc13_Centroid.txt"), "w") do io
     println(io, "="^120);
-    println(io, "Track Minor 6. K_disc = $K_DISC centroid Discrete HMM (referee Minor 6 response).");
+    println(io, "K_disc = $K_DISC centroid Discrete HMM .");
     println(io, "="^120);
     println(io, "");
     println(io, "Setup     : Discrete HMM, $K_DISC quantile bins, centroid emissions, no jumps. SPY IS = $n_is, OoS = $n_oos, N_paths = $N_PATHS.");
@@ -184,7 +183,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "kdisc13_centroid_ablation.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track Minor 6 complete.");
+println("  complete.");
 println("  Text: $(joinpath(TRACK_DIR, "Kdisc13_Centroid.txt"))");
 println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "kdisc13_centroid_ablation.csv"))");
 println("="^72);

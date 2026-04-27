@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_lr_ind_bootstrap_null.jl
 #
-# Track M5 (revision response to referee comment M5): bootstrap null distribution of the
+# bootstrap null distribution of the
 # Christoffersen independence LR statistic at n = 572, α ∈ {0.01, 0.05}, to quantify how
 # underpowered the asymptotic χ²(1) critical value is at the paper's OoS sample size.
 #
@@ -18,7 +18,7 @@
 # sits well below the asymptotic 3.84 threshold.
 #
 # Outputs:
-#   results/track_m5/LR_ind_Bootstrap_Null.txt
+#   results/lr_ind_bootstrap_null/LR_ind_Bootstrap_Null.txt
 #   ../CHMM-paper/results/robustness/lr_ind_bootstrap_null.csv
 # ========================================================================================= #
 
@@ -55,13 +55,13 @@ const OBSERVED = Dict(
     ),
 );
 
-const TRACK_M5_DIR       = joinpath(_ROOT, "results", "track_m5");
+const OUT_DIR       = joinpath(_ROOT, "results", "lr_ind_bootstrap_null");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M5_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M5: Christoffersen LR_ind bootstrap null at n=$T_OOS, B=$B (referee M5)")
+println("  Christoffersen LR_ind bootstrap null")
 println("="^72)
 
 function bootstrap_lr_ind_null(α::Float64, n::Int, B::Int)
@@ -127,9 +127,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M5_DIR, "LR_ind_Bootstrap_Null.txt"), "w") do io
+open(joinpath(OUT_DIR, "LR_ind_Bootstrap_Null.txt"), "w") do io
     println(io, "="^120);
-    println(io, "Track M5. Christoffersen LR_ind bootstrap null at n = $T_OOS, B = $B (referee M5 response).");
+    println(io, "Christoffersen LR_ind bootstrap null at n = $T_OOS, B = $B.");
     println(io, "="^120);
     println(io, "");
     println(io, "Procedure: B = $B i.i.d. Bernoulli(α) breach sequences of length $T_OOS; christoffersen_lr on each.");
@@ -186,7 +186,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "lr_ind_bootstrap_null.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M5 complete.");
-println("  Text report : $(joinpath(TRACK_M5_DIR, "LR_ind_Bootstrap_Null.txt"))");
+println("  LR_ind bootstrap null complete.");
+println("  Text report : $(joinpath(OUT_DIR, "LR_ind_Bootstrap_Null.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "lr_ind_bootstrap_null.csv"))");
 println("="^72);

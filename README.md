@@ -99,10 +99,10 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |-- run_cross_asset_sim_copula.jl         # Pipeline B: SIM, Gaussian copula, Student-t copula
 |-- run_diagnostics.jl                    # Diagnostic metrics
 |-- run_figures.jl                        # Paper figures
-|-- run_track_b1_quantgan.jl              # QuantGAN deep-generative baseline row
-|-- run_track_b4_msgarch.jl               # MS-GARCH K=2/3 rows in extended panel
-|-- run_track_c1_smchmm.jl                # Semi-Markov CHMM rows in extended panel
-|-- run_track_c2_large_universe.jl        # Large-universe cross-asset scaling
+|-- run_quantgan_baseline.jl              # QuantGAN deep-generative baseline row
+|-- run_msgarch_baselines.jl              # MS-GARCH K=2/3 rows in extended panel
+|-- run_smchmm_baseline.jl                # Semi-Markov CHMM rows in extended panel
+|-- run_cross_asset_large_universe.jl     # Large-universe cross-asset scaling
 |-- run_garch_suite.jl, run_ks_block_bootstrap.jl, ...   # Standalone CSV producers (results/robustness/*.csv)
 |-- src/
 |   |-- Types.jl                          # HMM / GARCH / copula type definitions

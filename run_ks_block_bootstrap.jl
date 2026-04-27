@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_ks_block_bootstrap.jl
 #
-# Track M2 (revision response to referee comment M2): two complementary fixes for the
+# two complementary fixes for the
 # headline KS pass-rate metric.
 #
 #   (a) Mean two-sample KS p-value distribution (5/25/50/75/95 quantiles) per generator,
@@ -21,7 +21,7 @@
 # at this sample size).
 #
 # Outputs:
-#   results/track_m2/KS_Bootstrap_Recalibration.txt
+#   results/ks_block_bootstrap/KS_Bootstrap_Recalibration.txt
 #   ../CHMM-paper/results/robustness/ks_block_bootstrap.csv
 # ========================================================================================= #
 
@@ -43,13 +43,13 @@ const N_PATHS   = 500;
 const B_BOOT    = 1000;
 const BLOCK_LENGTHS = [5, 10, 20];
 
-const TRACK_M2_DIR       = joinpath(_ROOT, "results", "track_m2");
+const OUT_DIR       = joinpath(_ROOT, "results", "ks_block_bootstrap");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M2_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M2: KS p-value distribution + block-bootstrap recalibration (referee M2)")
+println("  KS p-value distribution + block-bootstrap recalibration")
 println("  Seed $SEED, K=$K_MAIN, N_paths=$N_PATHS, B_boot=$B_BOOT, L=$BLOCK_LENGTHS")
 println("="^72)
 
@@ -213,9 +213,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M2_DIR, "KS_Bootstrap_Recalibration.txt"), "w") do io
+open(joinpath(OUT_DIR, "KS_Bootstrap_Recalibration.txt"), "w") do io
     println(io, "="^150);
-    println(io, "Track M2. KS p-value distribution + block-bootstrap recalibration (referee M2 response).");
+    println(io, "KS p-value distribution + block-bootstrap recalibration.");
     println(io, "="^150);
     println(io, "");
     println(io, "Setup     : SPY IS ($n_is observations); $N_PATHS simulated paths per generator under seed $SEED.");
@@ -272,7 +272,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "ks_block_bootstrap.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M2 complete.");
-println("  Text report : $(joinpath(TRACK_M2_DIR, "KS_Bootstrap_Recalibration.txt"))");
+println("  KS block bootstrap complete.");
+println("  Text report : $(joinpath(OUT_DIR, "KS_Bootstrap_Recalibration.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "ks_block_bootstrap.csv"))");
 println("="^72);

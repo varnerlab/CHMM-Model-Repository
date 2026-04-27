@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_kupiec_mc_ci.jl
 #
-# Track M6 sub-ask (b) (revision response to referee comment M6): MC confidence interval
 # on the unconditional Kupiec LR_uc statistic at T_OoS = 572 days, addressing the
 # referee's concern that "the unconditional calibration gain on SM-CHMM-N
 # (LR_uc: 3.83 → 0.82) is numerically small relative to MC error."
@@ -17,7 +16,7 @@
 # implementation that is documented as a follow-up in revision-code-todo.md.
 #
 # Outputs:
-#   results/track_m6/LR_uc_MC_CI.txt
+#   results/kupiec_mc_ci/LR_uc_MC_CI.txt
 #   ../CHMM-paper/results/robustness/kupiec_mc_ci.csv
 # ========================================================================================= #
 
@@ -51,13 +50,13 @@ const OBS_LR_UC = Dict(
     "SM-CHMM-L (plug-in)"  => 3.03,
 );
 
-const TRACK_M6_DIR       = joinpath(_ROOT, "results", "track_m6");
+const OUT_DIR       = joinpath(_ROOT, "results", "kupiec_mc_ci");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M6_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M6: MC confidence interval on LR_uc at n=$T_OOS, B=$B (referee M6)")
+println("  Kupiec MC confidence interval")
 println("="^72)
 
 # --------------------------------------------------------------------------------------- #
@@ -131,9 +130,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M6_DIR, "LR_uc_MC_CI.txt"), "w") do io
+open(joinpath(OUT_DIR, "LR_uc_MC_CI.txt"), "w") do io
     println(io, "="^150);
-    println(io, "Track M6 sub-ask (b). MC confidence interval on Kupiec LR_uc at n = $T_OOS (referee M6 response).");
+    println(io, "MC confidence interval on Kupiec LR_uc at n = $T_OOS.");
     println(io, "="^150);
     println(io, "");
     println(io, "Procedure. For each (model, observed breach rate p) pair, simulate B = $B i.i.d. Bernoulli(p) breach");
@@ -184,7 +183,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "kupiec_mc_ci.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M6 (b) complete.");
-println("  Text report : $(joinpath(TRACK_M6_DIR, "LR_uc_MC_CI.txt"))");
+println("  Kupiec MC CI complete.");
+println("  Text report : $(joinpath(OUT_DIR, "LR_uc_MC_CI.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "kupiec_mc_ci.csv"))");
 println("="^72);

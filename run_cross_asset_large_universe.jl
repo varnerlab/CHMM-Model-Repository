@@ -1,13 +1,13 @@
 # ========================================================================================= #
-# run_track_c2_large_universe.jl
+# run_cross_asset_large_universe.jl
 #
-# Track C2 (large-universe dependence scaling): compare Gaussian copula, flat
+# Large-universe dependence-layer scaling: compare Gaussian copula, flat
 # Student-t copula, and truncated C-vine on a 50-asset universe using exact
-# empirical marginals. This isolates the scalability of the dependence layer.
+# empirical marginals. Isolates the scalability of the dependence layer.
 #
 # Outputs:
-#   results/cross_asset_large/Table-C2-Large-Universe.txt
-#   results/cross_asset_large/Track-C2-Large-summary.txt
+#   results/cross_asset_large/large_universe_table.txt
+#   results/cross_asset_large/summary.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -25,7 +25,7 @@ const OUT_DIR = joinpath(_ROOT, "results", "cross_asset_large");
 mkpath(OUT_DIR);
 
 println("="^72)
-println("  Track C2 large-universe dependence scaling")
+println("  Large-universe dependence-layer scaling (50-asset universe)")
 println("  Seed=$SEED, assets=$N_ASSETS, paths=$N_PATHS")
 println("="^72)
 
@@ -134,10 +134,10 @@ var_gauss = portfolio_var_stats(gauss_is, portfolio_oos);
 var_t = portfolio_var_stats(t_is, portfolio_oos);
 var_vine = portfolio_var_stats(vine_is, portfolio_oos);
 
-table_path = joinpath(OUT_DIR, "Table-C2-Large-Universe.txt");
+table_path = joinpath(OUT_DIR, "large_universe_table.txt");
 open(table_path, "w") do io
     println(io, "="^130);
-    println(io, "Track C2 large-universe dependence scaling (exact empirical marginals, $N_ASSETS assets)");
+    println(io, "Large-universe dependence scaling (exact empirical marginals, $N_ASSETS assets)");
     println(io, "="^130);
     println(io, "Universe    : top-$N_ASSETS common tickers by in-sample average dollar volume.");
     println(io, "Marginals   : exact empirical marginals via rank reordering (dependence layer isolated).");
@@ -154,9 +154,9 @@ open(table_path, "w") do io
     println(io, "Top 10 assets: ", join(assets[1:10], ", "));
 end
 
-open(joinpath(OUT_DIR, "Track-C2-Large-summary.txt"), "w") do io
+open(joinpath(OUT_DIR, "summary.txt"), "w") do io
     n_t_edges = count(==(Symbol("student_t")), vine.families);
-    println(io, "Track C2 large-universe summary")
+    println(io, "Large-universe dependence-scaling summary")
     println(io, "="^80);
     println(io, "");
     println(io, "Universe: top-$N_ASSETS common tickers by avg dollar volume.");

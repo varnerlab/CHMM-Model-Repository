@@ -1,7 +1,6 @@
 # ========================================================================================= #
 # run_mmd_fixed_bandwidth.jl
 #
-# Track Minor 4 (revision response): the existing MMD calculation uses median-heuristic
 # bandwidth γ computed from the pooled (observed + simulated) window matrix, which makes
 # γ a function of the generator under evaluation and therefore makes the cross-generator
 # MMD ranking unstable. The referee asks to fix γ to the median-heuristic on the
@@ -13,7 +12,7 @@
 # fixed bandwidth.
 #
 # Output:
-#   results/track_minor4/MMD_Bandwidth_Fix.txt
+#   results/mmd_fixed_bandwidth/MMD_Bandwidth_Fix.txt
 #   ../CHMM-paper/results/robustness/mmd_fixed_bandwidth.csv
 # ========================================================================================= #
 
@@ -35,12 +34,12 @@ const MAX_ITER  = 60;
 const W         = 20;        # window length
 const N_WINDOWS = 500;       # MMD sample size per side
 
-const TRACK_DIR        = joinpath(_ROOT, "results", "track_minor4");
+const TRACK_DIR        = joinpath(_ROOT, "results", "mmd_fixed_bandwidth");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_DIR); mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track Minor 4: fixed observed-sample MMD bandwidth (referee Minor 4)")
+println("  fixed observed-sample MMD bandwidth ")
 println("="^72)
 
 println("\n[data] Loading SPY IS...");
@@ -154,7 +153,7 @@ end
 # --------------------------------------------------------------------------------------- #
 open(joinpath(TRACK_DIR, "MMD_Bandwidth_Fix.txt"), "w") do io
     println(io, "="^130);
-    println(io, "Track Minor 4. Fixed observed-sample MMD bandwidth (referee Minor 4 response).");
+    println(io, "Fixed observed-sample MMD bandwidth .");
     println(io, "="^130);
     println(io, "");
     println(io, "Setup    : $N_WINDOWS standardised 20-day windows per generator. Fixed γ computed from observed-only median heuristic.");
@@ -184,7 +183,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "mmd_fixed_bandwidth.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track Minor 4 complete.");
+println("  complete.");
 println("  Text: $(joinpath(TRACK_DIR, "MMD_Bandwidth_Fix.txt"))");
 println("  CSV : $(joinpath(PAPER_ROBUSTNESS_DIR, "mmd_fixed_bandwidth.csv"))");
 println("="^72);

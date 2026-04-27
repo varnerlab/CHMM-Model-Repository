@@ -1,16 +1,16 @@
 # ========================================================================================= #
-# run_track_b4_msgarch.jl
+# run_msgarch_baselines.jl
 #
-# Track B4: Markov-Switching GARCH(1,1), K=2 (Haas-Mittnik-Paolella 2004).
-# Fit on SPY, simulate 1000 IS + 1000 OoS paths, append to the Track A harness panel,
-# and re-run A1..A10 metrics and A8 unconditional VaR.
+# Markov-Switching GARCH(1,1), K=2 (Haas-Mittnik-Paolella 2004).
+# Fit on SPY, simulate 1000 IS + 1000 OoS paths, append to the legacy harness
+# panel, and emit the MS-GARCH row referenced by tab:extended_baselines.
 #
 # Outputs:
-#   results/track_b4/ms_garch_model.jld2        fitted MS-GARCH(K=2) params
-#   results/track_b4/Table-4-Extended-Metrics-B4.txt   metrics panel + MS-GARCH row
-#   results/track_b4/sim_pvalues_b4.txt
-#   results/track_b4/VaR_LR_tests_b4.txt
-#   results/track_b4/Track-B4-summary.txt
+#   results/msgarch_baselines/ms_garch_model.jld2     fitted MS-GARCH(K=2) parameters
+#   results/msgarch_baselines/extended_metrics.txt    metrics panel with MS-GARCH row
+#   results/msgarch_baselines/sim_pvalues.txt
+#   results/msgarch_baselines/var_lr_tests.txt
+#   results/msgarch_baselines/summary.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -31,12 +31,12 @@ const SIG_DEPTH    = 3;
 const MAX_LAG_LEV  = 20;
 const HORIZONS_AG  = [1, 5, 10, 21];
 
-const TRACK_A_DIR = joinpath(_ROOT, "results", "track_a");
-const TRACK_B_DIR = joinpath(_ROOT, "results", "track_b4");
-mkpath(TRACK_B_DIR);
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const MSGARCH_DIR      = joinpath(_ROOT, "results", "msgarch_baselines");
+mkpath(MSGARCH_DIR);
 
 println("="^72)
-println("  Track B4: MS-GARCH(1,1) K=2 baseline")
+println("  MS-GARCH(1,1) K=2 baseline (Haas-Mittnik-Paolella 2004)")
 println("="^72)
 
 # --------------------------------------------------------------------------------------- #
@@ -82,7 +82,7 @@ end
 println("  uncond var per regime: ", round.([msg.ω[k] / max(1 - msg.α[k] - msg.β[k], 1e-6) for k in 1:2], digits=3));
 println("  ll = $(round(msg.log_likelihood, digits=2))");
 
-save(joinpath(TRACK_B_DIR, "ms_garch_model.jld2"), "model", msg);
+save(joinpath(MSGARCH_DIR, "ms_garch_model.jld2"), "model", msg);
 
 # --------------------------------------------------------------------------------------- #
 # Simulate 1000 IS + 1000 OoS paths
@@ -100,12 +100,12 @@ end
 # Build a minimal archive {Observed-row + MS-GARCH row + CHMM-t for comparison}
 # Load Track A cache to reuse observed + CHMM rows for the panel
 # --------------------------------------------------------------------------------------- #
-cache_path = joinpath(TRACK_A_DIR, "sim_archive_cache.jld2");
+cache_path = SIM_ARCHIVE_PATH;
 base_archive = load(cache_path)["archive"];
 archive = merge(base_archive, Dict("MS-GARCH" => (is=msg_is, oos=msg_oos)));
 
 # Append optional SM rows if the C1 archive is present
-sm_cache = joinpath(_ROOT, "results", "track_c1", "sim_archive_sm.jld2");
+sm_cache = joinpath(_ROOT, "results", "smchmm_baseline", "sim_archive_sm.jld2");
 if isfile(sm_cache)
     sm = load(sm_cache)["archive"];
     archive = merge(archive, sm);
@@ -221,9 +221,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-println("\n[output] Writing Track B4 tables...");
+println("\n[output] Writing MS-GARCH tables...");
 
-open(joinpath(TRACK_B_DIR, "Table-4-Extended-Metrics-B4.txt"), "w") do io
+open(joinpath(MSGARCH_DIR, "extended_metrics.txt"), "w") do io
     println(io, "="^130);
     println(io, "TABLE 4 (Track A + C1 + B4). MMD / sig-MMD / disc AUC, MS-GARCH(K=2) row appended.");
     println(io, "="^130);
@@ -252,8 +252,8 @@ open(joinpath(TRACK_B_DIR, "Table-4-Extended-Metrics-B4.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "sim_pvalues_b4.txt"), "w") do io
-    println(io, "Track B4. Joint p-value coverage pv̄ with MS-GARCH row appended.");
+open(joinpath(MSGARCH_DIR, "sim_pvalues.txt"), "w") do io
+    println(io, "MS-GARCH baseline. Joint p-value coverage pv̄ with MS-GARCH row appended.");
     println(io, rpad("Model", 13), " | pv̄ IS   | pv̄ OoS");
     for m in MODEL_ORDER
         pv = pv_results[m];
@@ -263,8 +263,8 @@ open(joinpath(TRACK_B_DIR, "sim_pvalues_b4.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "VaR_LR_tests_b4.txt"), "w") do io
-    println(io, "Track B4. Unconditional VaR LR tests with MS-GARCH row appended (α ∈ {0.01, 0.05}).");
+open(joinpath(MSGARCH_DIR, "var_lr_tests.txt"), "w") do io
+    println(io, "MS-GARCH baseline. Unconditional VaR LR tests with MS-GARCH row appended (α ∈ {0.01, 0.05}).");
     println(io, rpad("Model", 13), " | VaR01   | br%01 | LR_uc01 | p_uc01 | LR_ind01 | VaR05   | br%05 | LR_uc05 | p_uc05 | LR_ind05");
     for m in MODEL_ORDER
         r = var_results[m];
@@ -282,8 +282,8 @@ open(joinpath(TRACK_B_DIR, "VaR_LR_tests_b4.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "Track-B4-summary.txt"), "w") do io
-    println(io, "Track B4 summary: MS-GARCH(K=2) vs single-regime GARCH vs CHMMs (SPY)");
+open(joinpath(MSGARCH_DIR, "summary.txt"), "w") do io
+    println(io, "MS-GARCH baseline summary: MS-GARCH(K=2) vs single-regime GARCH vs CHMMs (SPY)");
     println(io, "="^80);
     println(io, "");
     println(io, "Fit params (HMP 2004 path-independent recursion):");
@@ -303,6 +303,6 @@ open(joinpath(TRACK_B_DIR, "Track-B4-summary.txt"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track B4 complete.");
-println("  Results: $TRACK_B_DIR");
+println("  MS-GARCH baseline complete.");
+println("  Results: $MSGARCH_DIR");
 println("="^72);

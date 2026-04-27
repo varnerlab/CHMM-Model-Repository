@@ -1,25 +1,25 @@
 # ========================================================================================= #
-# run_track_b1_quantgan.jl
+# run_quantgan_baseline.jl
 #
-# Track B1 (first pass): QuantGAN-style deep baseline in pure Julia / Flux.
-#
-# This is a practical repo-native approximation to QuantGAN:
+# QuantGAN-style deep-generative baseline in pure Julia / Flux. Repo-native
+# approximation to the original convolutional WGAN of Wiese et al. (2020):
 #   - train on standardised rolling windows of SPY returns,
 #   - convolutional generator and critic,
 #   - Wasserstein loss with critic weight clipping,
-#   - synthesize long paths by stitching generated windows.
+#   - synthesise long paths by stitching generated windows.
 #
-# The goal is not exact architectural reproduction of the original paper; the
-# goal is a serious GAN baseline row that is reproducible in this codebase.
+# The goal is a reproducible deep-generative baseline row in the extended
+# baseline panel (tab:extended_baselines), not exact architectural reproduction
+# of the original paper.
 #
 # Outputs:
-#   results/track_b1/Table-4-Extended-Metrics-B1.txt
-#   results/track_b1/VaR_LR_tests_b1.txt
-#   results/track_b1/sim_pvalues_b1.txt
-#   results/track_b1/Track-B1-summary.txt
-#   results/track_b1/Loss.svg
-#   results/track_b1/quantgan_panel.txt          (seven-metric panel for tab:m7_extended_panel)
-#   ../CHMM-paper/results/robustness/quantgan_panel.csv
+#   results/quantgan_baseline/quantgan_panel.txt    (seven-metric panel for tab:extended_baselines)
+#   results/quantgan_baseline/Loss.svg              (training-loss curve, debug)
+#   results/quantgan_baseline/extended_metrics.txt  (legacy MMD / sig-MMD / AUC reference)
+#   results/quantgan_baseline/var_lr_tests.txt      (legacy VaR LR reference)
+#   results/quantgan_baseline/sim_pvalues.txt       (legacy joint p-value reference)
+#   results/quantgan_baseline/summary.txt           (top-line training + metrics summary)
+#   ../CHMM-paper/results/robustness/quantgan_panel.csv  (machine-readable row consumed by paper)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -51,14 +51,14 @@ const SIG_DEPTH    = 3;
 const MAX_LAG_LEV  = 20;
 const HORIZONS_AG  = [1, 5, 10, 21];
 
-const TRACK_A_DIR = joinpath(_ROOT, "results", "track_a");
-const TRACK_B_DIR = joinpath(_ROOT, "results", "track_b1");
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const QUANTGAN_DIR = joinpath(_ROOT, "results", "quantgan_baseline");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_B_DIR);
+mkpath(QUANTGAN_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track B1: QuantGAN-style convolutional WGAN baseline")
+println("  QuantGAN baseline (convolutional WGAN, weight clipping)")
 println("  Seed=$SEED, W=$WINDOW_LEN, latent=$LATENT_DIM, epochs=$EPOCHS")
 println("="^72)
 
@@ -187,7 +187,7 @@ loss_fig = plot(1:EPOCHS, d_loss_hist, lw=2, color=:darkred, label="Critic",
     xlabel="Epoch", ylabel="Loss", title="QuantGAN-style WGAN training loss",
     titlefontsize=10, size=(760, 420));
 plot!(loss_fig, 1:EPOCHS, g_loss_hist, lw=2, color=:navy, label="Generator");
-savefig(loss_fig, joinpath(TRACK_B_DIR, "Loss.svg"));
+savefig(loss_fig, joinpath(QUANTGAN_DIR, "Loss.svg"));
 
 function generate_window(g)
     z = sample_noise(1);
@@ -295,8 +295,8 @@ println("  ACF    $(round(panel_acf, digits=4))");
 println("  br01   $(round(100*panel_vb[0.01].br_rate, digits=1))%  LR_uc01 $(round(panel_vb[0.01].LR_uc, digits=2))");
 println("  br05   $(round(100*panel_vb[0.05].br_rate, digits=1))%  LR_uc05 $(round(panel_vb[0.05].LR_uc, digits=2))");
 
-open(joinpath(TRACK_B_DIR, "quantgan_panel.txt"), "w") do io
-    println(io, "Track B1 (arXiv). Seven-metric panel for tab:m7_extended_panel.");
+open(joinpath(QUANTGAN_DIR, "quantgan_panel.txt"), "w") do io
+    println(io, "QuantGAN baseline. Seven-metric panel for tab:extended_baselines (arXiv).");
     println(io, "SPY, IS n=$n_is, OoS n=$n_oos, N_paths=$N_PATHS, seed=$SEED.");
     println(io, "");
     println(io, "Model      | IS_KS%  | OoS_KS% | IS_AD%  | OoS_AD% | Kurt   | ACF-MAE | br%01 | LR_uc01 | LR_ind01 | br%05 | LR_uc05 | LR_ind05");
@@ -309,7 +309,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "quantgan_panel.csv"), "w") do io
     println(io, "QuantGAN,$(round(100*panel_is_ks, digits=2)),$(round(100*panel_oos_ks, digits=2)),$(round(100*panel_is_ad, digits=2)),$(round(100*panel_oos_ad, digits=2)),$(round(panel_kurt, digits=3)),$(round(panel_acf, digits=5)),$(round(100*panel_vb[0.01].br_rate, digits=2)),$(round(panel_vb[0.01].LR_uc, digits=3)),$(round(panel_vb[0.01].LR_ind, digits=3)),$(round(100*panel_vb[0.05].br_rate, digits=2)),$(round(panel_vb[0.05].LR_uc, digits=3)),$(round(panel_vb[0.05].LR_ind, digits=3))");
 end
 
-cache_path = joinpath(TRACK_A_DIR, "sim_archive_cache.jld2");
+cache_path = SIM_ARCHIVE_PATH;
 base_archive = load(cache_path)["archive"];
 archive = merge(base_archive, Dict("QuantGAN" => (is=qgan_is, oos=qgan_oos)));
 
@@ -391,12 +391,12 @@ for m in MODEL_ORDER
     );
 end
 
-open(joinpath(TRACK_B_DIR, "Table-4-Extended-Metrics-B1.txt"), "w") do io
+open(joinpath(QUANTGAN_DIR, "extended_metrics.txt"), "w") do io
     println(io, "="^120);
-    println(io, "TABLE 4 (Track B1). QuantGAN-style convolutional WGAN baseline added.");
+    println(io, "Extended metrics (legacy MMD / sig-MMD / AUC reference). QuantGAN baseline.");
     println(io, "="^120);
     println(io, "Setup: SPY daily log excess growth; IS n=$n_is, OoS n=$n_oos; seed=$SEED; N_paths=$N_PATHS.");
-    println(io, "B1 model: 3-layer 1D convolutional generator + critic, Wasserstein loss with critic weight clipping on rolling windows (W=$WINDOW_LEN).");
+    println(io, "Model: 3-layer 1D convolutional generator + critic, Wasserstein loss with critic weight clipping on rolling windows (W=$WINDOW_LEN).");
     println(io, "Generator training loss final: $(round(g_loss_hist[end], digits=4)); critic: $(round(d_loss_hist[end], digits=4)).");
     println(io, "");
     println(io, rpad("Model", 10), " | ", rpad("MMD IS", 10), " | ", rpad("MMD OoS", 10), " | ",
@@ -413,8 +413,8 @@ open(joinpath(TRACK_B_DIR, "Table-4-Extended-Metrics-B1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "sim_pvalues_b1.txt"), "w") do io
-    println(io, "Track B1. Joint p-value coverage pv̄ with QuantGAN row.");
+open(joinpath(QUANTGAN_DIR, "sim_pvalues.txt"), "w") do io
+    println(io, "QuantGAN baseline. Joint p-value coverage pv̄ across model panel.");
     println(io, rpad("Model", 10), " | pv̄ IS   | pv̄ OoS");
     for m in MODEL_ORDER
         pv = pv_results[m];
@@ -422,8 +422,8 @@ open(joinpath(TRACK_B_DIR, "sim_pvalues_b1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "VaR_LR_tests_b1.txt"), "w") do io
-    println(io, "Track B1. Unconditional VaR LR tests with QuantGAN row (α ∈ {0.01, 0.05}).");
+open(joinpath(QUANTGAN_DIR, "var_lr_tests.txt"), "w") do io
+    println(io, "QuantGAN baseline. Unconditional VaR LR tests across model panel (α ∈ {0.01, 0.05}).");
     println(io, rpad("Model", 10), " | VaR01   | br%01 | LR_uc01 | LR_ind01 | VaR05   | br%05 | LR_uc05 | LR_ind05");
     for m in MODEL_ORDER
         r = var_results[m];
@@ -438,8 +438,8 @@ open(joinpath(TRACK_B_DIR, "VaR_LR_tests_b1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_B_DIR, "Track-B1-summary.txt"), "w") do io
-    println(io, "Track B1 summary: QuantGAN-style convolutional WGAN baseline");
+open(joinpath(QUANTGAN_DIR, "summary.txt"), "w") do io
+    println(io, "QuantGAN baseline summary: convolutional WGAN with critic weight clipping");
     println(io, "="^80);
     println(io, "");
     println(io, "Training setup:");
@@ -457,6 +457,6 @@ open(joinpath(TRACK_B_DIR, "Track-B1-summary.txt"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track B1 complete.");
-println("  Results: $TRACK_B_DIR");
+println("  QuantGAN baseline complete.");
+println("  Results: $QUANTGAN_DIR");
 println("="^72);

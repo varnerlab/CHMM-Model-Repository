@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_k_selection_validation.jl
 #
-# Track M8 (revision response to referee comment M8): clean K-selection on a pre-OoS
+# clean K-selection on a pre-OoS
 # validation slice, decoupled from the 2024-2026 OoS window used for VaR backtesting.
 #
 # The original K = 18 operating point was selected using a combined IC rank + IS/OoS
@@ -19,7 +19,7 @@
 # robustness check.
 #
 # Outputs:
-#   results/track_m8/K_Selection_Validation.txt
+#   results/k_selection_validation/K_Selection_Validation.txt
 #   ../CHMM-paper/results/robustness/k_selection_validation.csv
 # ========================================================================================= #
 
@@ -39,13 +39,13 @@ const DT        = 1/252;
 const MAX_ITER  = 60;
 const K_GRID    = [3, 6, 9, 12, 15, 18, 21];
 
-const TRACK_M8_DIR       = joinpath(_ROOT, "results", "track_m8");
+const OUT_DIR       = joinpath(_ROOT, "results", "k_selection_validation");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M8_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M8: pre-OoS validation K-selection (referee M8)")
+println("  Pre-OoS validation K-selection")
 println("  Seed $SEED, K grid $K_GRID")
 println("="^72)
 
@@ -213,9 +213,9 @@ end
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M8_DIR, "K_Selection_Validation.txt"), "w") do io
+open(joinpath(OUT_DIR, "K_Selection_Validation.txt"), "w") do io
     println(io, "="^140);
-    println(io, "Track M8. Pre-OoS validation K-selection (referee M8 response).");
+    println(io, "Pre-OoS validation K-selection.");
     println(io, "="^140);
     println(io, "");
     println(io, "Estimation slice  : 2014-01-03 through 2021-12-31 ($n_est observations).");
@@ -277,7 +277,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "k_selection_validation.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M8 complete.");
-println("  Text report : $(joinpath(TRACK_M8_DIR, "K_Selection_Validation.txt"))");
+println("  K-selection validation complete.");
+println("  Text report : $(joinpath(OUT_DIR, "K_Selection_Validation.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "k_selection_validation.csv"))");
 println("="^72);

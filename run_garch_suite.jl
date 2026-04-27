@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_garch_suite.jl
 #
-# Track M7 (revision response to referee comment M7): expand the paper's GARCH-family
+# expand the paper's GARCH-family
 # baseline panel beyond the single GARCH(1,1) + two-regime MS-GARCH currently reported.
 #
 # New baselines:
@@ -21,7 +21,7 @@
 # follow-up (see `revision-code-todo.md`).
 #
 # Outputs:
-#   results/track_m7/GARCH_Suite.txt
+#   results/garch_suite/GARCH_Suite.txt
 #   ../CHMM-paper/results/robustness/garch_suite.csv
 # ========================================================================================= #
 
@@ -39,13 +39,13 @@ const RISK_FREE = 0.0;
 const DT        = 1/252;
 const N_PATHS   = 1000;
 
-const TRACK_M7_DIR       = joinpath(_ROOT, "results", "track_m7");
+const OUT_DIR       = joinpath(_ROOT, "results", "garch_suite");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
-mkpath(TRACK_M7_DIR);
+mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
-println("  Track M7: expanded GARCH-family baseline panel (referee M7)")
+println("  Expanded GARCH-family baseline panel")
 println("  Seed $SEED")
 println("="^72)
 
@@ -233,9 +233,9 @@ push!(results, run_model("MS-GARCH K=3",
 # --------------------------------------------------------------------------------------- #
 # Output
 # --------------------------------------------------------------------------------------- #
-open(joinpath(TRACK_M7_DIR, "GARCH_Suite.txt"), "w") do io
+open(joinpath(OUT_DIR, "GARCH_Suite.txt"), "w") do io
     println(io, "="^170);
-    println(io, "Track M7. Expanded GARCH-family baseline panel (referee M7 response).");
+    println(io, "Expanded GARCH-family baseline panel.");
     println(io, "="^170);
     println(io, "");
     println(io, "Reference rows : GARCH(1,1) Gaussian, MS-GARCH K=2 (already in the paper, re-run here under the same seed policy for consistency).");
@@ -278,7 +278,7 @@ open(joinpath(PAPER_ROBUSTNESS_DIR, "garch_suite.csv"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track M7 complete.");
-println("  Text report : $(joinpath(TRACK_M7_DIR, "GARCH_Suite.txt"))");
+println("  GARCH suite complete.");
+println("  Text report : $(joinpath(OUT_DIR, "GARCH_Suite.txt"))");
 println("  Paper CSV   : $(joinpath(PAPER_ROBUSTNESS_DIR, "garch_suite.csv"))");
 println("="^72);

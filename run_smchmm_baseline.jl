@@ -1,25 +1,26 @@
 # ========================================================================================= #
-# run_track_c1_smchmm.jl
+# run_smchmm_baseline.jl
 #
-# Track C1 runner: fit SM-CHMM-N / SM-CHMM-t / SM-CHMM-L on SPY at K=18, append
-# simulation archives to the Track A cache, and recompute the extended metrics panel + the
-# downstream utility panel (A1..A10) with the three new rows.
+# Semi-Markov CHMM runner: fit SM-CHMM-N / SM-CHMM-t / SM-CHMM-L on SPY at K=18,
+# append simulation archives to the legacy harness cache, and recompute the
+# extended metrics panel + the downstream utility panel with the three new rows.
+# Produces the SM-CHMM rows referenced by tab:extended_baselines.
 #
 # Inputs:
 #   data/... (via Files.jl)
-#   results/track_a/sim_archive_cache.jld2 (from run_track_a_metrics.jl)
+#   results/_attic_v10/track_a/sim_archive_cache.jld2 (legacy harness cache)
 #
 # Outputs:
-#   results/track_c1/sim_archive_sm.jld2                 SM-CHMM simulation archives
-#   results/track_c1/Table-4-Extended-Metrics-C1.txt     Extended panel incl. SM rows
-#   results/track_c1/leverage_effect_c1.txt
-#   results/track_c1/aggregational_kurtosis_c1.txt
-#   results/track_c1/sim_pvalues_c1.txt
-#   results/track_c1/tstr_vol_forecaster_c1.txt
-#   results/track_c1/vol_target_strategy_c1.txt
-#   results/track_c1/VaR_LR_tests_c1.txt
-#   results/track_c1/sojourn_summary.txt                 per-state sojourn family + mean
-#   results/track_c1/Track-C1-summary.txt
+#   results/smchmm_baseline/sim_archive_sm.jld2          SM-CHMM simulation archives
+#   results/smchmm_baseline/extended_metrics.txt         Extended panel incl. SM rows
+#   results/smchmm_baseline/leverage_effect.txt
+#   results/smchmm_baseline/aggregational_kurtosis.txt
+#   results/smchmm_baseline/sim_pvalues.txt
+#   results/smchmm_baseline/tstr_vol_forecaster.txt
+#   results/smchmm_baseline/vol_target_strategy.txt
+#   results/smchmm_baseline/var_lr_tests.txt
+#   results/smchmm_baseline/sojourn_summary.txt          per-state sojourn family + mean
+#   results/smchmm_baseline/summary.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -42,12 +43,12 @@ const SIG_DEPTH    = 3;
 const MAX_LAG_LEV  = 20;
 const HORIZONS_AG  = [1, 5, 10, 21];
 
-const TRACK_A_DIR  = joinpath(_ROOT, "results", "track_a");
-const TRACK_C_DIR  = joinpath(_ROOT, "results", "track_c1");
-mkpath(TRACK_C_DIR);
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const SMCHMM_DIR       = joinpath(_ROOT, "results", "smchmm_baseline");
+mkpath(SMCHMM_DIR);
 
 println("="^72)
-println("  Track C1 runner: semi-Markov CHMM (SM-CHMM-N / -t / -L) at K=$K_MAIN")
+println("  SM-CHMM baseline runner: semi-Markov CHMM (SM-CHMM-N / -t / -L) at K=$K_MAIN")
 println("  Seed: $SEED, N_PATHS=$N_PATHS")
 println("="^72)
 
@@ -75,8 +76,8 @@ println("  IS: $n_is obs; OoS: $n_oos obs");
 # --------------------------------------------------------------------------------------- #
 # Fit SM-CHMMs
 # --------------------------------------------------------------------------------------- #
-sm_cache_path = joinpath(TRACK_C_DIR, "sm_models.jld2");
-sim_cache_path = joinpath(TRACK_C_DIR, "sim_archive_sm.jld2");
+sm_cache_path = joinpath(SMCHMM_DIR, "sm_models.jld2");
+sim_cache_path = joinpath(SMCHMM_DIR, "sim_archive_sm.jld2");
 
 println("\n[fit] Fitting SM-CHMM-N / -t / -L at K=$K_MAIN (plug-in estimator)...");
 
@@ -117,10 +118,10 @@ save(sim_cache_path, "archive", sm_archive);
 println("  wrote $sim_cache_path");
 
 # --------------------------------------------------------------------------------------- #
-# Merge with Track A archive and recompute metrics (A1..A10)
+# Merge with the legacy harness archive and recompute metrics (MMD / sig-MMD / AUC / pv)
 # --------------------------------------------------------------------------------------- #
-println("\n[merge] Loading Track A archive and appending SM rows...");
-base_archive = load(joinpath(TRACK_A_DIR, "sim_archive_cache.jld2"))["archive"];
+println("\n[merge] Loading legacy harness archive and appending SM rows...");
+base_archive = load(SIM_ARCHIVE_PATH)["archive"];
 archive = merge(base_archive, sm_archive);
 
 MODEL_ORDER_FULL = [
@@ -262,7 +263,7 @@ for m in MODEL_ORDER_FULL
 end
 
 # --------------------------------------------------------------------------------------- #
-# A4 / A5 TSTR + Strategy (reuse helpers from run_track_a_utility.jl for SM rows)
+# TSTR + Strategy (reuse helpers from the archived utility runner for SM rows)
 # --------------------------------------------------------------------------------------- #
 println("\n[A4] TSTR vol forecaster (SM rows only; real-trained benchmark reused)...");
 
@@ -361,12 +362,12 @@ end
 # --------------------------------------------------------------------------------------- #
 # Write outputs
 # --------------------------------------------------------------------------------------- #
-println("\n[output] Writing Track C1 tables...");
+println("\n[output] Writing SM-CHMM baseline tables...");
 
 # Sojourn summary
-open(joinpath(TRACK_C_DIR, "sojourn_summary.txt"), "w") do io
+open(joinpath(SMCHMM_DIR, "sojourn_summary.txt"), "w") do io
     println(io, "="^100);
-    println(io, "Track C1 semi-Markov CHMM sojourn summary (SPY, K=$K_MAIN, seed=$SEED)");
+    println(io, "SM-CHMM baseline sojourn summary (SPY, K=$K_MAIN, seed=$SEED)");
     println(io, "="^100);
     for tag in ("SM-CHMM-N", "SM-CHMM-t", "SM-CHMM-L")
         m = models[tag];
@@ -383,9 +384,9 @@ open(joinpath(TRACK_C_DIR, "sojourn_summary.txt"), "w") do io
 end
 
 # Table 4 extended with SM rows
-open(joinpath(TRACK_C_DIR, "Table-4-Extended-Metrics-C1.txt"), "w") do io
+open(joinpath(SMCHMM_DIR, "extended_metrics.txt"), "w") do io
     println(io, "="^130);
-    println(io, "TABLE 4 (Track A + C1). MMD, signature-MMD, discriminator AUC; SM-CHMM rows appended.");
+    println(io, "Extended metrics (legacy harness panel). MMD, signature-MMD, discriminator AUC; SM-CHMM rows appended.");
     println(io, "="^130);
     println(io, "");
     println(io, "Setup   : SPY daily log excess growth; IS n=$n_is, OoS n=$n_oos; seed=$SEED; N_paths=$N_PATHS.");
@@ -414,8 +415,8 @@ open(joinpath(TRACK_C_DIR, "Table-4-Extended-Metrics-C1.txt"), "w") do io
     println(io, "="^130);
 end
 
-open(joinpath(TRACK_C_DIR, "leverage_effect_c1.txt"), "w") do io
-    println(io, "Track C1 leverage effect (SM-CHMM rows appended)");
+open(joinpath(SMCHMM_DIR, "leverage_effect.txt"), "w") do io
+    println(io, "SM-CHMM baseline leverage effect (SM-CHMM rows appended)");
     println(io, "Observed IS  avg_neg=$(round(lev_obs_is.avg_neg, digits=4))  asym=$(round(lev_obs_is.asymmetry, digits=5))");
     println(io, "Observed OoS avg_neg=$(round(lev_obs_oos.avg_neg, digits=4))  asym=$(round(lev_obs_oos.asymmetry, digits=5))");
     println(io, "");
@@ -432,8 +433,8 @@ open(joinpath(TRACK_C_DIR, "leverage_effect_c1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_C_DIR, "aggregational_kurtosis_c1.txt"), "w") do io
-    println(io, "Track C1 aggregational kurtosis at horizons $HORIZONS_AG (SM-CHMM rows appended)");
+open(joinpath(SMCHMM_DIR, "aggregational_kurtosis.txt"), "w") do io
+    println(io, "SM-CHMM baseline aggregational kurtosis at horizons $HORIZONS_AG (SM-CHMM rows appended)");
     println(io, "Observed IS  : ", join(["h=$(h) k=$(round(agg_obs_is[h], digits=2))" for h in HORIZONS_AG], "   "));
     println(io, "Observed OoS : ", join(["h=$(h) k=$(round(agg_obs_oos[h], digits=2))" for h in HORIZONS_AG], "   "));
     println(io, "");
@@ -456,8 +457,8 @@ open(joinpath(TRACK_C_DIR, "aggregational_kurtosis_c1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_C_DIR, "sim_pvalues_c1.txt"), "w") do io
-    println(io, "Track C1 p-values (SM-CHMM rows appended)");
+open(joinpath(SMCHMM_DIR, "sim_pvalues.txt"), "w") do io
+    println(io, "SM-CHMM baseline p-values (SM-CHMM rows appended)");
     println(io, rpad("Model", 13), " | p_kurt  | p_acf   | p_lev   | p_ak5   | p_ak21  | pv̄ IS   | pv̄ OoS");
     for m in MODEL_ORDER_FULL
         pv = pv_results[m];
@@ -472,8 +473,8 @@ open(joinpath(TRACK_C_DIR, "sim_pvalues_c1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_C_DIR, "tstr_vol_forecaster_c1.txt"), "w") do io
-    println(io, "Track C1 TSTR HAR (SM-CHMM rows appended)");
+open(joinpath(SMCHMM_DIR, "tstr_vol_forecaster.txt"), "w") do io
+    println(io, "SM-CHMM baseline TSTR HAR (SM-CHMM rows appended)");
     println(io, "Real-trained: RMSE=$(round(real_rmse, digits=5)) QLIKE=$(round(real_qlike, digits=5))");
     println(io, rpad("Model", 13), " | RMSE       | RMSE/real  | QLIKE      | QLIKE/real");
     for m in MODEL_ORDER_FULL
@@ -486,8 +487,8 @@ open(joinpath(TRACK_C_DIR, "tstr_vol_forecaster_c1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_C_DIR, "vol_target_strategy_c1.txt"), "w") do io
-    println(io, "Track C1 vol-target strategy (SM-CHMM rows appended)");
+open(joinpath(SMCHMM_DIR, "vol_target_strategy.txt"), "w") do io
+    println(io, "SM-CHMM baseline vol-target strategy (SM-CHMM rows appended)");
     println(io, rpad("Train", 13), " | Sharpe | AnnRet  | AnnVol  | MDD     | Turnover | Mean w");
     println(io, rpad("Real IS", 13), " | ",
                 rpad(round(strat_real.sharpe, digits=2), 6), " | ",
@@ -508,8 +509,8 @@ open(joinpath(TRACK_C_DIR, "vol_target_strategy_c1.txt"), "w") do io
     end
 end
 
-open(joinpath(TRACK_C_DIR, "VaR_LR_tests_c1.txt"), "w") do io
-    println(io, "Track C1 VaR LR tests (SM-CHMM rows appended). α ∈ {0.01, 0.05}, χ²(1) crit 3.84.");
+open(joinpath(SMCHMM_DIR, "var_lr_tests.txt"), "w") do io
+    println(io, "SM-CHMM baseline VaR LR tests (SM-CHMM rows appended). α ∈ {0.01, 0.05}, χ²(1) crit 3.84.");
     println(io, rpad("Model", 13), " | VaR01   | br%01 | LR_uc01 | p_uc01 | LR_ind01 | LR_cc01 | VaR05   | br%05 | LR_uc05 | p_uc05 | LR_ind05 | LR_cc05");
     for m in MODEL_ORDER_FULL
         r = var_lr_results[m];
@@ -530,8 +531,8 @@ open(joinpath(TRACK_C_DIR, "VaR_LR_tests_c1.txt"), "w") do io
 end
 
 # Summary digest
-open(joinpath(TRACK_C_DIR, "Track-C1-summary.txt"), "w") do io
-    println(io, "Track C1 summary (semi-Markov port from CHMM-Vol-Model)");
+open(joinpath(SMCHMM_DIR, "summary.txt"), "w") do io
+    println(io, "SM-CHMM baseline summary (semi-Markov port from CHMM-Vol-Model)");
     println(io, "="^80);
     println(io, "");
     println(io, "Setup : SPY K=$K_MAIN, plug-in estimator (Viterbi + per-state AR(1) + sojourn-family pick).");
@@ -568,6 +569,6 @@ open(joinpath(TRACK_C_DIR, "Track-C1-summary.txt"), "w") do io
 end
 
 println("\n" * "="^72);
-println("  Track C1 complete.");
-println("  Results: $TRACK_C_DIR");
+println("  SM-CHMM baseline complete.");
+println("  Results: $SMCHMM_DIR");
 println("="^72);
