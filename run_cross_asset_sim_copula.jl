@@ -18,6 +18,9 @@
 using Pkg; Pkg.activate(".");
 include("Include.jl");
 
+const SEED = 20260422;
+Random.seed!(SEED);
+
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const N_PATHS = 200;
