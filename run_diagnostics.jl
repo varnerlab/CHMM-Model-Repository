@@ -293,6 +293,7 @@ end
 
 # VaR/ES figure: ordered comparison
 var_fig = plot(layout=(2,2), size=(1100,800),
+    left_margin=18Plots.mm,
     plot_title="VaR and ES back-test (SPY, $N_PATHS paths)");
 
 model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
@@ -310,10 +311,11 @@ for (i, (tag, obs_v, obs_e, key)) in enumerate([
     his  = [is_var ? models_var[n][key].v_hi  : models_var[n][key].e_hi  for n in model_names];
     obs_line = is_var ? obs_v : obs_e;
 
+    ylab = (i == 1 || i == 3) ? "Annualized log excess growth rate" : "";
     scatter!(var_fig, xs, meds, yerror=(meds .- los, his .- meds),
         subplot=i, title=tag, ms=6, color=:navy, label="sim median [5-95]",
         xticks=(xs, model_names),
-        ylabel="Annualized log excess growth rate");
+        ylabel=ylab);
     hline!(var_fig, [obs_line], subplot=i, color=:red, lw=2, ls=:dash, label="observed");
 end
 savefig(var_fig, joinpath(util_dir, "VaR_ES_Backtest.pdf"));
