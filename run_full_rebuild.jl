@@ -2,29 +2,29 @@
 # run_full_rebuild.jl
 #
 # Master driver that re-runs every analysis pipeline end-to-end. Produces every
-# figure, metrics file, and table referenced by the paper.
+# figure, metrics file, and table referenced by the arXiv preprint.
 #
 # Stages (each is an independent top-level include; failure in one does not abort
 # the others, but a warning is printed):
-#   1.  run_all_analysis.jl               (stylized facts + per-K internals, SPY)
-#   2.  run_multi_emission_analysis.jl    (K x family sensitivity)
-#   3.  run_baselines_and_cross_asset.jl  (Table 2 + Table T2, Pipeline A)
-#   4.  run_cross_asset_sim_copula.jl     (Table T3, Pipeline B)
-#   5.  run_track_c2_large_universe.jl    (C2 large-universe dependence scaling)
-#   6.  run_diagnostics.jl                (utility, nu diagnostics, walk-forward, ...)
-#   7.  run_gru_baseline.jl               (deep-generative baseline)
-#   8.  run_equity_price_sim.jl           (price fans + terminal distributions)
-#   9.  run_track_a_metrics.jl            (A1, A2, A3, A6, A7, A8, A9)
-#   10. run_track_a_utility.jl            (A4, A5)
-#   11. run_track_b1_quantgan.jl          (B1 QuantGAN-style deep baseline)
-#   12. run_track_b3_diffusion.jl         (B3 diffusion baseline)
-#   13. run_track_b4_msgarch.jl           (B4 MS-GARCH baseline)
-#   14. run_track_c1_smchmm.jl            (C1 semi-Markov extension)
-#   15. run_track_c3_conditional_var.jl   (C3a conditional VaR)
-#   16. run_track_c3_time_varying_transition.jl (C3 time-varying transitions)
-#   17. run_track_c3_external_covariates.jl (C3 external-covariate transitions)
-#   18. run_track_c4_leverage_emission.jl (C4 leverage-emission ablation)
-#   19. run_figures.jl                    (K=18 main-body figures)
+#   1.  run_all_analysis.jl                  (stylized facts + per-K internals, SPY)
+#   2.  run_multi_emission_analysis.jl       (K x family sensitivity)
+#   3.  run_baselines_and_cross_asset.jl     (headline Pipeline A panel + per-ticker)
+#   4.  run_cross_asset_sim_copula.jl        (Pipeline B Student-t copula)
+#   5.  run_track_c2_large_universe.jl       (large-universe dependence scaling)
+#   6.  run_diagnostics.jl                   (utility, nu diagnostics, K-selection, ...)
+#   7.  run_equity_price_sim.jl              (price fans + terminal distributions)
+#   8.  run_track_b1_quantgan.jl             (QuantGAN deep-generative baseline row)
+#   9.  run_track_b4_msgarch.jl              (MS-GARCH K=2/3 rows in extended panel)
+#  10.  run_track_c1_smchmm.jl               (SM-CHMM rows in extended panel)
+#  11.  run_figures.jl                       (K=18 main-body figures)
+#
+# Earlier journal-revision stages (Track A extended evaluation, Track B3 diffusion,
+# Track C3 conditional-VaR variants, Track C4 leverage emission, GRU baseline) are
+# archived under _attic_v10/runners/. The descriptive run_*.jl scripts that produce
+# CSVs in ../CHMM-paper/results/robustness/ (run_garch_suite.jl, run_ks_block_bootstrap.jl,
+# run_multiseed_headline.jl, run_kupiec_mc_ci.jl, run_k_selection_validation.jl, etc.)
+# are intentionally not in this dispatcher; they are standalone exploratory runners
+# called manually when their CSVs need refreshing.
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -42,18 +42,10 @@ const SCRIPTS = [
     "run_cross_asset_sim_copula.jl",
     "run_track_c2_large_universe.jl",
     "run_diagnostics.jl",
-    "run_gru_baseline.jl",
     "run_equity_price_sim.jl",
-    "run_track_a_metrics.jl",
-    "run_track_a_utility.jl",
     "run_track_b1_quantgan.jl",
-    "run_track_b3_diffusion.jl",
     "run_track_b4_msgarch.jl",
     "run_track_c1_smchmm.jl",
-    "run_track_c3_conditional_var.jl",
-    "run_track_c3_time_varying_transition.jl",
-    "run_track_c3_external_covariates.jl",
-    "run_track_c4_leverage_emission.jl",
     "run_figures.jl",
 ];
 
