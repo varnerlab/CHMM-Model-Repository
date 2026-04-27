@@ -18,6 +18,8 @@
 #   results/track_b1/sim_pvalues_b1.txt
 #   results/track_b1/Track-B1-summary.txt
 #   results/track_b1/Loss.svg
+#   results/track_b1/quantgan_panel.txt          (seven-metric panel for tab:m7_extended_panel)
+#   ../CHMM-paper/results/robustness/quantgan_panel.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -51,7 +53,9 @@ const HORIZONS_AG  = [1, 5, 10, 21];
 
 const TRACK_A_DIR = joinpath(_ROOT, "results", "track_a");
 const TRACK_B_DIR = joinpath(_ROOT, "results", "track_b1");
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
 mkpath(TRACK_B_DIR);
+mkpath(PAPER_ROBUSTNESS_DIR);
 
 println("="^72)
 println("  Track B1: QuantGAN-style convolutional WGAN baseline")
@@ -214,6 +218,95 @@ for i in 1:N_PATHS
     if i % 100 == 0
         println("  path $i / $N_PATHS");
     end
+end
+
+# --------------------------------------------------------------------------------------- #
+# Seven-metric panel for Table tab:m7_extended_panel in the arXiv paper.
+# Schema mirrors run_garch_suite.jl exactly so the QuantGAN row drops into the same table.
+# --------------------------------------------------------------------------------------- #
+println("\n[panel] Seven-metric panel (KS / AD / kurt / ACF-MAE / Kupiec / Christoffersen)...");
+
+# Local _kurt copy (the original is defined further down for the MMD block; this lets the
+# panel block stay self-contained and run before that section).
+function _kurt_panel(x)
+    μ = mean(x); σ = std(x);
+    return σ > 0 ? sum(((x .- μ) ./ σ) .^ 4) / length(x) - 3.0 : 0.0;
+end
+
+function _ks_pass_rate(R_ref::Vector{Float64}, sim::Matrix{Float64}; α::Float64=0.05)
+    n_sim = size(sim, 2); n_pass = 0;
+    for p in 1:n_sim
+        pv = pvalue(ApproximateTwoSampleKSTest(R_ref, sim[:, p]));
+        if pv >= α; n_pass += 1; end
+    end
+    return n_pass / n_sim;
+end
+
+function _ad_pass_rate(R_ref::Vector{Float64}, sim::Matrix{Float64}; α::Float64=0.05)
+    n_sim = size(sim, 2); n_pass = 0;
+    for p in 1:n_sim
+        try
+            pv = pvalue(KSampleADTest(R_ref, sim[:, p]));
+            if pv >= α; n_pass += 1; end
+        catch
+        end
+    end
+    return n_pass / n_sim;
+end
+
+function _acf_mae(R_obs::Vector{Float64}, sim::Matrix{Float64}; max_lag::Int=L_LAGS)
+    obs_acf = autocor(abs.(R_obs), 1:max_lag);
+    n_sim = size(sim, 2);
+    sim_acf_mean = zeros(max_lag);
+    for p in 1:n_sim
+        sim_acf_mean .+= autocor(abs.(sim[:, p]), 1:max_lag);
+    end
+    sim_acf_mean ./= n_sim;
+    return mean(abs.(obs_acf .- sim_acf_mean));
+end
+
+function _var_backtest(R_oos_local::Vector{Float64}, sim_oos_paths::Matrix{Float64})
+    pooled = vec(sim_oos_paths);
+    out = Dict{Float64, NamedTuple}();
+    for α in [0.01, 0.05]
+        v = quantile(pooled, α);
+        br = R_oos_local .<= v;
+        k = kupiec_lr(br, α);
+        c = christoffersen_lr(br);
+        out[α] = (VaR=v, br_rate=k.breach_rate, LR_uc=k.LR, LR_ind=c.LR);
+    end
+    return out;
+end
+
+panel_is_ks  = _ks_pass_rate(R_is, qgan_is);
+panel_oos_ks = _ks_pass_rate(R_oos, qgan_oos);
+panel_is_ad  = _ad_pass_rate(R_is, qgan_is);
+panel_oos_ad = _ad_pass_rate(R_oos, qgan_oos);
+panel_kurt   = mean([_kurt_panel(qgan_is[:, p]) for p in 1:N_PATHS]);
+panel_acf    = _acf_mae(R_is, qgan_is);
+panel_vb     = _var_backtest(R_oos, qgan_oos);
+
+println("  IS KS  $(round(100*panel_is_ks, digits=1))%");
+println("  OoS KS $(round(100*panel_oos_ks, digits=1))%");
+println("  IS AD  $(round(100*panel_is_ad, digits=1))%");
+println("  OoS AD $(round(100*panel_oos_ad, digits=1))%");
+println("  Kurt   $(round(panel_kurt, digits=2))");
+println("  ACF    $(round(panel_acf, digits=4))");
+println("  br01   $(round(100*panel_vb[0.01].br_rate, digits=1))%  LR_uc01 $(round(panel_vb[0.01].LR_uc, digits=2))");
+println("  br05   $(round(100*panel_vb[0.05].br_rate, digits=1))%  LR_uc05 $(round(panel_vb[0.05].LR_uc, digits=2))");
+
+open(joinpath(TRACK_B_DIR, "quantgan_panel.txt"), "w") do io
+    println(io, "Track B1 (arXiv). Seven-metric panel for tab:m7_extended_panel.");
+    println(io, "SPY, IS n=$n_is, OoS n=$n_oos, N_paths=$N_PATHS, seed=$SEED.");
+    println(io, "");
+    println(io, "Model      | IS_KS%  | OoS_KS% | IS_AD%  | OoS_AD% | Kurt   | ACF-MAE | br%01 | LR_uc01 | LR_ind01 | br%05 | LR_uc05 | LR_ind05");
+    println(io, "-"^140);
+    println(io, "QuantGAN   | $(rpad(round(100*panel_is_ks, digits=1), 7)) | $(rpad(round(100*panel_oos_ks, digits=1), 7)) | $(rpad(round(100*panel_is_ad, digits=1), 7)) | $(rpad(round(100*panel_oos_ad, digits=1), 7)) | $(rpad(round(panel_kurt, digits=2), 6)) | $(rpad(round(panel_acf, digits=4), 7)) | $(rpad(round(100*panel_vb[0.01].br_rate, digits=1), 5)) | $(rpad(round(panel_vb[0.01].LR_uc, digits=2), 7)) | $(rpad(round(panel_vb[0.01].LR_ind, digits=2), 8)) | $(rpad(round(100*panel_vb[0.05].br_rate, digits=1), 5)) | $(rpad(round(panel_vb[0.05].LR_uc, digits=2), 7)) | $(rpad(round(panel_vb[0.05].LR_ind, digits=2), 8))");
+end
+
+open(joinpath(PAPER_ROBUSTNESS_DIR, "quantgan_panel.csv"), "w") do io
+    println(io, "model,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,sim_kurt,ACF_MAE,br01_pct,LRuc01,LRind01,br05_pct,LRuc05,LRind05");
+    println(io, "QuantGAN,$(round(100*panel_is_ks, digits=2)),$(round(100*panel_oos_ks, digits=2)),$(round(100*panel_is_ad, digits=2)),$(round(100*panel_oos_ad, digits=2)),$(round(panel_kurt, digits=3)),$(round(panel_acf, digits=5)),$(round(100*panel_vb[0.01].br_rate, digits=2)),$(round(panel_vb[0.01].LR_uc, digits=3)),$(round(panel_vb[0.01].LR_ind, digits=3)),$(round(100*panel_vb[0.05].br_rate, digits=2)),$(round(panel_vb[0.05].LR_uc, digits=3)),$(round(panel_vb[0.05].LR_ind, digits=3))");
 end
 
 cache_path = joinpath(TRACK_A_DIR, "sim_archive_cache.jld2");

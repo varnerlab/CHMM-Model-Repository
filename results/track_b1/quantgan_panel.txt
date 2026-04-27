@@ -1,0 +1,6 @@
+Track B1 (arXiv). Seven-metric panel for tab:m7_extended_panel.
+SPY, IS n=2516, OoS n=572, N_paths=1000, seed=20260422.
+
+Model      | IS_KS%  | OoS_KS% | IS_AD%  | OoS_AD% | Kurt   | ACF-MAE | br%01 | LR_uc01 | LR_ind01 | br%05 | LR_uc05 | LR_ind05
+--------------------------------------------------------------------------------------------------------------------------------------------
+QuantGAN   | 0.0     | 0.0     | 0.0     | 0.0     | 2.05   | 0.0591  | 1.0   | 0.01    | 20.87    | 3.3   | 3.83    | 5.26    
