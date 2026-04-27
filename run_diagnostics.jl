@@ -87,8 +87,9 @@ function eval_full(observed, sim_archive; L_val=L_LAGS)
     kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
     L_use = min(L_val, n_o - 1);
     acf_o = autocor(abs.(observed), 1:L_use);
+    acf_o_raw = autocor(observed, 1:L_use);
 
-    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0;
+    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; acf_mae_raw_s = 0.0;
     w1_s = 0.0; hell_s = 0.0;
 
     qprobs = range(0.01, 0.99, length=99);
@@ -105,6 +106,8 @@ function eval_full(observed, sim_archive; L_val=L_LAGS)
         kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
         acf_sim = autocor(abs.(sim), 1:L_use);
         acf_mae_s += mean(abs.(acf_o .- acf_sim));
+        acf_sim_raw = autocor(sim, 1:L_use);
+        acf_mae_raw_s += mean(abs.(acf_o_raw .- acf_sim_raw));
         obs_sorted = sort(observed); sim_sorted = sort(sim);
         n_min = min(length(obs_sorted), length(sim_sorted));
         obs_q = [obs_sorted[max(1, round(Int, k*length(obs_sorted)/n_min))] for k in 1:n_min];
@@ -132,6 +135,7 @@ function eval_full(observed, sim_archive; L_val=L_LAGS)
             ad=round(100*ad_pass/np, digits=1),
             kurt=round(kurt_s/np, digits=2), kurt_obs=round(kurt_o, digits=2),
             acf_mae=round(acf_mae_s/np, digits=4),
+            acf_mae_raw=round(acf_mae_raw_s/np, digits=4),
             w1=round(w1_s/np, digits=3), hell=round(hell_s/np, digits=4),
             cov=round(100.0*cov_count/99, digits=1));
 end
@@ -663,13 +667,13 @@ open(joinpath(bb_dir, "BlockBootstrap.txt"), "w") do io
     println(io, "Stationary block bootstrap (block length 10 trading days, SPY)");
     println(io, "="^85);
     println(io, rpad("Window",8), " | ", rpad("KS",7), " | ", rpad("AD",7), " | ",
-                rpad("Kurt",7), " | ", rpad("ACF-MAE",8), " | ", rpad("W1",7), " | ",
+                rpad("Kurt",7), " | ", rpad("ACF|G|",8), " | ", rpad("ACFraw",8), " | ", rpad("W1",7), " | ",
                 rpad("H",7), " | ", rpad("Cov",7));
-    println(io, "-"^85);
+    println(io, "-"^100);
     for (tag, m) in [("IS", m_bb_is), ("OoS", m_bb_oos)]
         println(io, rpad(tag, 8), " | ",
                     rpad(m.ks, 7), " | ", rpad(m.ad, 7), " | ",
-                    rpad(m.kurt, 7), " | ", rpad(m.acf_mae, 8), " | ",
+                    rpad(m.kurt, 7), " | ", rpad(m.acf_mae, 8), " | ", rpad(m.acf_mae_raw, 8), " | ",
                     rpad(m.w1, 7), " | ", rpad(m.hell, 7), " | ", rpad(m.cov, 7));
     end
 end

@@ -72,73 +72,114 @@ const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
 function save_is_comparison(sim_is, m_is, tag, K, out_path)
-    acf_obs = autocor(abs.(R_is), 1:L_LAGS);
+    # |G_t| ACF: observed + simulated mean / 10-90 band
+    acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
-    acf_arch = hcat([autocor(abs.(sim_is[:,i]), 1:L_LAGS) for i in 1:n_acf]...);
-    acf_m = mean(acf_arch, dims=2)[:];
-    acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L_LAGS];
-    acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L_LAGS];
+    acf_arch_abs = hcat([autocor(abs.(sim_is[:,i]), 1:L_LAGS) for i in 1:n_acf]...);
+    acf_m_abs = mean(acf_arch_abs, dims=2)[:];
+    acf_10_abs = [quantile(acf_arch_abs[t,:], 0.10) for t in 1:L_LAGS];
+    acf_90_abs = [quantile(acf_arch_abs[t,:], 0.90) for t in 1:L_LAGS];
 
+    # Raw G_t ACF: observed + simulated mean / 10-90 band
+    acf_obs_raw = autocor(R_is, 1:L_LAGS);
+    acf_arch_raw = hcat([autocor(sim_is[:,i], 1:L_LAGS) for i in 1:n_acf]...);
+    acf_m_raw = mean(acf_arch_raw, dims=2)[:];
+    acf_10_raw = [quantile(acf_arch_raw[t,:], 0.10) for t in 1:L_LAGS];
+    acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:L_LAGS];
+    ci99 = 2.576 / sqrt(length(R_is));
+
+    # Panel (a): marginal density
     p_a = plot(title="(a) IS density (KS: $(m_is.ks)%)",
         xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
     density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
     xlims!(p_a, x_lo, x_hi);
 
-    p_b = plot(1:L_LAGS, acf_obs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        title="(b) ACF of |G_t|",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
-    plot!(p_b, 1:L_LAGS, acf_m, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
-    plot!(p_b, 1:L_LAGS, acf_10, fillrange=acf_90, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
-
+    # Panel (b): tail Q-Q
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(sim_is), probs_qq);
-    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect)",
-        title="(c) Tail Q-Q plot (0.1st-99.9th)",
+    p_b = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect)",
+        title="(b) Tail Q-Q plot (0.1st-99.9th)",
         xlabel="Observed quantiles", ylabel="Simulated quantiles"; _STYLE...);
-    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
+    scatter!(p_b, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
+    # Panel (c): raw-return ACF
+    p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
+        title="(c) ACF of G_t (raw returns)",
+        xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
+    plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
+    hline!(p_c, [ci99, -ci99], lw=1, color=:gray, ls=:dash, label="99% CI");
+
+    # Panel (d): |G_t| ACF
+    p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
+        title="(d) ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
+    plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
+
+    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800),
         plot_title="IS comparison (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");
 end
 
 function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
-    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
-        label="CHMM-$tag",
-        title="(a) OoS KS p-values (pass: $(m_oos.ks)%)",
-        xlabel="p-value against OoS series", ylabel="Density"; _STYLE...);
-    vline!(p_a, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
-
-    p_b = plot(title="(b) OoS density fan",
+    # Panel (a): OoS density fan
+    p_a = plot(title="(a) OoS density fan",
         xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot
         _lbl = (i == 1) ? "CHMM-$tag simulated ($(_sim_paths_to_plot) paths)" : "";
-        density!(p_b, sim_oos[:,i], lw=1, color=_SIM_C, alpha=0.18, label=_lbl);
+        density!(p_a, sim_oos[:,i], lw=1, color=_SIM_C, alpha=0.18, label=_lbl);
     end
-    density!(p_b, R_oos, lw=3, color=_OBS_C, label="Observed OoS");
+    density!(p_a, R_oos, lw=3, color=_OBS_C, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
-    xlims!(p_b, oos_lo - oos_pad, oos_hi + oos_pad);
+    xlims!(p_a, oos_lo - oos_pad, oos_hi + oos_pad);
+
+    # Panel (b): KS p-value histogram
+    p_b = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
+        label="CHMM-$tag",
+        title="(b) OoS KS p-values (pass: $(m_oos.ks)%)",
+        xlabel="p-value against OoS series", ylabel="Density"; _STYLE...);
+    vline!(p_b, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
 
     τ_oos = 1:min(L_LAGS, n_oos-1);
-    acf_oos_obs = autocor(abs.(R_oos), τ_oos);
     n_acf = min(200, N_PATHS);
-    acf_arch = hcat([autocor(abs.(sim_oos[:,i]), τ_oos) for i in 1:n_acf]...);
-    acf_m = mean(acf_arch, dims=2)[:];
-    acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:length(τ_oos)];
-    acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
-    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        title="(c) OoS ACF of |G_t|",
+    # Raw G_t ACF
+    acf_oos_obs_raw = autocor(R_oos, τ_oos);
+    acf_arch_raw = hcat([autocor(sim_oos[:,i], τ_oos) for i in 1:n_acf]...);
+    acf_m_raw = mean(acf_arch_raw, dims=2)[:];
+    acf_10_raw = [quantile(acf_arch_raw[t,:], 0.10) for t in 1:length(τ_oos)];
+    acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:length(τ_oos)];
+    ci99_oos = 2.576 / sqrt(length(R_oos));
+
+    # |G_t| ACF
+    acf_oos_obs_abs = autocor(abs.(R_oos), τ_oos);
+    acf_arch_abs = hcat([autocor(abs.(sim_oos[:,i]), τ_oos) for i in 1:n_acf]...);
+    acf_m_abs = mean(acf_arch_abs, dims=2)[:];
+    acf_10_abs = [quantile(acf_arch_abs[t,:], 0.10) for t in 1:length(τ_oos)];
+    acf_90_abs = [quantile(acf_arch_abs[t,:], 0.90) for t in 1:length(τ_oos)];
+
+    # Panel (c): raw-return OoS ACF
+    p_c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
+        title="(c) OoS ACF of G_t (raw returns)",
+        xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
+    plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
+    hline!(p_c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
+
+    # Panel (d): |G_t| OoS ACF
+    p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
+        title="(d) OoS ACF of |G_t|",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
-    plot!(p_c, τ_oos, acf_m, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
-    plot!(p_c, τ_oos, acf_10, fillrange=acf_90, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
+    plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
+    plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
+    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800),
         plot_title="OoS validation (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");

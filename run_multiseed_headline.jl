@@ -74,6 +74,14 @@ function acf_mae(R_obs, sim; max_lag::Int=252)
     sm ./= n_p;
     return mean(abs.(obs .- sm));
 end
+function acf_mae_raw(R_obs, sim; max_lag::Int=252)
+    obs = autocor(R_obs, 1:max_lag);
+    n_p = size(sim, 2);
+    sm = zeros(max_lag);
+    for p in 1:n_p; sm .+= autocor(sim[:, p], 1:max_lag); end
+    sm ./= n_p;
+    return mean(abs.(obs .- sm));
+end
 function var_calibration(R_oos, sim_oos)
     pooled = vec(sim_oos);
     out = Dict{Float64, NamedTuple}();
@@ -115,6 +123,7 @@ function eval_one_seed(seed::Int, family::Symbol)
         oos_ks=ks_pass_rate(R_oos, sim_oos),
         sim_kurt=mean([kurtosis(sim_is[:, p]) for p in 1:N_PATHS]),
         acf_mae=acf_mae(R_is, sim_is),
+        acf_mae_raw=acf_mae_raw(R_is, sim_is),
         var01=var_calibration(R_oos, sim_oos)[0.01],
         var05=var_calibration(R_oos, sim_oos)[0.05],
     );
@@ -153,6 +162,7 @@ for (fam, results) in all_results
     oos_ks   = [r.oos_ks   for r in results];
     kurt     = [r.sim_kurt for r in results];
     acf      = [r.acf_mae  for r in results];
+    acf_raw  = [r.acf_mae_raw for r in results];
     LRuc01   = [r.var01.LR_uc for r in results];
     br01     = [r.var01.br_rate for r in results];
     LRuc05   = [r.var05.LR_uc for r in results];
@@ -162,6 +172,7 @@ for (fam, results) in all_results
         oos_ks=_mean_std(oos_ks),
         kurt=_mean_std(kurt),
         acf=_mean_std(acf),
+        acf_raw=_mean_std(acf_raw),
         LRuc01=_mean_std(LRuc01),
         br01=_mean_std(br01),
         LRuc05=_mean_std(LRuc05),
@@ -194,7 +205,8 @@ open(joinpath(TRACK_DIR, "MultiSeed.txt"), "w") do io
         println(io, "  IS  KS pass rate : $(round(100*a.is_ks.mean, digits=2))% ± $(round(100*a.is_ks.std, digits=2))%   range [$(round(100*a.is_ks.min, digits=1))%, $(round(100*a.is_ks.max, digits=1))%]");
         println(io, "  OoS KS pass rate : $(round(100*a.oos_ks.mean, digits=2))% ± $(round(100*a.oos_ks.std, digits=2))%   range [$(round(100*a.oos_ks.min, digits=1))%, $(round(100*a.oos_ks.max, digits=1))%]");
         println(io, "  sim IS kurt      : $(round(a.kurt.mean, digits=3)) ± $(round(a.kurt.std, digits=3))             range [$(round(a.kurt.min, digits=2)), $(round(a.kurt.max, digits=2))]");
-        println(io, "  ACF-MAE          : $(round(a.acf.mean, digits=4)) ± $(round(a.acf.std, digits=4))");
+        println(io, "  ACF-MAE |G|      : $(round(a.acf.mean, digits=4)) ± $(round(a.acf.std, digits=4))")
+        println(io, "  ACF-MAE raw      : $(round(a.acf_raw.mean, digits=4)) ± $(round(a.acf_raw.std, digits=4))");
         println(io, "  Kupiec LR_uc 1%  : $(round(a.LRuc01.mean, digits=2)) ± $(round(a.LRuc01.std, digits=2))");
         println(io, "  Kupiec LR_uc 5%  : $(round(a.LRuc05.mean, digits=2)) ± $(round(a.LRuc05.std, digits=2))");
         println(io, "");
@@ -203,19 +215,19 @@ open(joinpath(TRACK_DIR, "MultiSeed.txt"), "w") do io
 end
 
 open(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"), "w") do io
-    println(io, "model,seed,IS_KS_pct,OoS_KS_pct,sim_kurt,ACF_MAE,br01_pct,LRuc01,br05_pct,LRuc05");
+    println(io, "model,seed,IS_KS_pct,OoS_KS_pct,sim_kurt,ACF_MAE,ACF_MAE_raw,br01_pct,LRuc01,br05_pct,LRuc05");
     for fam in [:n, :t, :l]
         fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
         for (i, r) in enumerate(all_results[fam])
-            println(io, "$fname,$(SEED_GRID[i]),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(100*r.var01.br_rate, digits=2)),$(round(r.var01.LR_uc, digits=3)),$(round(100*r.var05.br_rate, digits=2)),$(round(r.var05.LR_uc, digits=3))");
+            println(io, "$fname,$(SEED_GRID[i]),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(r.acf_mae_raw, digits=5)),$(round(100*r.var01.br_rate, digits=2)),$(round(r.var01.LR_uc, digits=3)),$(round(100*r.var05.br_rate, digits=2)),$(round(r.var05.LR_uc, digits=3))");
         end
     end
     println(io, "");
-    println(io, "model,IS_KS_mean,IS_KS_std,OoS_KS_mean,OoS_KS_std,kurt_mean,kurt_std,ACF_mean,ACF_std,LRuc01_mean,LRuc01_std,LRuc05_mean,LRuc05_std");
+    println(io, "model,IS_KS_mean,IS_KS_std,OoS_KS_mean,OoS_KS_std,kurt_mean,kurt_std,ACF_mean,ACF_std,ACF_raw_mean,ACF_raw_std,LRuc01_mean,LRuc01_std,LRuc05_mean,LRuc05_std");
     for fam in [:n, :t, :l]
         fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
         a = agg[fam];
-        println(io, "$fname,$(round(100*a.is_ks.mean, digits=3)),$(round(100*a.is_ks.std, digits=3)),$(round(100*a.oos_ks.mean, digits=3)),$(round(100*a.oos_ks.std, digits=3)),$(round(a.kurt.mean, digits=4)),$(round(a.kurt.std, digits=4)),$(round(a.acf.mean, digits=5)),$(round(a.acf.std, digits=5)),$(round(a.LRuc01.mean, digits=3)),$(round(a.LRuc01.std, digits=3)),$(round(a.LRuc05.mean, digits=3)),$(round(a.LRuc05.std, digits=3))");
+        println(io, "$fname,$(round(100*a.is_ks.mean, digits=3)),$(round(100*a.is_ks.std, digits=3)),$(round(100*a.oos_ks.mean, digits=3)),$(round(100*a.oos_ks.std, digits=3)),$(round(a.kurt.mean, digits=4)),$(round(a.kurt.std, digits=4)),$(round(a.acf.mean, digits=5)),$(round(a.acf.std, digits=5)),$(round(a.acf_raw.mean, digits=5)),$(round(a.acf_raw.std, digits=5)),$(round(a.LRuc01.mean, digits=3)),$(round(a.LRuc01.std, digits=3)),$(round(a.LRuc05.mean, digits=3)),$(round(a.LRuc05.std, digits=3))");
     end
 end
 

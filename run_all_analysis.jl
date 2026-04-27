@@ -288,8 +288,9 @@ for K in K_VALUES
         kurt_obs_val = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
         L_use = min(L_val, n_o - 1);
         acf_obs_val = autocor(abs.(observed), 1:L_use);
+        acf_obs_raw_val = autocor(observed, 1:L_use);
 
-        ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0;
+        ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; acf_mae_raw_s = 0.0;
         w1_s = 0.0; hell_s = 0.0;
         ks_pvals = Float64[];
 
@@ -314,9 +315,13 @@ for K in K_VALUES
             μ_s = mean(sim); σ_s = std(sim);
             kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
 
-            # ACF-MAE
+            # ACF-MAE on |G_t| (volatility clustering)
             acf_sim_val = autocor(abs.(sim), 1:L_use);
             acf_mae_s += mean(abs.(acf_obs_val .- acf_sim_val));
+
+            # ACF-MAE on raw G_t (linear autocorrelation)
+            acf_sim_raw_val = autocor(sim, 1:L_use);
+            acf_mae_raw_s += mean(abs.(acf_obs_raw_val .- acf_sim_raw_val));
 
             # Wasserstein-1
             obs_s = sort(observed); sim_s = sort(sim);
@@ -353,6 +358,7 @@ for K in K_VALUES
                 kurtosis_obs=round(kurt_obs_val, digits=2),
                 kurtosis_sim=round(kurt_s/np, digits=2),
                 acf_mae=round(acf_mae_s/np, digits=4),
+                acf_mae_raw=round(acf_mae_raw_s/np, digits=4),
                 wasserstein=round(w1_s/np, digits=3),
                 hellinger=round(hell_s/np, digits=4),
                 coverage=coverage,
@@ -368,6 +374,7 @@ for K in K_VALUES
         ks_oos=m_oos.ks_rate, ad_oos=m_oos.ad_rate,
         kurt_obs=m_is.kurtosis_obs, kurt_sim_is=m_is.kurtosis_sim,
         acf_mae_is=m_is.acf_mae,
+        acf_mae_raw_is=m_is.acf_mae_raw,
         w1_is=m_is.wasserstein, w1_oos=m_oos.wasserstein,
         hell_is=m_is.hellinger, hell_oos=m_oos.hellinger,
         cov_is=m_is.coverage, cov_oos=m_oos.coverage))
@@ -383,7 +390,8 @@ for K in K_VALUES
         println(io, "AD pass rate (%) | $(lpad(m_is.ad_rate,12)) | $(lpad(m_oos.ad_rate,12))")
         println(io, "Excess kurtosis  | $(lpad(m_is.kurtosis_sim,12)) | $(lpad(m_oos.kurtosis_sim,12))")
         println(io, "  (observed)     | $(lpad(m_is.kurtosis_obs,12)) | $(lpad(m_oos.kurtosis_obs,12))")
-        println(io, "ACF-MAE          | $(lpad(m_is.acf_mae,12)) |")
+        println(io, "ACF-MAE |Gₜ|     | $(lpad(m_is.acf_mae,12)) |")
+        println(io, "ACF-MAE Gₜ (raw) | $(lpad(m_is.acf_mae_raw,12)) |")
         println(io, "Wasserstein-1    | $(lpad(m_is.wasserstein,12)) | $(lpad(m_oos.wasserstein,12))")
         println(io, "Hellinger        | $(lpad(m_is.hellinger,12)) | $(lpad(m_oos.hellinger,12))")
         println(io, "Coverage (%)     | $(lpad(m_is.coverage,12)) | $(lpad(m_oos.coverage,12))")
@@ -510,24 +518,24 @@ summary_dir = joinpath(RESULTS_DIR, TICKER);
 open(joinpath(summary_dir, "Table-T1-State-Resolution-Sensitivity.txt"), "w") do io
     println(io, "Table T1: State Resolution Sensitivity — $TICKER")
     println(io, "$(N_PATHS) simulated paths, α=0.05")
-    println(io, "="^130)
-    println(io, "  K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS) | H(IS)  | Cov IS(%) | Cov OoS(%)")
-    println(io, "-"^130)
+    println(io, "="^150)
+    println(io, "  K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE |G| | ACF-MAE raw | W1(IS) | H(IS)  | Cov IS(%) | Cov OoS(%)")
+    println(io, "-"^150)
     for r in summary_rows
-        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8)) | $(lpad(r.cov_oos,8))")
+        println(io, "  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,10)) | $(lpad(r.acf_mae_raw_is,11)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8)) | $(lpad(r.cov_oos,8))")
     end
-    println(io, "="^130)
+    println(io, "="^150)
 end
 
 # Also print to console
 println("\nTable T1: State Resolution Sensitivity")
-println("="^110)
-println("  K  | KS IS(%) | AD IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE  | W1(IS) | H(IS)  | Cov IS(%)")
-println("-"^110)
+println("="^130)
+println("  K  | KS IS(%) | AD IS(%) | KS OoS(%) | Kurt(obs) | Kurt(sim) | ACF-MAE |G| | ACF-MAE raw | W1(IS) | H(IS)  | Cov IS(%)")
+println("-"^130)
 for r in summary_rows
-    println("  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,7)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8))")
+    println("  $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim_is,8)) | $(lpad(r.acf_mae_is,10)) | $(lpad(r.acf_mae_raw_is,11)) | $(lpad(r.w1_is,5)) | $(lpad(r.hell_is,5)) | $(lpad(r.cov_is,8))")
 end
-println("="^110)
+println("="^130)
 
 # ========================================================================================= #
 # DONE

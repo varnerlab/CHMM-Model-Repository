@@ -112,8 +112,9 @@ function eval_metrics(observed, sim_archive; L_val=L)
     kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
     L_use = min(L_val, n_o - 1);
     acf_o = autocor(abs.(observed), 1:L_use);
+    acf_o_raw = autocor(observed, 1:L_use);
 
-    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0;
+    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; acf_mae_raw_s = 0.0;
     w1_s = 0.0; hell_s = 0.0;
     ks_pvals = Float64[];
 
@@ -136,6 +137,9 @@ function eval_metrics(observed, sim_archive; L_val=L)
 
         acf_sim = autocor(abs.(sim), 1:L_use);
         acf_mae_s += mean(abs.(acf_o .- acf_sim));
+
+        acf_sim_raw = autocor(sim, 1:L_use);
+        acf_mae_raw_s += mean(abs.(acf_o_raw .- acf_sim_raw));
 
         obs_sorted = sort(observed); sim_sorted = sort(sim);
         n_min = min(length(obs_sorted), length(sim_sorted));
@@ -166,6 +170,7 @@ function eval_metrics(observed, sim_archive; L_val=L)
             ad=round(100*ad_pass/np, digits=1),
             kurt=round(kurt_s/np, digits=2), kurt_obs=round(kurt_o, digits=2),
             acf_mae=round(acf_mae_s/np, digits=4),
+            acf_mae_raw=round(acf_mae_raw_s/np, digits=4),
             w1=round(w1_s/np, digits=3), hell=round(hell_s/np, digits=4),
             cov=round(100.0*cov_count/99, digits=1),
             ks_pvals=ks_pvals);
@@ -367,6 +372,7 @@ for family in EMISSION_FAMILIES
             ks_oos=m_oos.ks, ad_oos=m_oos.ad,
             kurt_obs=m_is.kurt_obs, kurt_sim=m_is.kurt,
             acf_mae=m_is.acf_mae,
+            acf_mae_raw=m_is.acf_mae_raw,
             w1=m_is.w1, hell=m_is.hell,
             cov_is=m_is.cov, cov_oos=m_oos.cov,
         ));
@@ -379,7 +385,8 @@ for family in EMISSION_FAMILIES
             println(io, "AD IS (%):       $(m_is.ad)   | AD OoS (%):  $(m_oos.ad)")
             println(io, "Kurt (IS sim):   $(m_is.kurt)  | Obs IS:      $(m_is.kurt_obs)")
             println(io, "Kurt (OoS sim):  $(m_oos.kurt) | Obs OoS:     $(m_oos.kurt_obs)")
-            println(io, "ACF-MAE:         $(m_is.acf_mae)")
+            println(io, "ACF-MAE |G|:     $(m_is.acf_mae)")
+            println(io, "ACF-MAE raw:     $(m_is.acf_mae_raw)")
             println(io, "Wasserstein-1:   $(m_is.w1)")
             println(io, "Hellinger:       $(m_is.hell)")
             println(io, "Coverage IS (%): $(m_is.cov) | OoS: $(m_oos.cov)")
@@ -412,16 +419,16 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-T1-Multi-Emission.txt"), "w") do io
     println(io, "$(N_PATHS) simulated paths, α=0.05")
     println(io, "CHMM-N: Gaussian; CHMM-t: Student-t (per-state ν); CHMM-L: Laplace")
     println(io, "="^150)
-    println(io, "Family | K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1(IS) | H(IS)   | Cov IS(%) | Cov OoS(%)")
-    println(io, "-"^150)
+    println(io, "Family | K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt Obs | Kurt Sim | ACF-MAE|G| | ACF-MAE raw | W1(IS) | H(IS)   | Cov IS(%) | Cov OoS(%)")
+    println(io, "-"^170)
     for family in ("N", "t", "L")
         for K in K_VALUES
             r = summary[findfirst(s -> s.family == family && s.K == K, summary)];
-            println(io, "CHMM-$(family) | $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim,8)) | $(lpad(r.acf_mae,7)) | $(lpad(r.w1,5))  | $(lpad(r.hell,5))  | $(lpad(r.cov_is,8))  | $(lpad(r.cov_oos,8))")
+            println(io, "CHMM-$(family) | $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim,8)) | $(lpad(r.acf_mae,9)) | $(lpad(r.acf_mae_raw,10)) | $(lpad(r.w1,5))  | $(lpad(r.hell,5))  | $(lpad(r.cov_is,8))  | $(lpad(r.cov_oos,8))")
         end
-        println(io, "-"^150)
+        println(io, "-"^170)
     end
-    println(io, "="^150)
+    println(io, "="^170)
 end
 
 # ========================================================================================= #

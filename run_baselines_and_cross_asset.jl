@@ -67,8 +67,9 @@ function eval_full(observed, sim_archive; L_val=252)
     kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
     L_use = min(L_val, n_o - 1);
     acf_o = autocor(abs.(observed), 1:L_use);
+    acf_o_raw = autocor(observed, 1:L_use);
 
-    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0;
+    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; acf_mae_raw_s = 0.0;
     w1_s = 0.0; hell_s = 0.0;
 
     # Coverage setup
@@ -91,9 +92,13 @@ function eval_full(observed, sim_archive; L_val=252)
         μ_s = mean(sim); σ_s = std(sim);
         kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
 
-        # ACF-MAE
+        # ACF-MAE on |G_t| (volatility clustering)
         acf_sim = autocor(abs.(sim), 1:L_use);
         acf_mae_s += mean(abs.(acf_o .- acf_sim));
+
+        # ACF-MAE on raw G_t (linear autocorrelation)
+        acf_sim_raw = autocor(sim, 1:L_use);
+        acf_mae_raw_s += mean(abs.(acf_o_raw .- acf_sim_raw));
 
         # Wasserstein-1
         obs_sorted = sort(observed); sim_sorted = sort(sim);
@@ -128,6 +133,7 @@ function eval_full(observed, sim_archive; L_val=252)
             ad=round(100*ad_pass/np, digits=1),
             kurt=round(kurt_s/np, digits=2), kurt_obs=round(kurt_o, digits=2),
             acf_mae=round(acf_mae_s/np, digits=4),
+            acf_mae_raw=round(acf_mae_raw_s/np, digits=4),
             w1=round(w1_s/np, digits=3), hell=round(hell_s/np, digits=4),
             cov=round(100.0*cov_count/99, digits=1))
 end
@@ -317,8 +323,8 @@ m_chmm_l_oos = eval_full(R_oos, chmm_l_oos);
 # Print Table 2
 println("\nTable 2: Model Comparison — $TICKER ($N_PATHS paths, α=0.05)")
 println("="^130)
-println("Model          | KS IS(%) | AD IS(%) | KS OoS(%) | Kurt IS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)")
-println("-"^130)
+println("Model          | KS IS(%) | AD IS(%) | KS OoS(%) | Kurt IS | ACF-MAE|G| | ACF-MAE raw | W1 IS  | H IS   | Cov IS(%)")
+println("-"^150)
 for (name, m_is_val, m_oos_val) in [
     ("Bootstrap", m_boot_is, m_boot_oos),
     ("Gaussian", m_gauss_is, m_gauss_oos),
@@ -329,9 +335,9 @@ for (name, m_is_val, m_oos_val) in [
     ("CHMM-N (K=$K)", m_chmm_is, m_chmm_oos),
     ("CHMM-t (K=$K)", m_chmm_t_is, m_chmm_t_oos),
     ("CHMM-L (K=$K)", m_chmm_l_is, m_chmm_l_oos)]
-    println("$(rpad(name,14)) | $(lpad(m_is_val.ks,7)) | $(lpad(m_is_val.ad,7)) | $(lpad(m_oos_val.ks,8))  | $(lpad(m_is_val.kurt,6)) | $(m_is_val.acf_mae) | $(m_is_val.w1) | $(m_is_val.hell) | $(m_is_val.cov)")
+    println("$(rpad(name,14)) | $(lpad(m_is_val.ks,7)) | $(lpad(m_is_val.ad,7)) | $(lpad(m_oos_val.ks,8))  | $(lpad(m_is_val.kurt,6)) | $(lpad(m_is_val.acf_mae,9)) | $(lpad(m_is_val.acf_mae_raw,10)) | $(m_is_val.w1) | $(m_is_val.hell) | $(m_is_val.cov)")
 end
-println("="^130)
+println("="^150)
 println("Observed kurtosis: IS=$(round(kurt_obs_is,digits=2))")
 
 # Save Table 2
@@ -350,9 +356,9 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
     println(io, "CHMM       : CHMM-N (Gaussian), CHMM-t (Student-t per-state nu), CHMM-L (Laplace). K=$K, no jumps.")
     println(io, "="^150)
     println(io, "")
-    println(io, "                | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE  | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)")
-    println(io, "-"^150)
-    println(io, "Observed        |           |           |            |            | $(lpad(round(kurt_obs_is,digits=2),6)) |          |          |        |        |           |")
+    println(io, "                | KS IS (%) | AD IS (%) | KS OoS (%) | AD OoS (%) | Kurt IS | Kurt OoS | ACF-MAE|G| | ACF-MAE raw | W1 IS  | H IS   | Cov IS(%) | Cov OoS(%)")
+    println(io, "-"^170)
+    println(io, "Observed        |           |           |            |            | $(lpad(round(kurt_obs_is,digits=2),6)) |          |            |             |        |        |           |")
     for (name, m_is_val, m_oos_val) in [
         ("Bootstrap", m_boot_is, m_boot_oos),
         ("Gaussian", m_gauss_is, m_gauss_oos),
@@ -363,9 +369,9 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-2-Baselines.txt"), "w") do io
         ("CHMM-N (K=$K)", m_chmm_is, m_chmm_oos),
         ("CHMM-t (K=$K)", m_chmm_t_is, m_chmm_t_oos),
         ("CHMM-L (K=$K)", m_chmm_l_is, m_chmm_l_oos)]
-        println(io, "$(rpad(name,15)) | $(lpad(m_is_val.ks,8)) | $(lpad(m_is_val.ad,8)) | $(lpad(m_oos_val.ks,9))  | $(lpad(m_oos_val.ad,9))  | $(lpad(m_is_val.kurt,6)) | $(lpad(m_oos_val.kurt,7))  | $(lpad(m_is_val.acf_mae,7)) | $(lpad(m_is_val.w1,5))  | $(m_is_val.hell) | $(lpad(m_is_val.cov,8))  | $(lpad(m_oos_val.cov,8))")
+        println(io, "$(rpad(name,15)) | $(lpad(m_is_val.ks,8)) | $(lpad(m_is_val.ad,8)) | $(lpad(m_oos_val.ks,9))  | $(lpad(m_oos_val.ad,9))  | $(lpad(m_is_val.kurt,6)) | $(lpad(m_oos_val.kurt,7))  | $(lpad(m_is_val.acf_mae,9)) | $(lpad(m_is_val.acf_mae_raw,10)) | $(lpad(m_is_val.w1,5))  | $(m_is_val.hell) | $(lpad(m_is_val.cov,8))  | $(lpad(m_oos_val.cov,8))")
     end
-    println(io, "="^150)
+    println(io, "="^170)
 end
 
 # ========================================================================================= #
@@ -399,8 +405,8 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Per-Ticker-Emission-Families.txt"),
     println(io, "  CHMM-N marginals and ASKS A DIFFERENT QUESTION: given the marginals, which dependence")
     println(io, "  mechanism (SIM, Gaussian copula, Student-t copula) best reproduces cross-asset correlations?")
     println(io, "="^140)
-    println(io, "Ticker | Emission | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE  | W1 IS  | H IS   | Cov IS(%)")
-    println(io, "-"^140)
+    println(io, "Ticker | Emission | KS IS (%) | AD IS (%) | KS OoS (%) | Kurt Obs | Kurt Sim | ACF-MAE|G| | ACF-MAE raw | W1 IS  | H IS   | Cov IS(%)")
+    println(io, "-"^160)
 
     emission_types = [
         ("CHMM-N", MyContinuousHiddenMarkovModel),
@@ -432,7 +438,7 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-T2-Per-Ticker-Emission-Families.txt"),
             m_t_is = eval_full(R_t_is, sim_is);
             m_t_oos = eval_full(R_t_oos, sim_oos);
 
-            line = "$(rpad(t,6)) | $(rpad(tag,8)) | $(lpad(m_t_is.ks,8)) | $(lpad(m_t_is.ad,8)) | $(lpad(m_t_oos.ks,9))  | $(lpad(round(kurt_t_obs,digits=1),7))  | $(lpad(m_t_is.kurt,7))  | $(lpad(m_t_is.acf_mae,7)) | $(lpad(m_t_is.w1,5))  | $(m_t_is.hell) | $(m_t_is.cov)"
+            line = "$(rpad(t,6)) | $(rpad(tag,8)) | $(lpad(m_t_is.ks,8)) | $(lpad(m_t_is.ad,8)) | $(lpad(m_t_oos.ks,9))  | $(lpad(round(kurt_t_obs,digits=1),7))  | $(lpad(m_t_is.kurt,7))  | $(lpad(m_t_is.acf_mae,9)) | $(lpad(m_t_is.acf_mae_raw,10)) | $(lpad(m_t_is.w1,5))  | $(m_t_is.hell) | $(m_t_is.cov)"
             println("      $line");
             println(io, line);
         end
