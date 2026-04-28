@@ -266,22 +266,19 @@ try
     Σ_vine_avg ./= N_PATHS;
     Σ_sim_avg ./= N_PATHS;
 
-    plot_title_corr = "Pipeline B — Cross-asset correlation reproduction | " *
-                      "K=$K marginals, $N_PATHS paths, IS window | top-left is the data";
-    p1 = heatmap(Σ_obs, title="(a) Observed (IS data, T=$n_is)", c=:RdBu, clims=(-1,1), aspect_ratio=1,
+    p1 = heatmap(Σ_obs, title="Observed (IS data, T=$n_is)", c=:RdBu, clims=(-1,1), aspect_ratio=1,
         xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p2 = heatmap(Σ_sim_avg, title="(b) SIM (mean over $N_PATHS sim paths)", c=:RdBu, clims=(-1,1),
+    p2 = heatmap(Σ_sim_avg, title="SIM (mean over $N_PATHS sim paths)", c=:RdBu, clims=(-1,1),
         aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p3 = heatmap(Σ_gauss_avg, title="(c) Gaussian copula (mean over $N_PATHS paths)", c=:RdBu, clims=(-1,1),
+    p3 = heatmap(Σ_gauss_avg, title="Gaussian copula (mean over $N_PATHS paths)", c=:RdBu, clims=(-1,1),
         aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p4 = heatmap(Σ_t_avg, title="(d) Student-t copula, nu*=$(Int(t_copula.nu)) (mean over $N_PATHS paths)",
+    p4 = heatmap(Σ_t_avg, title="Student-t copula, nu*=$(Int(t_copula.nu)) (mean over $N_PATHS paths)",
         c=:RdBu, clims=(-1,1),
         aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p5 = heatmap(Σ_vine_avg, title="(e) Truncated C-vine, root=$(available[vine_copula.root_index])",
+    p5 = heatmap(Σ_vine_avg, title="Truncated C-vine, root=$(available[vine_copula.root_index])",
         c=:RdBu, clims=(-1,1),
         aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    fig = plot(p1, p2, p3, p4, p5, layout=(3,2), size=(950, 1300),
-        plot_title=plot_title_corr, plot_titlefontsize=10);
+    fig = plot(p1, p2, p3, p4, p5, layout=(3,2), size=(950, 1300));
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.svg"));
     savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.pdf"));
     println("Saved correlation heatmap.");

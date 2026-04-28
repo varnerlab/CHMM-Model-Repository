@@ -1,0 +1,41 @@
+CHMM-GED per-state shape diagnostics  (SPY, K = 18, seed = 20260420, p_bounds = (0.5, 3.0))
+States ordered by variance-equivalent sigma (calm to crash).
+p_k = 2 -> Gaussian-shape state. p_k = 1 -> Laplace-shape state.
+=====================================================================================
+rank | k  |  mu_k       |  alpha_k  |  p_k     |  sigma_eq |  shape interpretation
+-------------------------------------------------------------------------------------
+   1 |  9 |     0.0724 |   0.0855 |     3.0 |   0.0523  | Gaussian-like
+   2 |  8 |    -0.0871 |   0.0874 |     3.0 |   0.0534  | Gaussian-like
+   3 |  7 |    -0.2892 |     0.14 |     3.0 |   0.0856  | Gaussian-like
+   4 | 10 |     0.2456 |   0.1411 |     3.0 |   0.0862  | Gaussian-like
+   5 | 11 |     0.4408 |   0.1369 |   2.565 |   0.0873  | Gaussian-like
+   6 |  5 |    -0.8896 |   0.1529 |     3.0 |   0.0934  | Gaussian-like
+   7 |  6 |    -0.5714 |   0.1558 |     3.0 |   0.0952  | Gaussian-like
+   8 | 13 |     0.8916 |   0.0982 |   1.239 |   0.1025  | Laplace-like
+   9 | 12 |     0.6769 |   0.1918 |     3.0 |   0.1172  | Gaussian-like
+  10 | 14 |     1.1611 |   0.2046 |     3.0 |    0.125  | Gaussian-like
+  11 | 15 |     1.5341 |   0.2518 |     3.0 |   0.1538  | Gaussian-like
+  12 |  3 |    -1.5823 |   0.4689 |     3.0 |   0.2865  | Gaussian-like
+  13 |  4 |    -1.1801 |   0.1784 |   0.912 |    0.298  | Laplace-like
+  14 | 16 |     1.8174 |    0.595 |     3.0 |   0.3635  | Gaussian-like
+  15 |  2 |    -2.3803 |   0.3553 |   0.863 |   0.6633  | Laplace-like
+  16 | 17 |     2.4498 |   0.8805 |   1.631 |   0.7074  | Sub-Gaussian (intermediate)
+  17 | 18 |     2.5802 |   2.0276 |   2.266 |   1.3533  | Gaussian-like
+  18 |  1 |    -0.8177 |   2.9718 |   1.181 |   3.2915  | Laplace-like
+=====================================================================================
+
+Aggregate partition:
+  Gaussian-like (p >= 1.85):     13 / 18
+  Intermediate (1.30 <= p < 1.85): 1 / 18
+  Laplace-like (0.85 <= p < 1.30): 4 / 18
+  Super-Laplace (p < 0.85):      0 / 18
+
+Cross-ticker partition (K = 18, seed = 20260420):
+------------------------------------------------------------
+ticker | nGauss | nInter | nLapl | nSuper | total heavy
+SPY    |     13 |      1 |     4 |      0 |           4
+NVDA   |      9 |      4 |     4 |      1 |           5
+JNJ    |     10 |      3 |     3 |      2 |           5
+JPM    |     16 |      0 |     0 |      2 |           2
+AAPL   |     12 |      2 |     4 |      0 |           4
+QQQ    |     13 |      3 |     2 |      0 |           2

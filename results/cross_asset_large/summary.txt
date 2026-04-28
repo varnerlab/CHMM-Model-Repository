@@ -1,0 +1,21 @@
+Large-universe dependence-scaling summary
+================================================================================
+
+Universe: top-50 common tickers by avg dollar volume.
+Dependence layer isolated via exact empirical marginals.
+
+IS off-diag correlation MAE:
+  Gaussian   0.035
+  Student-t  0.037
+  C-vine     0.075
+
+OoS off-diag correlation MAE:
+  Gaussian   0.174
+  Student-t  0.181
+  C-vine     0.189
+
+Vine root: SPY
+Student-t pair edges: 49 / 49
+
+Interpretation: this is the dependence-layer scaling test for C2.
+If the vine beats the flat Student-t copula here, the C2 finance-venue story strengthens.

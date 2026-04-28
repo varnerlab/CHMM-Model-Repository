@@ -43,7 +43,14 @@ const SCRIPTS = [
     "run_cross_asset_large_universe.jl",
     "run_diagnostics.jl",
     "run_equity_price_sim.jl",
-    "run_quantgan_baseline.jl",
+    # "run_quantgan_baseline.jl",   # excluded: slowest stage by far, deterministic
+                                    # with the global seed. Run standalone via
+                                    #   julia --project=. run_quantgan_baseline.jl
+                                    # only when the QuantGAN row in the extended
+                                    # panel needs refreshing (architecture, training
+                                    # data, or seed change). Re-include here only
+                                    # if you want a single-command end-to-end
+                                    # rebuild including the deep-generative row.
     "run_msgarch_baselines.jl",
     "run_smchmm_baseline.jl",
     "run_figures.jl",

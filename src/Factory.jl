@@ -213,6 +213,48 @@ function build(model::Type{MyLaplaceHiddenMarkovModel}, data::NamedTuple)::MyLap
 end
 
 
+"""
+    build(model::Type{MyGEDHiddenMarkovModel}, data::NamedTuple) -> MyGEDHiddenMarkovModel
+
+Trains a continuous HMM with per-state Generalized Error Distribution
+emissions PGeneralizedGaussian(μ_k, α_k, p_k) via ECM (see `baum_welch_ged`).
+GED nests Gaussian (p=2) and Laplace (p=1); per-state p_k therefore lets
+each regime pick its own kurtosis on the Gaussian-Laplace axis.
+
+### NamedTuple keys
+- `observations::Vector{Float64}`: return series
+- `number_of_states::Int`: K
+- `max_iter::Int=30` (optional): EM iteration cap
+- `p_init::Float64=1.5` (optional): initial shape per state
+- `p_bounds::Tuple{Float64,Float64}=(0.5, 4.0)` (optional): bracket for p search
+"""
+function build(model::Type{MyGEDHiddenMarkovModel}, data::NamedTuple)::MyGEDHiddenMarkovModel
+
+    obs = data.observations;
+    n_states = data.number_of_states;
+    max_iterations = haskey(data, :max_iter) ? data.max_iter : 30;
+    p_init = haskey(data, :p_init) ? data.p_init : 1.5;
+    p_bounds = haskey(data, :p_bounds) ? data.p_bounds : (0.5, 3.0);
+
+    T_matrix, μ_vec, α_vec, p_vec, π_vec, ll_hist, γ =
+        baum_welch_ged(obs, n_states;
+                       max_iter=max_iterations, p_init=p_init, p_bounds=p_bounds);
+
+    m = model();
+    m.states = collect(1:n_states);
+    m.log_likelihood_history = ll_hist;
+    transition = Dict{Int64, Categorical}();
+    emission = Dict{Int64, PGeneralizedGaussian}();
+    for s in 1:n_states
+        transition[s] = Categorical(T_matrix[s, :]);
+        emission[s] = PGeneralizedGaussian(μ_vec[s], α_vec[s], p_vec[s]);
+    end
+    m.transition = transition;
+    m.emission = emission;
+    return m;
+end
+
+
 # --- GARCH MODEL BUILDER ----------------------------------------------------- #
 
 """

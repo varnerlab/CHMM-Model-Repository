@@ -116,7 +116,7 @@ x_grid = range(x_lo, x_hi, length=1000);
 
 # Panel (a): Distribution
 p1 = histogram(R_is, normalize=:pdf, bins=200, alpha=0.4, color=:lightgray, label="Observed",
-    title="(a) Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
+    title="Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
 plot!(p1, x_grid, pdf.(d_gauss, x_grid), lw=2, color=:blue, label="Gaussian", ls=:dash);
 plot!(p1, x_grid, pdf.(d_laplace, x_grid), lw=2, color=:red, label="Laplace");
 xlims!(p1, x_lo, x_hi);
@@ -126,27 +126,25 @@ sorted_R = sort(R_is); n_r = length(sorted_R);
 theo_q = [quantile(d_gauss, (i-0.5)/n_r) for i in 1:n_r];
 qq_lo = min(minimum(theo_q), minimum(sorted_R)); qq_hi = max(maximum(theo_q), maximum(sorted_R));
 p2 = scatter(theo_q, sorted_R, ms=1, alpha=0.5, color=:steelblue, label="",
-    title="(b) Normal Q-Q Plot", titlefontsize=10, xlabel="Theoretical", ylabel="Sample");
+    title="Normal Q-Q Plot", titlefontsize=10, xlabel="Theoretical", ylabel="Sample");
 plot!(p2, [qq_lo, qq_hi], [qq_lo, qq_hi], lw=2, color=:red, ls=:dash, label="45°");
 
 # Panel (c): Returns ACF
 τ = 1:(L-1); ci = 2.576/sqrt(n_r);
 acf_raw = autocor(R_is, τ);
 p3 = plot(τ, acf_raw, linetype=:steppost, lw=2, color=:steelblue, label="ACF(Gₜ)",
-    title="(c) Returns ACF", titlefontsize=10, xlabel="Lag", ylabel="ACF");
+    title="Returns ACF", titlefontsize=10, xlabel="Lag", ylabel="ACF");
 plot!(p3, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI");
 plot!(p3, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
 
 # Panel (d): |Returns| ACF
 acf_abs = autocor(abs.(R_is), τ);
 p4 = plot(τ, acf_abs, linetype=:steppost, lw=2, color=:darkorange, label="ACF(|Gₜ|)",
-    title="(d) Volatility Clustering", titlefontsize=10, xlabel="Lag", ylabel="ACF");
+    title="Volatility Clustering", titlefontsize=10, xlabel="Lag", ylabel="ACF");
 plot!(p4, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI");
 plot!(p4, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
 
-fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700),
-    plot_title="Stylized Facts — $TICKER", plot_titlefontsize=12,
-    );
+fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700));
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.svg"));
 savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.pdf"));
 println("  Saved Figure 1 + Table 1")
@@ -403,7 +401,7 @@ for K in K_VALUES
     println("  Generating Figure 3: IS comparison...")
 
     # (a) Density
-    p3a = plot(title="(a) Density (KS pass: $(m_is.ks_rate)%)",
+    p3a = plot(title="Density (KS pass: $(m_is.ks_rate)%)",
         titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
     histogram!(p3a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
     density!(p3a, decoded_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM");
@@ -418,7 +416,7 @@ for K in K_VALUES
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
     p3b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
-        title="(b) ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
+        title="ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
     plot!(p3b, 1:L, acf_m, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p3b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
 
@@ -428,13 +426,11 @@ for K in K_VALUES
     q_sim = quantile(vec(decoded_is), probs_qq);
 
     p3c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
-        title="(c) Tail Q-Q (0.1st-99.9th)", titlefontsize=9,
+        title="Tail Q-Q (0.1st-99.9th)", titlefontsize=9,
         xlabel="Observed Quantiles", ylabel="Simulated Quantiles");
     scatter!(p3c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM");
 
-    fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400),
-        plot_title="IS Comparison — $TICKER, K=$K", plot_titlefontsize=12,
-        );
+    fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400));
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.svg"));
     savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.pdf"));
 
@@ -445,11 +441,11 @@ for K in K_VALUES
 
     # (a) KS p-values
     p4a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
-        label="CHMM", title="(a) OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
+        label="CHMM", title="OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
     vline!(p4a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
 
     # (b) Density fan chart
-    p4b = plot(title="(b) OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
+    p4b = plot(title="OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
     _n_fan = min(50, N_PATHS);
     for i in 1:_n_fan
         _lbl = (i == 1) ? "CHMM simulated ($(_n_fan) paths)" : "";
@@ -470,13 +466,11 @@ for K in K_VALUES
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
     p4c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        title="(c) OoS ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
+        title="OoS ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
     plot!(p4c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p4c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
 
-    fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400),
-        plot_title="OoS Validation — $TICKER, K=$K", plot_titlefontsize=12,
-        );
+    fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400));
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.svg"));
     savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.pdf"));
 

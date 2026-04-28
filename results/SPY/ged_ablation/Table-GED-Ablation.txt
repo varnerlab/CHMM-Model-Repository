@@ -1,0 +1,17 @@
+Table: CHMM-GED Ablation vs CHMM-N / CHMM-t / CHMM-L  (SPY, K=18)
+1000 simulated paths per family, α=0.05.  Seed 20260420.
+Observed IS excess kurtosis: 7.68
+==============================================================================================================
+Family    | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt(sim) | ACF-MAE | W1(IS) | Hell(IS) | Cov IS(%) | Cov OoS(%)
+--------------------------------------------------------------------------------------------------------------
+CHMM-N (Gaussian)      |    95.3 |    89.8 |     84.8 |     75.9 |     5.05 |  0.0514 | 0.108  | 0.0804  |    100.0  |     90.9
+CHMM-t (Student-t)     |    94.6 |    90.1 |     85.0 |     78.3 |    17.44 |  0.0548 | 0.101  | 0.0761  |    100.0  |     91.9
+CHMM-L (Laplace)       |    94.2 |    91.4 |     80.5 |     80.6 |     6.74 |  0.0566 | 0.104  | 0.0795  |    100.0  |     83.8
+CHMM-GED (per-state p) |    95.9 |    91.3 |     84.4 |     80.6 |     5.18 |  0.0543 | 0.099  | 0.0785  |    100.0  |     91.9
+==============================================================================================================
+
+Final log-likelihoods (training, T_IS = 2516 obs):
+  CHMM-N (Gaussian): final LL = -4733.39 over 60 ECM iters
+  CHMM-t (Student-t): final LL = -4729.599 over 60 ECM iters
+  CHMM-L (Laplace): final LL = -4758.859 over 60 ECM iters
+  CHMM-GED (per-state p): final LL = -4716.326 over 60 ECM iters

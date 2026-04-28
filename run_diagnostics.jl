@@ -162,7 +162,7 @@ end
 # ========================================================================================= #
 # Train the three base CHMM families at K = 18 (shared input for utility + coverage rows)
 # ========================================================================================= #
-println("\n[base] Training CHMM-N / CHMM-t / CHMM-L at K = $K_MAIN on SPY IS...")
+println("\n[base] Training CHMM-N / CHMM-t / CHMM-L / CHMM-GED at K = $K_MAIN on SPY IS...")
 
 chmm_n = build(MyContinuousHiddenMarkovModel,
     (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
@@ -170,19 +170,24 @@ chmm_t = build(MyStudentTHiddenMarkovModel,
     (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
 chmm_l = build(MyLaplaceHiddenMarkovModel,
     (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
+chmm_ged = build(MyGEDHiddenMarkovModel,
+    (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
 
 _, sd_n = _stationary(chmm_n, K_MAIN);
 _, sd_t = _stationary(chmm_t, K_MAIN);
 _, sd_l = _stationary(chmm_l, K_MAIN);
+_, sd_ged = _stationary(chmm_ged, K_MAIN);
 
 println("  CHMM-N converged in $(length(chmm_n.log_likelihood_history)) iters");
 println("  CHMM-t converged in $(length(chmm_t.log_likelihood_history)) iters");
 println("  CHMM-L converged in $(length(chmm_l.log_likelihood_history)) iters");
+println("  CHMM-GED converged in $(length(chmm_ged.log_likelihood_history)) iters");
 
 println("\n[base] Simulating $N_PATHS paths from each family...")
 sim_n_is, sim_n_oos = _simulate_chmm_paths(chmm_n, sd_n, n_is, n_oos, N_PATHS);
 sim_t_is, sim_t_oos = _simulate_chmm_paths(chmm_t, sd_t, n_is, n_oos, N_PATHS);
 sim_l_is, sim_l_oos = _simulate_chmm_paths(chmm_l, sd_l, n_is, n_oos, N_PATHS);
+sim_ged_is, sim_ged_oos = _simulate_chmm_paths(chmm_ged, sd_ged, n_is, n_oos, N_PATHS);
 println("  Paths ready.");
 
 # ========================================================================================= #
@@ -247,7 +252,8 @@ for (name, sim_is_mx, sim_oos_mx) in [
     ("GARCH",     garch_is,    garch_oos),
     ("CHMM-N",    sim_n_is,    sim_n_oos),
     ("CHMM-t",    sim_t_is,    sim_t_oos),
-    ("CHMM-L",    sim_l_is,    sim_l_oos)]
+    ("CHMM-L",    sim_l_is,    sim_l_oos),
+    ("CHMM-GED",  sim_ged_is,  sim_ged_oos)]
     v01is, e01is = mc_var_es(sim_is_mx,  0.01);
     v05is, e05is = mc_var_es(sim_is_mx,  0.05);
     v01os, e01os = mc_var_es(sim_oos_mx, 0.01);
@@ -275,7 +281,7 @@ open(joinpath(util_dir, "VaR_ES_Backtest.txt"), "w") do io
                 "OoS VaR01 [5-95]               | OoS ES01 [5-95]                | ",
                 "OoS VaR05 [5-95]               | OoS ES05 [5-95]");
     println(io, "-"^240);
-    for name in ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"]
+    for name in ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"]
         d = models_var[name];
         function fmt(s)
             return rpad("$(round(s.v_med, digits=3)) [$(round(s.v_lo, digits=3)), $(round(s.v_hi, digits=3))]", 30);
@@ -298,10 +304,9 @@ end
 # VaR/ES figure: ordered comparison
 var_fig = plot(layout=(2,2), size=(1100,800),
     left_margin=22Plots.mm,
-    bottom_margin=14Plots.mm,
-    plot_title="VaR and ES back-test (SPY, $N_PATHS paths)");
+    bottom_margin=14Plots.mm);
 
-model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
+model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"];
 xs = 1:length(model_names);
 
 for (i, (tag, obs_v, obs_e, key)) in enumerate([
@@ -353,8 +358,8 @@ open(joinpath(nu_dir, "nu_values_K$(K_MAIN).txt"), "w") do io
 end
 
 # Histogram figure
-nu_hist_fig = plot(xlabel="ν_k", ylabel="Count", title="Per-state ν_k (CHMM-t, K=$K_MAIN, SPY)",
-    titlefontsize=11, legend=false, size=(700,450));
+nu_hist_fig = plot(xlabel="ν_k", ylabel="Count", title="",
+    legend=false, size=(700,450));
 histogram!(nu_hist_fig, nu_k_main, bins=range(2.0, 50.0, length=25), color=:steelblue, alpha=0.8);
 vline!(nu_hist_fig, [2.1], color=:red, lw=2, ls=:dash);
 annotate!(nu_hist_fig, 3.0, maximum([1,maximum(ones(length(nu_k_main)))])*0.9, text("ν_min = 2.1", :red, 9, :left));
@@ -611,8 +616,8 @@ end
 # Plot
 cp_fig = plot(ν_grid, ll_grid, marker=:circle, lw=2, color=:navy, label="profile log-L",
     xlabel="ν (Student-t copula degrees of freedom)", ylabel="profile log-likelihood",
-    title="Student-t copula profile MLE — six-asset SPY cross-section",
-    titlefontsize=11, size=(700, 450));
+    title="",
+    size=(700, 450));
 vline!(cp_fig, [ν_star], color=:red, lw=2, ls=:dash, label="ν* = $(Int(ν_star))");
 savefig(cp_fig, joinpath(cp_dir, "Fig-Copula-Profile-LogL.pdf"));
 savefig(cp_fig, joinpath(cp_dir, "Fig-Copula-Profile-LogL.svg"));

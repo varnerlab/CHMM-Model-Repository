@@ -14,6 +14,7 @@
 
 using Pkg; Pkg.activate(".");
 include("Include.jl");
+using Random;
 
 const TICKER = "SPY";
 const RISK_FREE_RATE = 0.0;
@@ -22,16 +23,18 @@ const MAX_ITER = 60;
 const N_PATHS = 1000;
 const L = 252;
 const K_VALUES = [3, 6, 9, 12, 15, 18, 21];
-const EMISSION_FAMILIES = [:gaussian, :student_t, :laplace];
+const EMISSION_FAMILIES = [:gaussian, :student_t, :laplace, :ged];
+const SEED = 20260420;       # paper-canonical global seed (Section: Evaluation Protocol)
 const RESULTS_DIR = joinpath(_ROOT, "results");
 
 # Also copy selected K=18 figures to the paper's figs folder for LaTeX inclusion.
-const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "paper", "sections", "figs");
+const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
 
 println("="^70)
 println("  Multi-Emission Analysis Pipeline")
-println("  Families: CHMM-N (Gaussian), CHMM-t (Student-t), CHMM-L (Laplace)")
+println("  Families: CHMM-N (Gaussian), CHMM-t (Student-t), CHMM-L (Laplace), CHMM-GED")
 println("  States:   K ∈ $(K_VALUES)")
+println("  Seed:     $SEED  (paper-canonical global seed)")
 println("="^70)
 
 # ========================================================================================= #
@@ -65,10 +68,11 @@ x_grid = range(x_lo, x_hi, length=400);
 # ========================================================================================= #
 # Emission-family dispatch helpers
 # ========================================================================================= #
-const FAMILY_TAG = Dict(:gaussian => "N", :student_t => "t", :laplace => "L");
+const FAMILY_TAG = Dict(:gaussian => "N", :student_t => "t", :laplace => "L", :ged => "GED");
 const FAMILY_LABEL = Dict(:gaussian => "CHMM-N (Gaussian)",
                           :student_t => "CHMM-t (Student-t)",
-                          :laplace => "CHMM-L (Laplace)");
+                          :laplace => "CHMM-L (Laplace)",
+                          :ged => "CHMM-GED (per-state shape)");
 
 function _train_family(family::Symbol, obs::Vector{Float64}, K::Int, max_iter::Int)
     if family == :gaussian
@@ -79,6 +83,9 @@ function _train_family(family::Symbol, obs::Vector{Float64}, K::Int, max_iter::I
             (observations=obs, number_of_states=K, max_iter=max_iter));
     elseif family == :laplace
         return build(MyLaplaceHiddenMarkovModel,
+            (observations=obs, number_of_states=K, max_iter=max_iter));
+    elseif family == :ged
+        return build(MyGEDHiddenMarkovModel,
             (observations=obs, number_of_states=K, max_iter=max_iter));
     else
         error("Unknown emission family: $family")
@@ -182,9 +189,7 @@ end
 
 function save_convergence(model, family_tag::String, K::Int, out_dir::String)
     p = plot(model.log_likelihood_history,
-        title="Pipeline A — Baum-Welch convergence | $TICKER | CHMM-$family_tag, K=$K\n" *
-              "T_IS = $(n_steps) obs | max_iter = $MAX_ITER",
-        titlefontsize=9,
+        title="",
         xlabel="EM iteration", ylabel="Data log-likelihood",
         legend=false, lw=2, color=:navy, marker=:circle, ms=3);
     savefig(p, joinpath(out_dir, "Fig-Convergence-K$K-$family_tag.svg"));
@@ -193,9 +198,7 @@ end
 
 function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
     colors_k = cgrad(:RdYlBu, K, categorical=true);
-    p = plot(title="Pipeline A — Per-state emission densities | $TICKER | CHMM-$family_tag, K=$K\n" *
-                  "Gray histogram = observed IS returns (T_IS = $(n_steps)); S1..S$K = fitted state emissions",
-        titlefontsize=9,
+    p = plot(title="",
         xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)", legend=:topright);
     histogram!(p, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS");
     for s in 1:K
@@ -230,8 +233,7 @@ end
 function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     res = [1.0 / max(1.0 - T_mat[k,k], 1e-12) for k in 1:K];
     p = bar(1:K, res,
-        title="Natural residence time 1/(1 - T_ii) | $TICKER | CHMM-$family_tag, K=$K",
-        titlefontsize=9,
+        title="",
         xlabel="State index", ylabel="Expected residence time (trading days)",
         legend=false, color=:steelblue, alpha=0.7);
     savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.svg"));
@@ -253,14 +255,14 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green
     _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
-    p_a = plot(title="(a) IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
+    p_a = plot(title="IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
         xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed IS (T=$(n_steps))");
     density!(p_a, sim_is[:,1], lw=2, color=_sim_c, alpha=0.85, label="CHMM-$family_tag (single sim path)");
     xlims!(p_a, x_lo, x_hi);
 
     p_b = plot(1:L, acf_obs_is, lw=2, color=_obs_c, ls=:dash, label="Observed |G_t|",
-        title="(b) ACF of |G_t| | lag 1..$L (trading days)",
+        title="ACF of |G_t| | lag 1..$L (trading days)",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
     plot!(p_b, 1:L, acf_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
     plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
@@ -270,13 +272,11 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     q_sim = quantile(vec(sim_is), probs_qq);
 
     p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect fit)",
-        title="(c) Tail Q-Q plot | quantile grid 0.1% .. 99.9%",
+        title="Tail Q-Q plot | quantile grid 0.1% .. 99.9%",
         xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)"; _style...);
     scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_sim_c, label="CHMM-$family_tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
-        plot_title="Pipeline A — IS validation | $TICKER | CHMM-$family_tag, K=$K | $N_PATHS sim paths",
-        plot_titlefontsize=11);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450));
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.pdf"));
 end
@@ -291,11 +291,11 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
 
     p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.7, color=_sim_c,
         label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths)",
-        title="(a) OoS KS p-values | pass rate = $(m_oos.ks)% above alpha=0.05",
+        title="OoS KS p-values | pass rate = $(m_oos.ks)% above alpha=0.05",
         xlabel="KS p-value against OoS series", ylabel="Density"; _style...);
     vline!(p_a, [0.05], lw=2, color=_obs_c, ls=:dash, label="alpha = 0.05 threshold");
 
-    p_b = plot(title="(b) OoS return density fan | 50 sim paths vs. observed OoS (T=$(n_steps_oos))",
+    p_b = plot(title="OoS return density fan | 50 sim paths vs. observed OoS (T=$(n_steps_oos))",
         xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
     # V14: single legend entry for the simulated fan; tripled alpha for contrast.
     _sim_paths_to_plot = min(50, N_PATHS);
@@ -317,15 +317,12 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
     p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_obs_c, ls=:dash, label="Observed OoS |G_t|",
-        title="(c) OoS ACF of |G_t| | lag 1..$(length(τ_oos)) (trading days)",
+        title="OoS ACF of |G_t| | lag 1..$(length(τ_oos)) (trading days)",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
     plot!(p_c, τ_oos, acf_oos_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
     plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450),
-        plot_title="Pipeline A — OoS validation | $TICKER | CHMM-$family_tag, K=$K | " *
-                   "T_OoS=$(n_steps_oos) obs, $N_PATHS sim paths",
-        plot_titlefontsize=11);
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450));
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.pdf"));
 end
@@ -358,10 +355,15 @@ for family in EMISSION_FAMILIES
         out_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K$K", tag);
         mkpath(out_dir);
 
+        # Reproducibility: deterministic seeding per (family, K) cell. SEED for the
+        # fit step (the EM is deterministic from the quantile init; this is for any
+        # randomness the build path may touch); SEED + 1 for simulation.
+        Random.seed!(SEED);
         model = _train_family(family, R_is, K, MAX_ITER);
         T_mat, start_dist = _stationary(model, K);
         π_stat = T_mat^1000 |> x -> x[1, :];
 
+        Random.seed!(SEED + 1);
         sim_is, sim_oos = _simulate_paths(model, start_dist, n_steps, n_steps_oos, N_PATHS);
         m_is = eval_metrics(R_is, sim_is);
         m_oos = eval_metrics(R_oos, sim_oos);
@@ -419,12 +421,12 @@ open(joinpath(RESULTS_DIR, TICKER, "Table-T1-Multi-Emission.txt"), "w") do io
     println(io, "$(N_PATHS) simulated paths, α=0.05")
     println(io, "CHMM-N: Gaussian; CHMM-t: Student-t (per-state ν); CHMM-L: Laplace")
     println(io, "="^150)
-    println(io, "Family | K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt Obs | Kurt Sim | ACF-MAE|G| | ACF-MAE raw | W1(IS) | H(IS)   | Cov IS(%) | Cov OoS(%)")
+    println(io, "Family   | K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt Obs | Kurt Sim | ACF-MAE|G| | ACF-MAE raw | W1(IS) | H(IS)   | Cov IS(%) | Cov OoS(%)")
     println(io, "-"^170)
-    for family in ("N", "t", "L")
+    for family in ("N", "t", "L", "GED")
         for K in K_VALUES
             r = summary[findfirst(s -> s.family == family && s.K == K, summary)];
-            println(io, "CHMM-$(family) | $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim,8)) | $(lpad(r.acf_mae,9)) | $(lpad(r.acf_mae_raw,10)) | $(lpad(r.w1,5))  | $(lpad(r.hell,5))  | $(lpad(r.cov_is,8))  | $(lpad(r.cov_oos,8))")
+            println(io, "CHMM-$(rpad(family,3)) | $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim,8)) | $(lpad(r.acf_mae,9)) | $(lpad(r.acf_mae_raw,10)) | $(lpad(r.w1,5))  | $(lpad(r.hell,5))  | $(lpad(r.cov_is,8))  | $(lpad(r.cov_oos,8))")
         end
         println(io, "-"^170)
     end
@@ -444,7 +446,7 @@ if isdir(PAPER_FIGS_DIR)
         "Fig-Residence-Times-K18", "Fig-Trajectory-Example-K18",
         "Fig-3-IS-Comparison-K18", "Fig-4-OoS-Validation-K18",
     ];
-    for fam in ("N", "t", "L")
+    for fam in ("N", "t", "L", "GED")
         src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);
         for stem in per_family_figs_K18
             for ext in (".pdf", ".svg")
@@ -457,7 +459,7 @@ if isdir(PAPER_FIGS_DIR)
         end
     end
     # K=3 and K=12 side figures (emission PDFs + IS panel) for appendix
-    for fam in ("N", "t", "L")
+    for fam in ("N", "t", "L", "GED")
         for K_extra in (3, 12)
             src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K$(K_extra)", fam);
             for stem in ("Fig-Emission-PDFs-K$(K_extra)", "Fig-3-IS-Comparison-K$(K_extra)")

@@ -113,7 +113,8 @@ the univariate emission density, so the recursion is identical modulo the
 function viterbi(observations::Vector{Float64},
     model::Union{MyContinuousHiddenMarkovModel,
                  MyStudentTHiddenMarkovModel,
-                 MyLaplaceHiddenMarkovModel})::Vector{Int64}
+                 MyLaplaceHiddenMarkovModel,
+                 MyGEDHiddenMarkovModel})::Vector{Int64}
 
     N = length(observations);
     K = length(model.states);
@@ -714,6 +715,219 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
 end
 
 
+"""
+    baum_welch_ged(observations, number_of_states; max_iter=30, tol=1e-4,
+                   p_init=1.5, p_bounds=(0.5, 4.0)) -> Tuple
+
+ECM estimation for a continuous HMM with per-state Generalized Error
+Distribution (GED) emissions b_k(x) = PGeneralizedGaussian(μ_k, α_k, p_k).
+
+The GED log-density is
+
+    log f(x; μ, α, p) = log p − log(2α) − log Γ(1/p) − (|x − μ|/α)^p
+
+which contains Gaussian (p=2, σ = α/√2) and Laplace (p=1, b = α) as
+special cases. Per-state p_k therefore lets each regime pick its own
+kurtosis on the Gaussian-Laplace axis.
+
+Each EM iteration runs the standard log-space forward-backward E-step
+with `logpdf.(PGeneralizedGaussian, ·)` log-densities, then a three-stage
+ECM M-step:
+
+    CM1: μ_k ← argmin_μ Σ_t γ_t(k) |o_t − μ|^{p_k}     (golden-section, bracketed)
+    CM2: α_k ← [(p_k / W_k) Σ_t γ_t(k) |o_t − μ_k|^{p_k}]^{1/p_k}   (closed form)
+    CM3: p_k ← argmax_p Q_k(μ_k, α_k, p)                (golden-section on p_bounds)
+
+where W_k = Σ_t γ_t(k). CM2 is the unique zero of ∂Q_k/∂α_k. The full
+M-step is a partial-maximization sequence so EM monotonicity (the standard
+ECM result of Meng & Rubin 1993) holds on the compact bracket.
+
+Returns (T, μ, α, p, π, ll_history, gamma).
+"""
+function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
+    max_iter::Int64=30, tol::Float64=1e-4,
+    p_init::Float64=1.5, p_bounds::Tuple{Float64,Float64}=(0.5, 3.0))
+
+    N = length(observations);
+    K = number_of_states;
+
+    # Quantile-based init for (μ, α); shared p_init per state. α init is the
+    # chunk std (correct order of magnitude across the (Gaussian, Laplace)
+    # boundary; ECM corrects within a few iterations).
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
+    curr_μ = zeros(K); curr_α = zeros(K); curr_p = fill(p_init, K);
+    for s in 1:K
+        start_idx = (s - 1) * chunk_size + 1;
+        end_idx = (s == K) ? N : (s * chunk_size);
+        data_subset = sorted_data[start_idx:end_idx];
+        curr_μ[s] = mean(data_subset);
+        curr_α[s] = max(std(data_subset), 1e-6);
+    end
+    curr_T = ones(K, K) ./ K;
+    curr_π = ones(K) ./ K;
+
+    ll_history = Float64[];
+    final_gamma = zeros(N, K);
+    prev_ll = -Inf;
+
+    # Helpers.
+    _logpdf_ged(x, μ, α, p) = logpdf(PGeneralizedGaussian(μ, α, p), x);
+
+    # Weighted L^p loss for the location update (we minimize this).
+    function _loc_loss(μ, p, w, x)
+        acc = 0.0;
+        @inbounds for t in eachindex(x)
+            acc += w[t] * abs(x[t] - μ)^p;
+        end
+        return acc;
+    end
+
+    # Golden-section MIN over [a, b]. Used for the location update.
+    function _gss_min(f, a, b; iters=40)
+        φ = (sqrt(5.0) - 1.0) / 2.0;
+        c = b - φ*(b - a); d = a + φ*(b - a);
+        fc = f(c); fd = f(d);
+        for _ in 1:iters
+            if fc < fd
+                b = d; d = c; fd = fc;
+                c = b - φ*(b - a); fc = f(c);
+            else
+                a = c; c = d; fc = fd;
+                d = a + φ*(b - a); fd = f(d);
+            end
+        end
+        return 0.5*(a + b);
+    end
+
+    # Golden-section MAX of the per-state Q over p ∈ p_bounds.
+    function _gss_max_p(γk, o, μ, α, lo, hi; iters=40)
+        # Q_k(p) up to constants in p, given fixed (μ, α):
+        #   Q_k(p) = Σ_t γk[t] [log p − log(2α) − log Γ(1/p) − (|o_t − μ|/α)^p]
+        function _q(p)
+            acc = 0.0;
+            dist = PGeneralizedGaussian(μ, α, p);
+            @inbounds for t in eachindex(o)
+                acc += γk[t] * logpdf(dist, o[t]);
+            end
+            return acc;
+        end
+        φ = (sqrt(5.0) - 1.0) / 2.0;
+        a = lo; b = hi;
+        c = b - φ*(b - a); d = a + φ*(b - a);
+        fc = _q(c); fd = _q(d);
+        for _ in 1:iters
+            if fc > fd
+                b = d; d = c; fd = fc;
+                c = b - φ*(b - a); fc = _q(c);
+            else
+                a = c; c = d; fc = fd;
+                d = a + φ*(b - a); fd = _q(d);
+            end
+        end
+        return 0.5*(a + b);
+    end
+
+    # Last-known-good snapshot, mirroring the Student-t routine.
+    last_good_μ = copy(curr_μ); last_good_α = copy(curr_α); last_good_p = copy(curr_p);
+    last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+
+    for iter in 1:max_iter
+
+        # E-STEP: emission log-likelihoods + forward-backward.
+        log_B = zeros(N, K);
+        for t in 1:N, k in 1:K
+            log_B[t, k] = _logpdf_ged(observations[t], curr_μ[k], curr_α[k], curr_p[k]);
+        end
+
+        log_alpha = zeros(N, K);
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
+        for t in 2:N, j in 1:K
+            log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
+        end
+
+        current_ll_early = _logsumexp_vec(log_alpha[N, :]);
+        if !isfinite(current_ll_early)
+            curr_μ = last_good_μ; curr_α = last_good_α; curr_p = last_good_p;
+            curr_T = last_good_T; curr_π = last_good_π;
+            break;
+        end
+        last_good_μ = copy(curr_μ); last_good_α = copy(curr_α); last_good_p = copy(curr_p);
+        last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+
+        log_beta = zeros(N, K);
+        for t in N-1:-1:1, i in 1:K
+            log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
+            log_beta[t, i] = _logsumexp_vec(log_terms);
+        end
+
+        γ = zeros(N, K);
+        for t in 1:N
+            γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
+                           _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
+        end
+
+        expected_transitions = zeros(K, K);
+        for t in 1:N-1
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]);
+            for i in 1:K, j in 1:K
+                log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom;
+                expected_transitions[i, j] += exp(log_xi);
+            end
+        end
+
+        # M-STEP (CM): μ_k → α_k → p_k.
+        curr_π = γ[1, :];
+
+        for k in 1:K
+            wk = γ[:, k];
+            Wk = sum(wk);
+            if Wk <= 0
+                continue;
+            end
+
+            # CM1: μ_k bracketed L^{p_k} location estimator. Bracket scales
+            # with the current state's α_k so it always brackets the optimum
+            # for any reasonable data range.
+            pk = curr_p[k]; αk = curr_α[k];
+            μlo = curr_μ[k] - 5.0 * αk; μhi = curr_μ[k] + 5.0 * αk;
+            μlo = min(μlo, minimum(observations) - 1e-6);
+            μhi = max(μhi, maximum(observations) + 1e-6);
+            curr_μ[k] = _gss_min(μ -> _loc_loss(μ, pk, wk, observations), μlo, μhi);
+
+            # CM2: α_k closed-form given (μ_k, p_k).
+            ssum = 0.0;
+            @inbounds for t in 1:N
+                ssum += wk[t] * abs(observations[t] - curr_μ[k])^pk;
+            end
+            α_new = (pk * ssum / Wk)^(1.0 / pk);
+            curr_α[k] = max(α_new, 1e-6);
+
+            # CM3: p_k bracketed maximization given (μ_k, α_k).
+            curr_p[k] = _gss_max_p(wk, observations, curr_μ[k], curr_α[k],
+                                   p_bounds[1], p_bounds[2]);
+        end
+
+        for i in 1:K
+            r_sum = sum(expected_transitions[i, :]);
+            if r_sum > 0
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
+            end
+        end
+
+        current_ll = current_ll_early;
+        push!(ll_history, current_ll);
+        final_gamma = γ;
+        if abs(current_ll - prev_ll) < tol
+            break;
+        end
+        prev_ll = current_ll;
+    end
+
+    return (curr_T, curr_μ, curr_α, curr_p, curr_π, ll_history, final_gamma);
+end
+
+
 # --- FUNCTORS (Simulation Interface) ----------------------------------------- #
 
 """
@@ -741,8 +955,18 @@ function _simulate(m::MyLaplaceHiddenMarkovModel, start::Int64, steps::Int64)::A
     return chain;
 end
 
+function _simulate(m::MyGEDHiddenMarkovModel, start::Int64, steps::Int64)::Array{Int64,1}
+    chain = Array{Int64,1}(undef, steps);
+    chain[1] = start;
+    for t in 2:steps
+        chain[t] = rand(m.transition[chain[t-1]]);
+    end
+    return chain;
+end
+
 (m::MyStudentTHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
 (m::MyLaplaceHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
+(m::MyGEDHiddenMarkovModel)(start::Int64, steps::Int64) = _simulate(m, start, steps);
 
 # Discrete Models (Baseline)
 """
@@ -768,7 +992,8 @@ Functor call to simulate a path for the Discrete Jump HMM.
 # Dict{Int64, UnivariateDistribution} emission interface used below.
 const _ContinuousCHMM = Union{MyContinuousHiddenMarkovModel,
                               MyStudentTHiddenMarkovModel,
-                              MyLaplaceHiddenMarkovModel};
+                              MyLaplaceHiddenMarkovModel,
+                              MyGEDHiddenMarkovModel};
 
 """
     _stationary_distribution(chmm) -> Categorical

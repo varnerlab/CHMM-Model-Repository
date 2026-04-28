@@ -68,6 +68,8 @@ function _fit_and_simulate(family::Symbol, R_is::Vector{Float64}, S0::Float64,
         chmm = build(MyStudentTHiddenMarkovModel, nt);
     elseif family === :Laplace
         chmm = build(MyLaplaceHiddenMarkovModel, nt);
+    elseif family === :GED
+        chmm = build(MyGEDHiddenMarkovModel, nt);
     else
         error("Unknown family: $family");
     end
@@ -93,10 +95,8 @@ function _price_fan_plot(ticker::String, family_label::String,
     q75 = [quantile(P_paths[i, :], 0.75) for i in 1:(n_steps + 1)];
     q95 = [quantile(P_paths[i, :], 0.95) for i in 1:(n_steps + 1)];
 
-    title_text = "Pipeline A — $ticker OoS price fan | CHMM-$family_label, K=$K_MAIN\n" *
-                 "$(size(P_paths,2)) simulated paths | S0 = last IS VWAP | dt = 1/252";
     p = plot(xs, q50, label="Simulated median", lw=2, c=:blue,
-             title=title_text, titlefontsize=9,
+             title="",
              xlabel="Trading day after last IS close (out-of-sample)", ylabel="Price (USD)");
     plot!(p, xs, q05, fillrange=q95, fillalpha=0.15, c=:blue, label="Simulated 5-95 percentile band", lw=0);
     plot!(p, xs, q25, fillrange=q75, fillalpha=0.25, c=:blue, label="Simulated 25-75 percentile band", lw=0);
@@ -112,10 +112,8 @@ function _terminal_hist_plot(ticker::String, family_label::String,
                              P_paths::Matrix{Float64}, P_obs_end::Float64)
     terminal = P_paths[end, :];
     n_steps = size(P_paths, 1) - 1;
-    title_text = "Pipeline A — $ticker terminal-price distribution | CHMM-$family_label, K=$K_MAIN\n" *
-                 "$(length(terminal)) simulated paths at day $n_steps OoS";
     p = histogram(terminal, bins=40, legend=:topright, label="Simulated terminal prices",
-                  title=title_text, titlefontsize=9,
+                  title="",
                   xlabel="Terminal price at end of OoS window (USD)", ylabel="Count",
                   fillalpha=0.6, c=:steelblue);
     vline!(p, [P_obs_end], lw=2, c=:red, label="Observed terminal");
@@ -221,8 +219,8 @@ summary_rows = DataFrame(
     crps_rel_S0 = Float64[],       # CRPS divided by S0 (scale-free)
 );
 
-families = (:Gaussian, :StudentT, :Laplace);
-family_labels = Dict(:Gaussian=>"N", :StudentT=>"t", :Laplace=>"L");
+families = (:Gaussian, :StudentT, :Laplace, :GED);
+family_labels = Dict(:Gaussian=>"N", :StudentT=>"t", :Laplace=>"L", :GED=>"GED");
 
 for ticker in TICKERS
     if !haskey(train_dataset, ticker) || !haskey(oos_raw, ticker)

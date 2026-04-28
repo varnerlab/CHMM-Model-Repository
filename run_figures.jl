@@ -82,7 +82,7 @@ const _MEAN_C = RGB(0.0, 0.620, 0.451);     # Okabe-Ito bluish green (mean over 
 const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
-function save_is_comparison(sim_is, m_is, tag, K, out_path)
+function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     # |G_t| ACF: observed + simulated mean / 10-90 band
     acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
@@ -100,7 +100,7 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
     ci99 = 2.576 / sqrt(length(R_is));
 
     # Panel (a): marginal density
-    p_a = plot(title="(a) IS density (KS: $(m_is.ks)%)",
+    p_a = plot(title="IS density (KS: $(m_is.ks)%)",
         xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
     density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
@@ -111,13 +111,13 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(sim_is), probs_qq);
     p_b = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect)",
-        title="(b) Tail Q-Q plot (0.1st-99.9th)",
+        title="Tail Q-Q plot (0.1st-99.9th)",
         xlabel="Observed quantiles", ylabel="Simulated quantiles"; _STYLE...);
     scatter!(p_b, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
 
     # Panel (c): raw-return ACF (linear autocorrelation)
     p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        title="(c) ACF of G_t (raw returns)",
+        title="ACF of G_t (raw returns)",
         xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
     plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
@@ -125,20 +125,19 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
 
     # Panel (d): |G_t| ACF (volatility clustering)
     p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        title="(d) ACF of |G_t|",
+        title="ACF of |G_t|",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
     plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
 
-    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800),
-        plot_title="IS comparison (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
+    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800));
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");
 end
 
-function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
+function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     # Panel (a): OoS density fan (marginal fidelity, visual)
-    p_a = plot(title="(a) OoS density fan",
+    p_a = plot(title="OoS density fan",
         xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot
@@ -153,7 +152,7 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     # Panel (b): KS p-value histogram (marginal fidelity, numerical)
     p_b = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
         label="CHMM-$tag",
-        title="(b) OoS KS p-values (pass: $(m_oos.ks)%)",
+        title="OoS KS p-values (pass: $(m_oos.ks)%)",
         xlabel="p-value against OoS series", ylabel="Density"; _STYLE...);
     vline!(p_b, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
 
@@ -178,7 +177,7 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     # Panel (c): raw-return OoS ACF
     p_c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        title="(c) OoS ACF of G_t (raw returns)",
+        title="OoS ACF of G_t (raw returns)",
         xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
     plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
@@ -186,18 +185,17 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     # Panel (d): |G_t| OoS ACF
     p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        title="(d) OoS ACF of |G_t|",
+        title="OoS ACF of |G_t|",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
     plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
 
-    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800),
-        plot_title="OoS validation (CHMM-$tag, K=$K)", plot_titlefontsize=PTFS);
+    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800));
     savefig(fig, out_path * ".pdf");
     savefig(fig, out_path * ".svg");
 end
 
-function save_transition_heatmap(T_mat, tag, K, out_path)
+function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
     T_log = log10.(T_mat .+ 1e-10);
     p = heatmap(T_log,
         title="Transition Matrix log₁₀ (CHMM-$tag, K=$K)",
@@ -226,21 +224,21 @@ for (tag, build_fn) in [
     m_is  = eval_metrics(R_is,  sis);
     m_oos = eval_metrics(R_oos, sos);
 
-    save_is_comparison(sis, m_is, tag, K,
+    kfigs_save_is_comparison(sis, m_is, tag, K,
         joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K-$tag"));
-    save_oos_validation(sos, m_oos, tag, K,
+    kfigs_save_oos_validation(sos, m_oos, tag, K,
         joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K-$tag"));
-    save_transition_heatmap(T_mat, tag, K,
+    kfigs_save_transition_heatmap(T_mat, tag, K,
         joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K-$tag"));
     println("  [$tag] Figures written.")
 
     # Also write the main-body unsuffixed versions from the Gaussian family (main-body figures)
     if tag == "N"
-        save_is_comparison(sis, m_is, tag, K,
+        kfigs_save_is_comparison(sis, m_is, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));
-        save_oos_validation(sos, m_oos, tag, K,
+        kfigs_save_oos_validation(sos, m_oos, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K"));
-        save_transition_heatmap(T_mat, tag, K,
+        kfigs_save_transition_heatmap(T_mat, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K"));
         println("  [$tag] Main-body Fig-*-K18 (unsuffixed) also rewritten.")
     end

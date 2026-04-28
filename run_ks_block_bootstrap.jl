@@ -143,6 +143,9 @@ chmm_t = build(MyStudentTHiddenMarkovModel,
 println("  CHMM-L..."); Random.seed!(SEED + 3);
 chmm_l = build(MyLaplaceHiddenMarkovModel,
     (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
+println("  CHMM-GED..."); Random.seed!(SEED + 5);
+chmm_ged = build(MyGEDHiddenMarkovModel,
+    (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
 println("  GARCH(1,1)..."); Random.seed!(SEED + 4);
 garch = build(MyGARCHModel, (observations=R_is,));
 
@@ -174,6 +177,7 @@ Random.seed!(SEED + 100); sims = Dict{String, Matrix{Float64}}();
 println("  simulating CHMM-N..."); sims["CHMM-N"] = _simulate_paths_chmm(chmm_n, n_is, N_PATHS);
 println("  simulating CHMM-t..."); sims["CHMM-t"] = _simulate_paths_chmm(chmm_t, n_is, N_PATHS);
 println("  simulating CHMM-L..."); sims["CHMM-L"] = _simulate_paths_chmm(chmm_l, n_is, N_PATHS);
+println("  simulating CHMM-GED..."); sims["CHMM-GED"] = _simulate_paths_chmm(chmm_ged, n_is, N_PATHS);
 println("  simulating GARCH(1,1)..."); sims["GARCH(1,1)"] = _simulate_paths_garch(garch, n_is, N_PATHS);
 println("  simulating i.i.d. bootstrap..."); sims["iid bootstrap"] = _simulate_paths_iid_boot(R_is, n_is, N_PATHS);
 
@@ -204,7 +208,7 @@ end
 
 println("\n[score] per-generator KS p-value distribution + block-bootstrap pass rates...");
 panel = NamedTuple[];
-for name in ["iid bootstrap", "GARCH(1,1)", "CHMM-N", "CHMM-t", "CHMM-L"]
+for name in ["iid bootstrap", "GARCH(1,1)", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"]
     r = score_generator(name, sims[name], R_is);
     push!(panel, r);
     println("  $(rpad(name, 14))  asymp_pass $(round(100*r.asymp_pass_rate, digits=1))%  mean_pv $(round(r.mean_pv, digits=3))  pv_q05 $(round(r.pv_q05, digits=3))  pv_q95 $(round(r.pv_q95, digits=3))   block5 $(round(100*r.block_pass[5], digits=1))%  block10 $(round(100*r.block_pass[10], digits=1))%  block20 $(round(100*r.block_pass[20], digits=1))%");

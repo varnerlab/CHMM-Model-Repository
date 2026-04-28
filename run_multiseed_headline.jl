@@ -110,9 +110,14 @@ function eval_one_seed(seed::Int, family::Symbol)
     elseif family == :t
         m = build(MyStudentTHiddenMarkovModel,
             (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
-    else
+    elseif family == :l
         m = build(MyLaplaceHiddenMarkovModel,
             (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
+    elseif family == :ged
+        m = build(MyGEDHiddenMarkovModel,
+            (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
+    else
+        error("Unknown family: $family");
     end
     Random.seed!(seed + 1000);
     sim_is  = _simulate_paths(() -> simulate_returns(m, n_is), n_is, N_PATHS);
@@ -132,20 +137,22 @@ end
 # --------------------------------------------------------------------------------------- #
 # Multi-seed sweep
 # --------------------------------------------------------------------------------------- #
-println("\n[sweep] $(length(SEED_GRID)) seeds × 3 emission families...");
+const FAMILIES = [:n, :t, :l, :ged];
+const FAMILY_NAME = Dict(:n => "CHMM-N", :t => "CHMM-t", :l => "CHMM-L", :ged => "CHMM-GED");
+
+println("\n[sweep] $(length(SEED_GRID)) seeds × $(length(FAMILIES)) emission families...");
 
 all_results = Dict{Symbol, Vector{NamedTuple}}();
-for fam in [:n, :t, :l]
+for fam in FAMILIES
     all_results[fam] = NamedTuple[];
 end
 
 for (i, seed) in enumerate(SEED_GRID)
     println("\n  seed $i = $seed");
-    for fam in [:n, :t, :l]
+    for fam in FAMILIES
         r = eval_one_seed(seed, fam);
         push!(all_results[fam], r);
-        fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
-        println("    $fname  IS_KS $(round(100*r.is_ks, digits=1))%  OoS_KS $(round(100*r.oos_ks, digits=1))%  kurt $(round(r.sim_kurt, digits=2))  ACF $(round(r.acf_mae, digits=4))  LR_uc01 $(round(r.var01.LR_uc, digits=2))  LR_uc05 $(round(r.var05.LR_uc, digits=2))");
+        println("    $(FAMILY_NAME[fam])  IS_KS $(round(100*r.is_ks, digits=1))%  OoS_KS $(round(100*r.oos_ks, digits=1))%  kurt $(round(r.sim_kurt, digits=2))  ACF $(round(r.acf_mae, digits=4))  LR_uc01 $(round(r.var01.LR_uc, digits=2))  LR_uc05 $(round(r.var05.LR_uc, digits=2))");
     end
 end
 
@@ -181,10 +188,9 @@ for (fam, results) in all_results
 end
 
 println("\n[aggregate] mean ± std across $(length(SEED_GRID)) seeds:");
-for fam in [:n, :t, :l]
-    fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
+for fam in FAMILIES
     a = agg[fam];
-    println("  $fname  IS_KS $(round(100*a.is_ks.mean, digits=1))% ± $(round(100*a.is_ks.std, digits=1))%   OoS_KS $(round(100*a.oos_ks.mean, digits=1))% ± $(round(100*a.oos_ks.std, digits=1))%   kurt $(round(a.kurt.mean, digits=2)) ± $(round(a.kurt.std, digits=2))   ACF $(round(a.acf.mean, digits=4)) ± $(round(a.acf.std, digits=4))   LR_uc01 $(round(a.LRuc01.mean, digits=2)) ± $(round(a.LRuc01.std, digits=2))   LR_uc05 $(round(a.LRuc05.mean, digits=2)) ± $(round(a.LRuc05.std, digits=2))");
+    println("  $(FAMILY_NAME[fam])  IS_KS $(round(100*a.is_ks.mean, digits=1))% ± $(round(100*a.is_ks.std, digits=1))%   OoS_KS $(round(100*a.oos_ks.mean, digits=1))% ± $(round(100*a.oos_ks.std, digits=1))%   kurt $(round(a.kurt.mean, digits=2)) ± $(round(a.kurt.std, digits=2))   ACF $(round(a.acf.mean, digits=4)) ± $(round(a.acf.std, digits=4))   LR_uc01 $(round(a.LRuc01.mean, digits=2)) ± $(round(a.LRuc01.std, digits=2))   LR_uc05 $(round(a.LRuc05.mean, digits=2)) ± $(round(a.LRuc05.std, digits=2))");
 end
 
 # --------------------------------------------------------------------------------------- #
@@ -198,10 +204,9 @@ open(joinpath(TRACK_DIR, "MultiSeed.txt"), "w") do io
     println(io, "Setup : $(length(SEED_GRID)) global seeds (base $BASE_SEED, increment 100), N_paths = $N_PATHS per seed, K = $K_MAIN.");
     println(io, "Note  : the $N_PATHS paths per seed is reduced from the paper's 1000 to keep total compute tractable; the seed-to-seed std reported here is therefore an upper bound on the std the headline panel would show under N_paths = 1000.");
     println(io, "");
-    for fam in [:n, :t, :l]
-        fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
+    for fam in FAMILIES
         a = agg[fam];
-        println(io, "$fname:");
+        println(io, "$(FAMILY_NAME[fam]):");
         println(io, "  IS  KS pass rate : $(round(100*a.is_ks.mean, digits=2))% ± $(round(100*a.is_ks.std, digits=2))%   range [$(round(100*a.is_ks.min, digits=1))%, $(round(100*a.is_ks.max, digits=1))%]");
         println(io, "  OoS KS pass rate : $(round(100*a.oos_ks.mean, digits=2))% ± $(round(100*a.oos_ks.std, digits=2))%   range [$(round(100*a.oos_ks.min, digits=1))%, $(round(100*a.oos_ks.max, digits=1))%]");
         println(io, "  sim IS kurt      : $(round(a.kurt.mean, digits=3)) ± $(round(a.kurt.std, digits=3))             range [$(round(a.kurt.min, digits=2)), $(round(a.kurt.max, digits=2))]");
@@ -216,18 +221,16 @@ end
 
 open(joinpath(PAPER_ROBUSTNESS_DIR, "multiseed_headline.csv"), "w") do io
     println(io, "model,seed,IS_KS_pct,OoS_KS_pct,sim_kurt,ACF_MAE,ACF_MAE_raw,br01_pct,LRuc01,br05_pct,LRuc05");
-    for fam in [:n, :t, :l]
-        fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
+    for fam in FAMILIES
         for (i, r) in enumerate(all_results[fam])
-            println(io, "$fname,$(SEED_GRID[i]),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(r.acf_mae_raw, digits=5)),$(round(100*r.var01.br_rate, digits=2)),$(round(r.var01.LR_uc, digits=3)),$(round(100*r.var05.br_rate, digits=2)),$(round(r.var05.LR_uc, digits=3))");
+            println(io, "$(FAMILY_NAME[fam]),$(SEED_GRID[i]),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(r.acf_mae_raw, digits=5)),$(round(100*r.var01.br_rate, digits=2)),$(round(r.var01.LR_uc, digits=3)),$(round(100*r.var05.br_rate, digits=2)),$(round(r.var05.LR_uc, digits=3))");
         end
     end
     println(io, "");
     println(io, "model,IS_KS_mean,IS_KS_std,OoS_KS_mean,OoS_KS_std,kurt_mean,kurt_std,ACF_mean,ACF_std,ACF_raw_mean,ACF_raw_std,LRuc01_mean,LRuc01_std,LRuc05_mean,LRuc05_std");
-    for fam in [:n, :t, :l]
-        fname = fam == :n ? "CHMM-N" : fam == :t ? "CHMM-t" : "CHMM-L";
+    for fam in FAMILIES
         a = agg[fam];
-        println(io, "$fname,$(round(100*a.is_ks.mean, digits=3)),$(round(100*a.is_ks.std, digits=3)),$(round(100*a.oos_ks.mean, digits=3)),$(round(100*a.oos_ks.std, digits=3)),$(round(a.kurt.mean, digits=4)),$(round(a.kurt.std, digits=4)),$(round(a.acf.mean, digits=5)),$(round(a.acf.std, digits=5)),$(round(a.acf_raw.mean, digits=5)),$(round(a.acf_raw.std, digits=5)),$(round(a.LRuc01.mean, digits=3)),$(round(a.LRuc01.std, digits=3)),$(round(a.LRuc05.mean, digits=3)),$(round(a.LRuc05.std, digits=3))");
+        println(io, "$(FAMILY_NAME[fam]),$(round(100*a.is_ks.mean, digits=3)),$(round(100*a.is_ks.std, digits=3)),$(round(100*a.oos_ks.mean, digits=3)),$(round(100*a.oos_ks.std, digits=3)),$(round(a.kurt.mean, digits=4)),$(round(a.kurt.std, digits=4)),$(round(a.acf.mean, digits=5)),$(round(a.acf.std, digits=5)),$(round(a.acf_raw.mean, digits=5)),$(round(a.acf_raw.std, digits=5)),$(round(a.LRuc01.mean, digits=3)),$(round(a.LRuc01.std, digits=3)),$(round(a.LRuc05.mean, digits=3)),$(round(a.LRuc05.std, digits=3))");
     end
 end
 

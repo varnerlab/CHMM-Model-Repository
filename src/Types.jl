@@ -141,6 +141,38 @@ end
 
 
 """
+    mutable struct MyGEDHiddenMarkovModel <: AbstractMarkovModel
+
+Continuous HMM with per-state Generalized Error Distribution (GED, also
+known as exponential power / Subbotin / generalized normal) emissions
+b_k(x) = PGeneralizedGaussian(μ_k, α_k, p_k) with shape p_k learned per
+state. Special cases: p_k = 2 recovers Gaussian (with σ = α/√2); p_k = 1
+recovers Laplace (with b = α). Per-state p_k lets each regime pick its
+own kurtosis on the Gaussian-Laplace axis, structurally analogous to how
+MyStudentTHiddenMarkovModel lets each state pick its own ν_k.
+
+ECM: closed-form scale update given (μ, p); 1D bracketed updates for μ
+and p. Identifiability of finite GED mixtures follows from Yakowitz-Spragins
+on the curved-exponential family (μ, log α, p).
+
+### Required fields
+- `states::Array{Int64,1}`: state labels
+- `transition::Dict{Int64, Categorical}`: transition distributions per state
+- `emission::Dict{Int64, PGeneralizedGaussian}`: per-state GED emissions
+- `log_likelihood_history::Array{Float64,1}`: ECM log-likelihood trace
+"""
+mutable struct MyGEDHiddenMarkovModel <: AbstractMarkovModel
+
+    states::Array{Int64,1}
+    transition::Dict{Int64, Categorical}
+    emission::Dict{Int64, PGeneralizedGaussian}
+    log_likelihood_history::Array{Float64,1}
+
+    MyGEDHiddenMarkovModel() = new();
+end
+
+
+"""
     mutable struct MySemiMarkovContinuousHMM <: AbstractMarkovModel
 
 Semi-Markov continuous HMM with state-dependent AR(1) emissions. Ported
