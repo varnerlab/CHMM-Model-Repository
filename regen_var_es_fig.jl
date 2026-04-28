@@ -99,7 +99,7 @@ var_fig = plot(layout=(2,2), size=(1100,800),
     left_margin=22Plots.mm,
     bottom_margin=14Plots.mm);
 
-model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
+model_names = ["GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
 xs = 1:length(model_names);
 
 for (i, (tag, obs_v, obs_e, key)) in enumerate([
@@ -125,3 +125,13 @@ end
 savefig(var_fig, joinpath(OUT_DIR, "VaR_ES_Backtest.pdf"));
 savefig(var_fig, joinpath(OUT_DIR, "VaR_ES_Backtest.svg"));
 println("Wrote: ", joinpath(OUT_DIR, "VaR_ES_Backtest.pdf"));
+
+# Copy to paper figs as Fig-VaR-ES.{pdf,svg}.
+const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
+if isdir(PAPER_FIGS)
+    for ext in ("pdf", "svg")
+        cp(joinpath(OUT_DIR, "VaR_ES_Backtest.$ext"),
+           joinpath(PAPER_FIGS, "Fig-VaR-ES.$ext"); force=true);
+    end
+    println("Copied to paper figs: $PAPER_FIGS/Fig-VaR-ES.{pdf,svg}")
+end

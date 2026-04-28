@@ -305,3 +305,17 @@ catch err
 end
 
 println("\nCross-asset run complete. Output directory: $figs_dir");
+
+# ========================================================================================= #
+# Copy paper-relevant figures into the paper's figs directory.
+# ========================================================================================= #
+const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
+if isdir(PAPER_FIGS)
+    for stem in ("Fig-Cross-Asset-Correlation",), ext in ("pdf", "svg")
+        src = joinpath(figs_dir, "$stem.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "$stem.$ext"); force=true); end
+    end
+    println("Copied Fig-Cross-Asset-Correlation to: $PAPER_FIGS")
+else
+    println("(Skipped paper copy: $PAPER_FIGS not found)")
+end

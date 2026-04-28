@@ -554,3 +554,23 @@ println("\nGenerated once:")
 println("  - Fig-1-Stylized-Facts (.svg/.pdf)")
 println("  - Table-1-Descriptive-Stats.txt")
 println("  - Table-T1-State-Resolution-Sensitivity.txt")
+
+# ========================================================================================= #
+# Copy paper-relevant figures into the paper's figs directory.
+# ========================================================================================= #
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+if isdir(PAPER_FIGS)
+    println("\nCopying figures to paper figs: $PAPER_FIGS")
+    # Fig 1: stylized facts (single, ticker-level)
+    for ext in ("pdf", "svg")
+        src = joinpath(RESULTS_DIR, TICKER, "stylized_facts", "Fig-1-Stylized-Facts.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-1-Stylized-Facts.$ext"); force=true); end
+    end
+    # Per-K convergence (rename Fig-Convergence.{pdf,svg} -> Fig-Convergence-K{K}.{pdf,svg})
+    for K in K_VALUES, ext in ("pdf", "svg")
+        src = joinpath(RESULTS_DIR, TICKER, "K$K", "Fig-Convergence.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-Convergence-K$K.$ext"); force=true); end
+    end
+else
+    println("\n(Skipped paper copy: $PAPER_FIGS not found)")
+end

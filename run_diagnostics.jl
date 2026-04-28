@@ -306,7 +306,7 @@ var_fig = plot(layout=(2,2), size=(1100,800),
     left_margin=22Plots.mm,
     bottom_margin=14Plots.mm);
 
-model_names = ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"];
+model_names = ["GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"];
 xs = 1:length(model_names);
 
 for (i, (tag, obs_v, obs_e, key)) in enumerate([
@@ -791,3 +791,28 @@ println("\n" * "="^70);
 println("  Diagnostics pipeline finished.");
 println("  Results written to: $DIAG_DIR");
 println("="^70);
+
+# ========================================================================================= #
+# Copy paper-relevant figures into the paper's figs directory.
+# ========================================================================================= #
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+if isdir(PAPER_FIGS)
+    println("\nCopying figures to paper figs: $PAPER_FIGS")
+    # VaR/ES backtest panel (renames VaR_ES_Backtest.{pdf,svg} -> Fig-VaR-ES.{pdf,svg})
+    for ext in ("pdf", "svg")
+        src = joinpath(DIAG_DIR, "utility", "VaR_ES_Backtest.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-VaR-ES.$ext"); force=true); end
+    end
+    # nu_k diagnostic histogram (renames Fig-nu-Histogram-K{K}.{pdf,svg} -> Fig-nu-Histogram.{pdf,svg})
+    for ext in ("pdf", "svg")
+        src = joinpath(DIAG_DIR, "nu_diagnostics", "Fig-nu-Histogram-K$(K_MAIN).$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-nu-Histogram.$ext"); force=true); end
+    end
+    # Student-t copula profile MLE
+    for ext in ("pdf", "svg")
+        src = joinpath(DIAG_DIR, "copula_profile", "Fig-Copula-Profile-LogL.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-Copula-Profile.$ext"); force=true); end
+    end
+else
+    println("\n(Skipped paper copy: $PAPER_FIGS not found)")
+end
