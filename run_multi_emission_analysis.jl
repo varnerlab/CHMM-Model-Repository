@@ -213,21 +213,11 @@ end
 function save_transition_matrix(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     T_log = log10.(T_mat .+ 1e-10);
     p = heatmap(T_log,
-        title="Pipeline A — Transition matrix log10 P(s_{t+1}=j | s_t=i) | $TICKER | CHMM-$family_tag, K=$K",
         titlefontsize=9,
         xlabel="To state j", ylabel="From state i", color=:viridis,
         yflip=true, aspect_ratio=:equal, size=(500,450));
     savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.svg"));
     savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.pdf"));
-end
-
-function save_stationary_distribution(π_stat::Vector{Float64}, family_tag::String, K::Int, out_dir::String)
-    p = bar(1:K, π_stat,
-        title="Stationary distribution pi (= left eigenvector of T) | $TICKER | CHMM-$family_tag, K=$K",
-        titlefontsize=9,
-        xlabel="State index", ylabel="Stationary probability pi_k", legend=false, color=:steelblue, alpha=0.7);
-    savefig(p, joinpath(out_dir, "Fig-Stationary-Distribution-K$K-$family_tag.svg"));
-    savefig(p, joinpath(out_dir, "Fig-Stationary-Distribution-K$K-$family_tag.pdf"));
 end
 
 function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
@@ -255,14 +245,16 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green
     _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
-    p_a = plot(title="IS return density | KS pass rate = $(m_is.ks)% of $N_PATHS paths at alpha=0.05",
-        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
+    # NOTE: The canonical paper-side IS comparison panels for K=18 are produced by
+    # run_figures.jl (split panels with no top titles). This combined 3-panel layout
+    # is retained as an internal inspection artefact only.
+    _ps_inspect = (1500, 450);
+    p_a = plot(xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed IS (T=$(n_steps))");
     density!(p_a, sim_is[:,1], lw=2, color=_sim_c, alpha=0.85, label="CHMM-$family_tag (single sim path)");
     xlims!(p_a, x_lo, x_hi);
 
     p_b = plot(1:L, acf_obs_is, lw=2, color=_obs_c, ls=:dash, label="Observed |G_t|",
-        title="ACF of |G_t| | lag 1..$L (trading days)",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
     plot!(p_b, 1:L, acf_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
     plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
@@ -272,11 +264,10 @@ function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K
     q_sim = quantile(vec(sim_is), probs_qq);
 
     p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect fit)",
-        title="Tail Q-Q plot | quantile grid 0.1% .. 99.9%",
         xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)"; _style...);
     scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_sim_c, label="CHMM-$family_tag");
 
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450));
+    fig = plot(p_a, p_b, p_c, layout=(1,3), size=_ps_inspect);
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
     savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.pdf"));
 end
@@ -289,15 +280,15 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green (mean over sims)
     _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
+    # NOTE: Canonical paper-side OoS validation panels for K=18 are produced by
+    # run_figures.jl (split panels, no top titles). This combined 3-panel layout
+    # is retained as an internal inspection artefact only.
     p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.7, color=_sim_c,
-        label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths)",
-        title="OoS KS p-values | pass rate = $(m_oos.ks)% above alpha=0.05",
+        label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths, pass: $(m_oos.ks)%)",
         xlabel="KS p-value against OoS series", ylabel="Density"; _style...);
     vline!(p_a, [0.05], lw=2, color=_obs_c, ls=:dash, label="alpha = 0.05 threshold");
 
-    p_b = plot(title="OoS return density fan | 50 sim paths vs. observed OoS (T=$(n_steps_oos))",
-        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
-    # V14: single legend entry for the simulated fan; tripled alpha for contrast.
+    p_b = plot(xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot
         _lbl = (i == 1) ? "CHMM-$family_tag simulated OoS ($(_sim_paths_to_plot) paths)" : "";
@@ -317,7 +308,6 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
     p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_obs_c, ls=:dash, label="Observed OoS |G_t|",
-        title="OoS ACF of |G_t| | lag 1..$(length(τ_oos)) (trading days)",
         xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
     plot!(p_c, τ_oos, acf_oos_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
     plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
@@ -327,17 +317,8 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.pdf"));
 end
 
-function save_trajectory(sim_is::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
-    idx = rand(1:N_PATHS);
-    traj_len = min(500, n_steps);
-    p = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed IS",
-        title="Sample return trajectory (first $traj_len IS days) | $TICKER | CHMM-$family_tag, K=$K",
-        titlefontsize=9,
-        xlabel="Trading day (IS index)", ylabel="Annualized excess log return G_t");
-    plot!(p, sim_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-$family_tag (single sim path)");
-    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.svg"));
-    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.pdf"));
-end
+# NOTE: save_stationary_distribution and save_trajectory were removed (2026-04-28)
+# because their outputs are not panelled in the paper.
 
 # ========================================================================================= #
 # Main loop: train + evaluate + (at K=18) generate figures
@@ -399,11 +380,9 @@ for family in EMISSION_FAMILIES
             save_convergence(model, tag, K, out_dir);
             save_emission_pdfs(model, tag, K, out_dir);
             save_transition_matrix(T_mat, tag, K, out_dir);
-            save_stationary_distribution(π_stat, tag, K, out_dir);
             save_residence_times(T_mat, tag, K, out_dir);
             save_is_comparison(sim_is, m_is, tag, K, out_dir);
             save_oos_validation(sim_oos, m_oos, tag, K, out_dir);
-            save_trajectory(sim_is, tag, K, out_dir);
         elseif K in (3, 12)
             save_emission_pdfs(model, tag, K, out_dir);
             save_is_comparison(sim_is, m_is, tag, K, out_dir);
@@ -441,27 +420,20 @@ println("\n[4/4] Copying figures to the paper's figs directory...")
 
 if isdir(PAPER_FIGS_DIR)
     # Only files actually included in paper.tex via \includegraphics. The
-    # per-family Transition-Matrix, Stationary-Distribution, and Trajectory-Example
-    # figures are produced for inspection but are not panelled in the paper, so
-    # we no longer copy them into the paper figs directory. The CHMM-N variant
-    # of IS-Comparison and OoS-Validation also duplicates the unsuffixed K18
-    # main-body files produced by run_figures.jl, so we omit -N here too and
-    # only copy the -t, -L, -GED family rows. Re-add a stem here if a future
-    # paper revision starts including it.
+    # per-family Transition-Matrix, Stationary-Distribution, Trajectory-Example,
+    # IS-Comparison, and OoS-Validation figures from this script are produced
+    # for inspection but are not panelled in the paper (the canonical paper-side
+    # IS/OoS K=18 family panels are split-panel PDFs produced by run_figures.jl).
+    # We only copy the per-family Convergence, Emission-PDFs, and Residence-Times
+    # figures, which are referenced via subfigure blocks in sensitivity_appendix.tex.
     per_family_figs_K18 = [
         "Fig-Convergence-K18",
         "Fig-Emission-PDFs-K18",
         "Fig-Residence-Times-K18",
     ];
-    per_family_figs_K18_non_N = [
-        "Fig-3-IS-Comparison-K18",
-        "Fig-4-OoS-Validation-K18",
-    ];
     for fam in ("N", "t", "L", "GED")
         src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);
-        stems = fam == "N" ? per_family_figs_K18 :
-                              vcat(per_family_figs_K18, per_family_figs_K18_non_N);
-        for stem in stems
+        for stem in per_family_figs_K18
             for ext in (".pdf", ".svg")
                 src = joinpath(src_dir, stem * "-" * fam * ext);
                 if isfile(src)
@@ -471,11 +443,6 @@ if isdir(PAPER_FIGS_DIR)
             end
         end
     end
-    # The K=3 and K=12 family-suffixed Emission-PDFs and IS-Comparison files
-    # produced by this script are not included in paper.tex (the appendix uses
-    # only the unsuffixed K=3 and K=12 IS panels produced by run_figures_ksweep.jl,
-    # and the K=18 family-suffixed emissions). Removed the copy block on
-    # 2026-04-28 to keep figs/ in sync with what paper.tex actually loads.
     println("  Copied figures to: $PAPER_FIGS_DIR")
 else
     println("  (Skipped copy: $PAPER_FIGS_DIR not found)")

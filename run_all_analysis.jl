@@ -114,40 +114,47 @@ x_pad = 0.20 * (x_hi_raw - x_lo_raw);
 x_lo = x_lo_raw - x_pad; x_hi = x_hi_raw + x_pad;
 x_grid = range(x_lo, x_hi, length=1000);
 
+# Stylized-facts panels saved as separate PDFs (no top titles; (a)/(b)/(c)/(d) come from LaTeX subcaptions).
+_panel_size = (700, 500);
+
 # Panel (a): Distribution
 p1 = histogram(R_is, normalize=:pdf, bins=200, alpha=0.4, color=:lightgray, label="Observed",
-    title="Marginal Distribution", titlefontsize=10, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
+    xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", size=_panel_size);
 plot!(p1, x_grid, pdf.(d_gauss, x_grid), lw=2, color=:blue, label="Gaussian", ls=:dash);
 plot!(p1, x_grid, pdf.(d_laplace, x_grid), lw=2, color=:red, label="Laplace");
 xlims!(p1, x_lo, x_hi);
+savefig(p1, joinpath(fig1_dir, "Fig-1-Stylized-Facts-a.svg"));
+savefig(p1, joinpath(fig1_dir, "Fig-1-Stylized-Facts-a.pdf"));
 
 # Panel (b): Q-Q
 sorted_R = sort(R_is); n_r = length(sorted_R);
 theo_q = [quantile(d_gauss, (i-0.5)/n_r) for i in 1:n_r];
 qq_lo = min(minimum(theo_q), minimum(sorted_R)); qq_hi = max(maximum(theo_q), maximum(sorted_R));
 p2 = scatter(theo_q, sorted_R, ms=1, alpha=0.5, color=:steelblue, label="",
-    title="Normal Q-Q Plot", titlefontsize=10, xlabel="Theoretical", ylabel="Sample");
+    xlabel="Theoretical", ylabel="Sample", size=_panel_size);
 plot!(p2, [qq_lo, qq_hi], [qq_lo, qq_hi], lw=2, color=:red, ls=:dash, label="45°");
+savefig(p2, joinpath(fig1_dir, "Fig-1-Stylized-Facts-b.svg"));
+savefig(p2, joinpath(fig1_dir, "Fig-1-Stylized-Facts-b.pdf"));
 
 # Panel (c): Returns ACF
 τ = 1:(L-1); ci = 2.576/sqrt(n_r);
 acf_raw = autocor(R_is, τ);
 p3 = plot(τ, acf_raw, linetype=:steppost, lw=2, color=:steelblue, label="ACF(Gₜ)",
-    title="Returns ACF", titlefontsize=10, xlabel="Lag", ylabel="ACF");
+    xlabel="Lag", ylabel="ACF", size=_panel_size);
 plot!(p3, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI");
 plot!(p3, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
+savefig(p3, joinpath(fig1_dir, "Fig-1-Stylized-Facts-c.svg"));
+savefig(p3, joinpath(fig1_dir, "Fig-1-Stylized-Facts-c.pdf"));
 
 # Panel (d): |Returns| ACF
 acf_abs = autocor(abs.(R_is), τ);
 p4 = plot(τ, acf_abs, linetype=:steppost, lw=2, color=:darkorange, label="ACF(|Gₜ|)",
-    title="Volatility Clustering", titlefontsize=10, xlabel="Lag", ylabel="ACF");
+    xlabel="Lag", ylabel="ACF", size=_panel_size);
 plot!(p4, τ, ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="99% CI");
 plot!(p4, τ, -ci.*ones(length(τ)), lw=1.5, color=:gray, ls=:dash, label="");
-
-fig1 = plot(p1, p2, p3, p4, layout=(2,2), size=(1000,700));
-savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.svg"));
-savefig(fig1, joinpath(fig1_dir, "Fig-1-Stylized-Facts.pdf"));
-println("  Saved Figure 1 + Table 1")
+savefig(p4, joinpath(fig1_dir, "Fig-1-Stylized-Facts-d.svg"));
+savefig(p4, joinpath(fig1_dir, "Fig-1-Stylized-Facts-d.pdf"));
+println("  Saved Figure 1 panels (a-d) + Table 1")
 
 # ========================================================================================= #
 # PER-K ANALYSIS LOOP
@@ -194,7 +201,6 @@ for K in K_VALUES
     # FIGURE: Convergence
     # ------------------------------------------------------------------- #
     p_conv = plot(model.log_likelihood_history,
-        title="Baum-Welch Convergence ($TICKER, K=$K)", titlefontsize=10,
         xlabel="Iteration", ylabel="Log-Likelihood",
         legend=false, lw=2, color=:navy, marker=:circle, ms=3);
     savefig(p_conv, joinpath(out_dir, "Fig-Convergence.svg"));
@@ -204,8 +210,7 @@ for K in K_VALUES
     # FIGURE: Emission Distributions
     # ------------------------------------------------------------------- #
     colors_k = cgrad(:RdYlBu, K, categorical=true);
-    p_emit = plot(title="Emission Distributions ($TICKER, K=$K)", titlefontsize=10,
-        xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", legend=:topright);
+    p_emit = plot(xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", legend=:topright);
     histogram!(p_emit, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
     for s in 1:K
         d = model.emission[s];
@@ -216,31 +221,18 @@ for K in K_VALUES
     savefig(p_emit, joinpath(out_dir, "Fig-Emission-PDFs.pdf"));
 
     # ------------------------------------------------------------------- #
-    # FIGURE: Transition Matrix Heatmap
-    # ------------------------------------------------------------------- #
-    T_log = log10.(T_mat .+ 1e-10);
-    p_trans = heatmap(T_log, title="Transition Matrix (log₁₀) — K=$K", titlefontsize=10,
-        xlabel="To State", ylabel="From State", color=:viridis,
-        yflip=true, aspect_ratio=:equal, size=(500,450));
-    savefig(p_trans, joinpath(out_dir, "Fig-Transition-Matrix.svg"));
-    savefig(p_trans, joinpath(out_dir, "Fig-Transition-Matrix.pdf"));
-
-    # ------------------------------------------------------------------- #
     # FIGURE: Residence Times
     # ------------------------------------------------------------------- #
     res_times = [1.0 / (1.0 - T_mat[k,k]) for k in 1:K];
-    p_res = bar(1:K, res_times, title="Natural Residence Time — K=$K", titlefontsize=10,
+    p_res = bar(1:K, res_times,
         xlabel="State", ylabel="Steps", legend=false, color=:steelblue, alpha=0.7);
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.svg"));
     savefig(p_res, joinpath(out_dir, "Fig-Residence-Times.pdf"));
 
-    # ------------------------------------------------------------------- #
-    # FIGURE: Stationary Distribution
-    # ------------------------------------------------------------------- #
-    p_pi = bar(1:K, π_stat, title="Stationary Distribution π — K=$K", titlefontsize=10,
-        xlabel="State", ylabel="Probability", legend=false, color=:steelblue, alpha=0.7);
-    savefig(p_pi, joinpath(out_dir, "Fig-Stationary-Distribution.svg"));
-    savefig(p_pi, joinpath(out_dir, "Fig-Stationary-Distribution.pdf"));
+    # NOTE: Per-K Fig-Transition-Matrix and Fig-Stationary-Distribution outputs
+    # were removed (2026-04-28) because they are not panelled in the paper.
+    # The K=18 cross-family transition-matrix panel uses the per-family files
+    # produced by run_figures.jl (Fig-Transition-Matrix-K18-{N,t,L,GED}.pdf).
 
     # Save emission parameters
     open(joinpath(out_dir, "Emission-Parameters.txt"), "w") do io
@@ -396,18 +388,12 @@ for K in K_VALUES
     end
 
     # ------------------------------------------------------------------- #
-    # FIGURE 3: In-Sample Comparison (Density + ACF + Q-Q)
+    # FIGURE 3: In-Sample Comparison — 4 split panels (no top titles)
     # ------------------------------------------------------------------- #
-    println("  Generating Figure 3: IS comparison...")
+    println("  Generating Figure 3: IS comparison (4 panels)...")
+    _ps = (700, 500);
 
-    # (a) Density
-    p3a = plot(title="Density (KS pass: $(m_is.ks_rate)%)",
-        titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
-    histogram!(p3a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
-    density!(p3a, decoded_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM");
-    xlims!(p3a, x_lo, x_hi);
-
-    # (b) ACF(|G|)
+    # |G_t| ACF: observed + simulated mean / 10-90 band
     acf_obs_is = autocor(abs.(R_is), 1:L);
     n_acf_sample = min(200, N_PATHS);
     acf_arch = hcat([autocor(abs.(decoded_is[:,i]), 1:L) for i in 1:n_acf_sample]...);
@@ -415,88 +401,110 @@ for K in K_VALUES
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
-    p3b = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
-        title="ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p3b, 1:L, acf_m, lw=2, color=:navy, label="CHMM (mean)");
-    plot!(p3b, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
+    # Raw G_t ACF
+    acf_obs_raw_is = autocor(R_is, 1:L);
+    acf_arch_raw = hcat([autocor(decoded_is[:,i], 1:L) for i in 1:n_acf_sample]...);
+    acf_m_raw = mean(acf_arch_raw, dims=2)[:];
+    acf_10_raw = [quantile(acf_arch_raw[t,:], 0.10) for t in 1:L];
+    acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:L];
+    ci99_is = 2.576 / sqrt(length(R_is));
 
-    # (c) Q-Q
+    # (a) Density
+    p3a = plot(xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", size=_ps);
+    histogram!(p3a, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed");
+    density!(p3a, decoded_is[:,1], lw=2, color=:blue, alpha=0.7, label="CHMM");
+    xlims!(p3a, x_lo, x_hi);
+    savefig(p3a, joinpath(out_dir, "Fig-3-IS-Comparison-a.svg"));
+    savefig(p3a, joinpath(out_dir, "Fig-3-IS-Comparison-a.pdf"));
+
+    # (b) Tail Q-Q
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(decoded_is), probs_qq);
+    p3b = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
+        xlabel="Observed Quantiles", ylabel="Simulated Quantiles", size=_ps);
+    scatter!(p3b, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM");
+    savefig(p3b, joinpath(out_dir, "Fig-3-IS-Comparison-b.svg"));
+    savefig(p3b, joinpath(out_dir, "Fig-3-IS-Comparison-b.pdf"));
 
-    p3c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Perfect",
-        title="Tail Q-Q (0.1st-99.9th)", titlefontsize=9,
-        xlabel="Observed Quantiles", ylabel="Simulated Quantiles");
-    scatter!(p3c, q_obs, q_sim, ms=3, alpha=0.6, color=:blue, label="CHMM");
+    # (c) ACF of raw G_t
+    p3c = plot(1:L, acf_obs_raw_is, lw=2, color=:red, ls=:dash, label="Observed",
+        xlabel="Lag", ylabel="ACF of G_t", size=_ps);
+    plot!(p3c, 1:L, acf_m_raw, lw=2, color=:navy, label="CHMM (mean)");
+    plot!(p3c, 1:L, acf_10_raw, fillrange=acf_90_raw, alpha=0.15, color=:navy, label="10-90th pctl");
+    hline!(p3c, [ci99_is, -ci99_is], lw=1, color=:gray, ls=:dash, label="99% CI");
+    savefig(p3c, joinpath(out_dir, "Fig-3-IS-Comparison-c.svg"));
+    savefig(p3c, joinpath(out_dir, "Fig-3-IS-Comparison-c.pdf"));
 
-    fig3 = plot(p3a, p3b, p3c, layout=(1,3), size=(1400,400));
-    savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.svg"));
-    savefig(fig3, joinpath(out_dir, "Fig-3-IS-Comparison.pdf"));
+    # (d) ACF of |G_t|
+    p3d = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
+        xlabel="Lag", ylabel="ACF of |G_t|", size=_ps);
+    plot!(p3d, 1:L, acf_m, lw=2, color=:navy, label="CHMM (mean)");
+    plot!(p3d, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
+    savefig(p3d, joinpath(out_dir, "Fig-3-IS-Comparison-d.svg"));
+    savefig(p3d, joinpath(out_dir, "Fig-3-IS-Comparison-d.pdf"));
 
     # ------------------------------------------------------------------- #
-    # FIGURE 4: OoS Validation
+    # FIGURE 4: OoS Validation — 4 split panels (no top titles)
     # ------------------------------------------------------------------- #
-    println("  Generating Figure 4: OoS validation...")
+    println("  Generating Figure 4: OoS validation (4 panels)...")
+    _ps = (700, 500);
 
-    # (a) KS p-values
-    p4a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
-        label="CHMM", title="OoS KS p-values", titlefontsize=9, xlabel="p-value", ylabel="Density");
-    vline!(p4a, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
-
-    # (b) Density fan chart
-    p4b = plot(title="OoS Density Fan", titlefontsize=9, xlabel=RETURN_LABEL, ylabel="Probability Density (AU)");
+    # (a) Density fan chart
+    p4a = plot(xlabel=RETURN_LABEL, ylabel="Probability Density (AU)", size=_ps);
     _n_fan = min(50, N_PATHS);
     for i in 1:_n_fan
         _lbl = (i == 1) ? "CHMM simulated ($(_n_fan) paths)" : "";
-        density!(p4b, decoded_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.18, label=_lbl);
+        density!(p4a, decoded_oos[:,i], lw=1, color=:deepskyblue1, alpha=0.18, label=_lbl);
     end
-    density!(p4b, R_oos, lw=3, color=:red, label="Observed OoS");
+    density!(p4a, R_oos, lw=3, color=:red, label="Observed OoS");
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
-    xlims!(p4b, oos_lo - oos_pad, oos_hi + oos_pad);
+    xlims!(p4a, oos_lo - oos_pad, oos_hi + oos_pad);
+    savefig(p4a, joinpath(out_dir, "Fig-4-OoS-Validation-a.svg"));
+    savefig(p4a, joinpath(out_dir, "Fig-4-OoS-Validation-a.pdf"));
 
-    # (c) OoS ACF
+    # (b) KS p-value histogram
+    p4b = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.6, color=:navy,
+        label="CHMM", xlabel="p-value", ylabel="Density", size=_ps);
+    vline!(p4b, [0.05], lw=2, color=:red, ls=:dash, label="α=0.05");
+    savefig(p4b, joinpath(out_dir, "Fig-4-OoS-Validation-b.svg"));
+    savefig(p4b, joinpath(out_dir, "Fig-4-OoS-Validation-b.pdf"));
+
+    # (c) ACF of raw G_t (OoS)
     τ_oos = 1:min(L, n_steps_oos-1);
-    acf_oos_obs = autocor(abs.(R_oos), τ_oos);
+    acf_oos_obs_raw = autocor(R_oos, τ_oos);
     n_acf_oos = min(200, N_PATHS);
+    acf_oos_arch_raw = hcat([autocor(decoded_oos[:,i], τ_oos) for i in 1:n_acf_oos]...);
+    acf_oos_m_raw = mean(acf_oos_arch_raw, dims=2)[:];
+    acf_oos_10_raw = [quantile(acf_oos_arch_raw[t,:], 0.10) for t in 1:length(τ_oos)];
+    acf_oos_90_raw = [quantile(acf_oos_arch_raw[t,:], 0.90) for t in 1:length(τ_oos)];
+    ci99_oos = 2.576 / sqrt(length(R_oos));
+
+    p4c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=:red, ls=:dash, label="Observed OoS",
+        xlabel="Lag", ylabel="ACF of G_t", size=_ps);
+    plot!(p4c, τ_oos, acf_oos_m_raw, lw=2, color=:navy, label="CHMM (mean)");
+    plot!(p4c, τ_oos, acf_oos_10_raw, fillrange=acf_oos_90_raw, alpha=0.2, color=:navy, label="10-90th");
+    hline!(p4c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
+    savefig(p4c, joinpath(out_dir, "Fig-4-OoS-Validation-c.svg"));
+    savefig(p4c, joinpath(out_dir, "Fig-4-OoS-Validation-c.pdf"));
+
+    # (d) ACF of |G_t| (OoS)
+    acf_oos_obs = autocor(abs.(R_oos), τ_oos);
     acf_oos_arch = hcat([autocor(abs.(decoded_oos[:,i]), τ_oos) for i in 1:n_acf_oos]...);
     acf_oos_m = mean(acf_oos_arch, dims=2)[:];
     acf_oos_10 = [quantile(acf_oos_arch[t,:], 0.10) for t in 1:length(τ_oos)];
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
-    p4c = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        title="OoS ACF(|Gₜ|)", titlefontsize=9, xlabel="Lag", ylabel="ACF");
-    plot!(p4c, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM (mean)");
-    plot!(p4c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
+    p4d = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
+        xlabel="Lag", ylabel="ACF of |G_t|", size=_ps);
+    plot!(p4d, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM (mean)");
+    plot!(p4d, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
+    savefig(p4d, joinpath(out_dir, "Fig-4-OoS-Validation-d.svg"));
+    savefig(p4d, joinpath(out_dir, "Fig-4-OoS-Validation-d.pdf"));
 
-    fig4 = plot(p4a, p4b, p4c, layout=(1,3), size=(1400,400));
-    savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.svg"));
-    savefig(fig4, joinpath(out_dir, "Fig-4-OoS-Validation.pdf"));
-
-    # ------------------------------------------------------------------- #
-    # FIGURE: Example Trajectories
-    # ------------------------------------------------------------------- #
-    idx = rand(1:N_PATHS);
-    traj_len = min(500, n_steps);
-    p_traj = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed",
-        title="Return Trajectory (first $traj_len steps) — K=$K", titlefontsize=10,
-        xlabel="Trading Day", ylabel=RETURN_LABEL);
-    plot!(p_traj, decoded_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM (path $idx)");
-    savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.svg"));
-    savefig(p_traj, joinpath(out_dir, "Fig-Trajectory-Example.pdf"));
-
-    # ------------------------------------------------------------------- #
-    # FIGURE: ACF Comparison (single path)
-    # ------------------------------------------------------------------- #
-    idx_acf = rand(1:N_PATHS);
-    p_acf_ret = plot_acf_comparison(R_is, decoded_is[:, idx_acf], "Returns ACF — K=$K", idx_acf; L=L);
-    p_acf_abs = plot_acf_comparison(R_is, decoded_is[:, idx_acf], "|Returns| ACF — K=$K", idx_acf; is_absolute=true, L=L);
-
-    fig_acf = plot(p_acf_ret, p_acf_abs, layout=(1,2), size=(1000,400),
-        plot_title="ACF Comparison — $TICKER, K=$K", plot_titlefontsize=12);
-    savefig(fig_acf, joinpath(out_dir, "Fig-ACF-Comparison.svg"));
-    savefig(fig_acf, joinpath(out_dir, "Fig-ACF-Comparison.pdf"));
+    # NOTE: Per-K Fig-Trajectory-Example and Fig-ACF-Comparison outputs were
+    # removed (2026-04-28) because they are not panelled in the paper.
 
     println("  K=$K complete. Files saved to: $out_dir")
 end
@@ -541,17 +549,13 @@ println("="^70)
 println("\nGenerated per K:")
 println("  - Fig-Convergence (.svg/.pdf)")
 println("  - Fig-Emission-PDFs (.svg/.pdf)")
-println("  - Fig-Transition-Matrix (.svg/.pdf)")
 println("  - Fig-Residence-Times (.svg/.pdf)")
-println("  - Fig-Stationary-Distribution (.svg/.pdf)")
-println("  - Fig-3-IS-Comparison (.svg/.pdf)")
-println("  - Fig-4-OoS-Validation (.svg/.pdf)")
-println("  - Fig-Trajectory-Example (.svg/.pdf)")
-println("  - Fig-ACF-Comparison (.svg/.pdf)")
+println("  - Fig-3-IS-Comparison-{a,b,c,d} (.svg/.pdf)")
+println("  - Fig-4-OoS-Validation-{a,b,c,d} (.svg/.pdf)")
 println("  - Emission-Parameters.txt")
 println("  - Metrics.txt")
 println("\nGenerated once:")
-println("  - Fig-1-Stylized-Facts (.svg/.pdf)")
+println("  - Fig-1-Stylized-Facts-{a,b,c,d} (.svg/.pdf)")
 println("  - Table-1-Descriptive-Stats.txt")
 println("  - Table-T1-State-Resolution-Sensitivity.txt")
 
@@ -561,10 +565,10 @@ println("  - Table-T1-State-Resolution-Sensitivity.txt")
 const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
 if isdir(PAPER_FIGS)
     println("\nCopying figures to paper figs: $PAPER_FIGS")
-    # Fig 1: stylized facts (single, ticker-level)
-    for ext in ("pdf", "svg")
-        src = joinpath(RESULTS_DIR, TICKER, "stylized_facts", "Fig-1-Stylized-Facts.$ext");
-        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-1-Stylized-Facts.$ext"); force=true); end
+    # Fig 1: stylized facts (4 split panels, ticker-level)
+    for letter in ("a", "b", "c", "d"), ext in ("pdf", "svg")
+        src = joinpath(RESULTS_DIR, TICKER, "stylized_facts", "Fig-1-Stylized-Facts-$letter.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-1-Stylized-Facts-$letter.$ext"); force=true); end
     end
     # Per-K convergence (rename Fig-Convergence.{pdf,svg} -> Fig-Convergence-K{K}.{pdf,svg})
     for K in K_VALUES, ext in ("pdf", "svg")

@@ -204,10 +204,9 @@ end
 function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
     T_log = log10.(T_mat .+ 1e-10);
     p = heatmap(T_log,
-        title="Transition Matrix log₁₀ (CHMM-$tag, K=$K)",
-        titlefontsize=TFS,
         xlabel="To State", ylabel="From State",
         xguidefontsize=TFS, yguidefontsize=TFS,
+        tickfontsize=TFS-1,
         color=:viridis, yflip=true, aspect_ratio=:equal,
         size=(520, 470),
         colorbar=true,
@@ -239,14 +238,15 @@ for (tag, build_fn) in [
         joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K-$tag"));
     println("  [$tag] Figures written.")
 
-    # Also write the main-body unsuffixed versions from the Gaussian family (main-body figures)
+    # Also write the main-body unsuffixed versions from the Gaussian family (main-body
+    # figures use the unsuffixed Fig-3-IS-Comparison-K18-{a,b,c,d}.pdf and
+    # Fig-4-OoS-Validation-K18-{a,b,c,d}.pdf split panels). The unsuffixed transition
+    # matrix is not referenced by the paper, so we no longer write it here.
     if tag == "N"
         kfigs_save_is_comparison(sis, m_is, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));
         kfigs_save_oos_validation(sos, m_oos, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K"));
-        kfigs_save_transition_heatmap(T_mat, tag, K,
-            joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K"));
         println("  [$tag] Main-body Fig-*-K18 (unsuffixed) also rewritten.")
     end
 end

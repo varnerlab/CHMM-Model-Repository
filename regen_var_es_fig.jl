@@ -94,13 +94,13 @@ end
 println("Parsed observed values: ", obs);
 println("Parsed models: ", collect(keys(models_var)));
 
-# ----- Render figure (mirrors run_diagnostics.jl [4.1]) ------------------------- #
-var_fig = plot(layout=(2,2), size=(1100,800),
-    left_margin=22Plots.mm,
-    bottom_margin=14Plots.mm);
-
+# ----- Render figure: 4 separate panels (no top titles; (a)-(d) come from LaTeX subcaptions) ----- #
 model_names = ["GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
 xs = 1:length(model_names);
+panel_size = (700, 500);
+
+const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
+const _PANEL_LETTERS = ["a", "b", "c", "d"];
 
 for (i, (tag, obs_v, obs_e, key)) in enumerate([
     ("IS VaR (0.01)",  obs[:is_v01], obs[:is_e01], :is01),
@@ -114,24 +114,26 @@ for (i, (tag, obs_v, obs_e, key)) in enumerate([
     his  = [is_var ? models_var[n][key].v_hi  : models_var[n][key].e_hi  for n in model_names];
     obs_line = is_var ? obs_v : obs_e;
 
-    ylab = (i == 1 || i == 3) ? "Annualized log excess growth rate" : "";
-    scatter!(var_fig, xs, meds, yerror=(meds .- los, his .- meds),
-        subplot=i, title=tag, ms=6, color=:navy, label="sim median [5-95]",
+    p = scatter(xs, meds, yerror=(meds .- los, his .- meds),
+        ms=6, color=:navy, label="sim median [5-95]",
         xticks=(xs, model_names),
-        ylabel=ylab);
-    hline!(var_fig, [obs_line], subplot=i, color=:red, lw=2, ls=:dash, label="observed");
+        ylabel="Annualized log excess growth rate",
+        size=panel_size,
+        left_margin=22Plots.mm, bottom_margin=14Plots.mm);
+    hline!(p, [obs_line], color=:red, lw=2, ls=:dash, label="observed");
+
+    letter = _PANEL_LETTERS[i];
+    savefig(p, joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.pdf"));
+    savefig(p, joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.svg"));
+    if isdir(PAPER_FIGS)
+        for ext in ("pdf", "svg")
+            cp(joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.$ext"),
+               joinpath(PAPER_FIGS, "Fig-VaR-ES-$letter.$ext"); force=true);
+        end
+    end
+    println("Wrote panel ($letter): $tag")
 end
 
-savefig(var_fig, joinpath(OUT_DIR, "VaR_ES_Backtest.pdf"));
-savefig(var_fig, joinpath(OUT_DIR, "VaR_ES_Backtest.svg"));
-println("Wrote: ", joinpath(OUT_DIR, "VaR_ES_Backtest.pdf"));
-
-# Copy to paper figs as Fig-VaR-ES.{pdf,svg}.
-const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
 if isdir(PAPER_FIGS)
-    for ext in ("pdf", "svg")
-        cp(joinpath(OUT_DIR, "VaR_ES_Backtest.$ext"),
-           joinpath(PAPER_FIGS, "Fig-VaR-ES.$ext"); force=true);
-    end
-    println("Copied to paper figs: $PAPER_FIGS/Fig-VaR-ES.{pdf,svg}")
+    println("Copied 4 panels to paper figs: $PAPER_FIGS/Fig-VaR-ES-{a,b,c,d}.{pdf,svg}")
 end

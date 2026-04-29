@@ -134,32 +134,33 @@ _mid_c  = RGB(0.0, 0.620, 0.451);          # bluish green (Gaussian reference)
 _bar_c  = RGB(0.337, 0.337, 0.337);        # neutral gray for histogram bars
 _style  = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
 
+# 2 split panels (no top titles; (a)/(b) come from LaTeX subcaptions).
+_ps_p = (700, 500);
+
 # Panel (a): histogram of fitted p_k.
 p_a = histogram(p_k, bins=range(0.5, 3.05, length=22),
     color=_bar_c, alpha=0.7, lw=0, label="",
-    title="Per-state p_k distribution (SPY, K = $K)",
     xlabel="Fitted shape parameter p_k", ylabel="Count (out of $K states)",
-    legend=:topleft; _style...);
+    legend=:topleft, size=_ps_p; _style...);
 vline!(p_a, [1.0], lw=2.5, ls=:dash, color=_sim_c, label="p = 1 (Laplace)");
 vline!(p_a, [2.0], lw=2.5, ls=:dash, color=_mid_c, label="p = 2 (Gaussian)");
 xlims!(p_a, 0.5, 3.1);
+savefig(p_a, joinpath(RESULTS_DIR, "Fig-p-Histogram-a.pdf"));
+savefig(p_a, joinpath(RESULTS_DIR, "Fig-p-Histogram-a.svg"));
 
-# Panel (b): p_k vs volatility rank scatter with bimodal annotation.
+# Panel (b): p_k vs volatility rank scatter.
 p_b = scatter(1:K, p_k[order], ms=7, color=_obs_c,
-    title="p_k vs volatility rank (1 = calm, $K = crash)",
     xlabel="State rank ordered by sigma_equivalent",
     ylabel="Fitted shape parameter p_k",
-    legend=:topright, label="Fitted p_k"; _style...);
+    legend=:topright, label="Fitted p_k", size=_ps_p; _style...);
 hline!(p_b, [2.0], lw=2.0, ls=:dash, color=_mid_c, label="p = 2 (Gaussian)");
 hline!(p_b, [1.0], lw=2.0, ls=:dash, color=_sim_c, label="p = 1 (Laplace)");
 xlims!(p_b, 0.5, K + 0.5);
 ylims!(p_b, 0.4, 3.1);
+savefig(p_b, joinpath(RESULTS_DIR, "Fig-p-Histogram-b.pdf"));
+savefig(p_b, joinpath(RESULTS_DIR, "Fig-p-Histogram-b.svg"));
 
-fig = plot(p_a, p_b, layout=(1, 2), size=(1300, 450));
-
-savefig(fig, joinpath(RESULTS_DIR, "Fig-p-Histogram.pdf"));
-savefig(fig, joinpath(RESULTS_DIR, "Fig-p-Histogram.svg"));
-println("  Saved Fig-p-Histogram.{pdf,svg}");
+println("  Saved Fig-p-Histogram-{a,b}.{pdf,svg}");
 
 # ========================================================================================= #
 # (3) Cross-ticker partition diagnostic
@@ -212,15 +213,15 @@ end
 # Copy headline figure to paper figs/
 # ========================================================================================= #
 if isdir(PAPER_FIGS)
-    cp(joinpath(RESULTS_DIR, "Fig-p-Histogram.pdf"),
-       joinpath(PAPER_FIGS, "Fig-p-Histogram.pdf"); force=true);
-    cp(joinpath(RESULTS_DIR, "Fig-p-Histogram.svg"),
-       joinpath(PAPER_FIGS, "Fig-p-Histogram.svg"); force=true);
+    for letter in ("a", "b"), ext in ("pdf", "svg")
+        cp(joinpath(RESULTS_DIR, "Fig-p-Histogram-$letter.$ext"),
+           joinpath(PAPER_FIGS, "Fig-p-Histogram-$letter.$ext"); force=true);
+    end
     cp(joinpath(RESULTS_DIR, "Fig-p-CrossTicker.pdf"),
        joinpath(PAPER_FIGS, "Fig-p-CrossTicker.pdf"); force=true);
     cp(joinpath(RESULTS_DIR, "Fig-p-CrossTicker.svg"),
        joinpath(PAPER_FIGS, "Fig-p-CrossTicker.svg"); force=true);
-    println("\nCopied Fig-p-Histogram and Fig-p-CrossTicker to: $PAPER_FIGS");
+    println("\nCopied Fig-p-Histogram-{a,b} and Fig-p-CrossTicker to: $PAPER_FIGS");
 else
     println("\n(Skipped paper copy: $PAPER_FIGS not found)");
 end

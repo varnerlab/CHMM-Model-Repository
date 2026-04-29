@@ -3,12 +3,12 @@ Validation Metrics — SPY, K=18
 
                   | CHMM (IS)    | CHMM (OoS)
 -------------------------------------------------------
-KS pass rate (%) |         95.3 |         83.2
-AD pass rate (%) |         87.8 |         76.7
-Excess kurtosis  |         5.03 |         4.48
+KS pass rate (%) |         94.1 |         83.2
+AD pass rate (%) |         87.8 |         75.2
+Excess kurtosis  |         5.03 |         4.57
   (observed)     |         7.68 |         5.29
-ACF-MAE |Gₜ|     |       0.0508 |
+ACF-MAE |Gₜ|     |        0.051 |
 ACF-MAE Gₜ (raw) |       0.0237 |
-Wasserstein-1    |         0.11 |         0.25
-Hellinger        |       0.0806 |       0.1587
-Coverage (%)     |        100.0 |         90.9
+Wasserstein-1    |        0.111 |        0.257
+Hellinger        |       0.0805 |       0.1598
+Coverage (%)     |        100.0 |         92.9

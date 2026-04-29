@@ -266,22 +266,31 @@ try
     Σ_vine_avg ./= N_PATHS;
     Σ_sim_avg ./= N_PATHS;
 
-    p1 = heatmap(Σ_obs, title="Observed (IS data, T=$n_is)", c=:RdBu, clims=(-1,1), aspect_ratio=1,
-        xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p2 = heatmap(Σ_sim_avg, title="SIM (mean over $N_PATHS sim paths)", c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p3 = heatmap(Σ_gauss_avg, title="Gaussian copula (mean over $N_PATHS paths)", c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p4 = heatmap(Σ_t_avg, title="Student-t copula, nu*=$(Int(t_copula.nu)) (mean over $N_PATHS paths)",
-        c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    p5 = heatmap(Σ_vine_avg, title="Truncated C-vine, root=$(available[vine_copula.root_index])",
-        c=:RdBu, clims=(-1,1),
-        aspect_ratio=1, xticks=(1:d, available), yticks=(1:d, available), xrotation=45, titlefontsize=9);
-    fig = plot(p1, p2, p3, p4, p5, layout=(3,2), size=(950, 1300));
-    savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.svg"));
-    savefig(fig, joinpath(figs_dir, "Fig-Cross-Asset-Correlation.pdf"));
-    println("Saved correlation heatmap.");
+    # 5 split panels (no top titles; (a)-(e) come from LaTeX subcaptions).
+    _ps_corr = (550, 500);
+    _heatmap_kw = (c=:RdBu, clims=(-1,1), aspect_ratio=1,
+        xticks=(1:d, available), yticks=(1:d, available), xrotation=45, size=_ps_corr);
+
+    p1 = heatmap(Σ_obs; _heatmap_kw...);
+    savefig(p1, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-a.svg"));
+    savefig(p1, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-a.pdf"));
+
+    p2 = heatmap(Σ_sim_avg; _heatmap_kw...);
+    savefig(p2, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-b.svg"));
+    savefig(p2, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-b.pdf"));
+
+    p3 = heatmap(Σ_gauss_avg; _heatmap_kw...);
+    savefig(p3, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-c.svg"));
+    savefig(p3, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-c.pdf"));
+
+    p4 = heatmap(Σ_t_avg; _heatmap_kw...);
+    savefig(p4, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-d.svg"));
+    savefig(p4, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-d.pdf"));
+
+    p5 = heatmap(Σ_vine_avg; _heatmap_kw...);
+    savefig(p5, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-e.svg"));
+    savefig(p5, joinpath(figs_dir, "Fig-Cross-Asset-Correlation-e.pdf"));
+    println("Saved correlation heatmap (5 split panels).");
 
     # Bar chart of per-asset IS KS pass rates across models
     gx = 1:d;
@@ -311,11 +320,11 @@ println("\nCross-asset run complete. Output directory: $figs_dir");
 # ========================================================================================= #
 const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
 if isdir(PAPER_FIGS)
-    for stem in ("Fig-Cross-Asset-Correlation",), ext in ("pdf", "svg")
-        src = joinpath(figs_dir, "$stem.$ext");
-        if isfile(src); cp(src, joinpath(PAPER_FIGS, "$stem.$ext"); force=true); end
+    for letter in ("a", "b", "c", "d", "e"), ext in ("pdf", "svg")
+        src = joinpath(figs_dir, "Fig-Cross-Asset-Correlation-$letter.$ext");
+        if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-Cross-Asset-Correlation-$letter.$ext"); force=true); end
     end
-    println("Copied Fig-Cross-Asset-Correlation to: $PAPER_FIGS")
+    println("Copied Fig-Cross-Asset-Correlation-{a..e} to: $PAPER_FIGS")
 else
     println("(Skipped paper copy: $PAPER_FIGS not found)")
 end
