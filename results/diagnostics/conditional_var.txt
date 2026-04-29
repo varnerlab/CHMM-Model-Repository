@@ -1,0 +1,24 @@
+==============================================================================================================
+Regime-conditional VaR back-test under one-step-ahead state forecast propagation
+(peer-review B6)
+==============================================================================================================
+Setup: CHMM-N at K = 3 and K = 18 fit on SPY IS (T = 2516 days, seed = 20260420).
+OoS  : T = 572 days. Parameters frozen at IS estimate; only the latent state
+       belief updates as each new R_t arrives. At each OoS day t, conditional VaR
+       VaR_α(t) = F^{-1}(α) where F is the K-component Gaussian mixture predictive
+       density at t given F_{t-1} = IS ∪ R_oos[1..t-1] under the forward filter.
+Tests: Kupiec LR_uc (unconditional coverage, ~χ²_1, critical 3.841)
+       Christoffersen LR_ind (breach independence, ~χ²_1, critical 3.841)
+       Christoffersen LR_cc = LR_uc + LR_ind (joint, ~χ²_2, critical 5.991)
+
+   K | α     | breaches  | br rate    | med VaR     | LR_uc   p      | LR_ind  p      | LR_cc   p     
+--------------------------------------------------------------------------------------------------------------
+   3 | 0.01  | 9         | 0.016      | -4.562      | 1.618   0.203  | 2.363   0.124  | 3.980   0.137 
+   3 | 0.05  | 35        | 0.061      | -2.872      | 1.412   0.235  | 0.011   0.915  | 1.423   0.491 
+  18 | 0.01  | 9         | 0.016      | -5.197      | 1.618   0.203  | 2.363   0.124  | 3.980   0.137 
+  18 | 0.05  | 26        | 0.045      | -3.023      | 0.256   0.613  | 0.521   0.471  | 0.777   0.678 
+
+Comparison panel: unconditional pooled-archive VaR for the same windows is in
+results/diagnostics/var_christoffersen.txt and paper Appendix tab:christoffersen_var.
+Both unconditional CHMM-N and GARCH(1,1) reject Christoffersen-ind on OoS at α=0.05;
+the question this panel answers is whether regime forecast propagation closes that gap.
