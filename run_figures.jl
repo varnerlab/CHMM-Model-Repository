@@ -99,46 +99,52 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:L_LAGS];
     ci99 = 2.576 / sqrt(length(R_is));
 
+    # Per-panel saves (no top titles; (a)/(b)/(c)/(d) come from LaTeX subcaptions).
+    panel_size = (700, 500);
+
     # Panel (a): marginal density
-    p_a = plot(title="IS density (KS: $(m_is.ks)%)",
-        xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
+    p_a = plot(xlabel="Excess growth rate", ylabel="Probability density (AU)",
+        size=panel_size; _STYLE...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
     density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
     xlims!(p_a, x_lo, x_hi);
+    savefig(p_a, out_path * "-a.pdf"); savefig(p_a, out_path * "-a.svg");
 
     # Panel (b): tail Q-Q
     probs_qq = range(0.001, 0.999, length=200);
     q_obs = quantile(R_is, probs_qq);
     q_sim = quantile(vec(sim_is), probs_qq);
     p_b = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect)",
-        title="Tail Q-Q plot (0.1st-99.9th)",
-        xlabel="Observed quantiles", ylabel="Simulated quantiles"; _STYLE...);
+        xlabel="Observed quantiles", ylabel="Simulated quantiles",
+        size=panel_size; _STYLE...);
     scatter!(p_b, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
+    savefig(p_b, out_path * "-b.pdf"); savefig(p_b, out_path * "-b.svg");
 
     # Panel (c): raw-return ACF (linear autocorrelation)
     p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        title="ACF of G_t (raw returns)",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
+        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        size=panel_size; _STYLE...);
     plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99, -ci99], lw=1, color=:gray, ls=:dash, label="99% CI");
+    savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
     # Panel (d): |G_t| ACF (volatility clustering)
     p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        title="ACF of |G_t|",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        size=panel_size; _STYLE...);
     plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
-
-    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800));
-    savefig(fig, out_path * ".pdf");
-    savefig(fig, out_path * ".svg");
+    savefig(p_d, out_path * "-d.pdf"); savefig(p_d, out_path * "-d.svg");
 end
 
 function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
+    # Per-panel saves (no top titles; (a)/(b)/(c)/(d) come from LaTeX subcaptions).
+    panel_size = (700, 500);
+
     # Panel (a): OoS density fan (marginal fidelity, visual)
-    p_a = plot(title="OoS density fan",
-        xlabel="Excess growth rate", ylabel="Probability density (AU)"; _STYLE...);
+    p_a = plot(xlabel="Excess growth rate", ylabel="Probability density (AU)",
+        size=panel_size; _STYLE...);
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot
         _lbl = (i == 1) ? "CHMM-$tag simulated ($(_sim_paths_to_plot) paths)" : "";
@@ -148,13 +154,15 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
     xlims!(p_a, oos_lo - oos_pad, oos_hi + oos_pad);
+    savefig(p_a, out_path * "-a.pdf"); savefig(p_a, out_path * "-a.svg");
 
     # Panel (b): KS p-value histogram (marginal fidelity, numerical)
     p_b = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
-        label="CHMM-$tag",
-        title="OoS KS p-values (pass: $(m_oos.ks)%)",
-        xlabel="p-value against OoS series", ylabel="Density"; _STYLE...);
+        label="CHMM-$tag (pass: $(m_oos.ks)%)",
+        xlabel="p-value against OoS series", ylabel="Density",
+        size=panel_size; _STYLE...);
     vline!(p_b, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
+    savefig(p_b, out_path * "-b.pdf"); savefig(p_b, out_path * "-b.svg");
 
     # ACF computations
     τ_oos = 1:min(L_LAGS, n_oos-1);
@@ -177,22 +185,20 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     # Panel (c): raw-return OoS ACF
     p_c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        title="OoS ACF of G_t (raw returns)",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t"; _STYLE...);
+        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        size=panel_size; _STYLE...);
     plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
+    savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
     # Panel (d): |G_t| OoS ACF
     p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        title="OoS ACF of |G_t|",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _STYLE...);
+        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        size=panel_size; _STYLE...);
     plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
-
-    fig = plot(p_a, p_b, p_c, p_d, layout=(2,2), size=(1100,800));
-    savefig(fig, out_path * ".pdf");
-    savefig(fig, out_path * ".svg");
+    savefig(p_d, out_path * "-d.pdf"); savefig(p_d, out_path * "-d.svg");
 end
 
 function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
