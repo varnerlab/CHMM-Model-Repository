@@ -1,0 +1,39 @@
+==============================================================================================================
+Rolling-window Student-t copula refit on six-asset SPY cross-section  (R1-Q4 / R1-RE4)
+==============================================================================================================
+
+Setup:
+  - Universe: SPY, NVDA, JNJ, JPM, AAPL, QQQ
+  - Per-asset CHMM-N marginals at K = 18, fitted once on IS, held fixed for rolling refits.
+  - Rolling window length: 252 days (1 trading year).
+  - Refit cadence:        63 days  (1 trading quarter).
+  - Forecast horizon:     63 days per quarter.
+  - Paths per refit:      200
+  - Seed root:            20260422
+
+Headline:
+  Static-IS-fit OoS off-diag MAE   : 0.2072
+  Rolling-refit OoS off-diag MAE   : mean 0.1853   median 0.1977
+  N rolling sub-windows           : 9
+
+Per-quarter detail:
+
+q   | win            | forecast       | ν*    | offdiag MAE  | Frob    
+--------------------------------------------------------------------------------
+1   | [2265,2516]    | [2517,2579]    | 15.0  | 0.1977       | 1.3015  
+2   | [2328,2579]    | [2580,2642]    | 15.0  | 0.2045       | 1.4019  
+3   | [2391,2642]    | [2643,2705]    | 10.0  | 0.2409       | 1.5949  
+4   | [2454,2705]    | [2706,2768]    | 6.0   | 0.1332       | 0.9056  
+5   | [2517,2768]    | [2769,2831]    | 6.0   | 0.2549       | 1.791   
+6   | [2580,2831]    | [2832,2894]    | 6.0   | 0.2322       | 1.5124  
+7   | [2643,2894]    | [2895,2957]    | 5.0   | 0.1467       | 0.9741  
+8   | [2706,2957]    | [2958,3020]    | 5.0   | 0.1191       | 0.7984  
+9   | [2769,3020]    | [3021,3083]    | 6.0   | 0.1384       | 0.9535  
+
+Notes:
+  - The CHMM-N marginals are not refit; only the copula. This isolates the dependence-layer
+    refit benefit from the marginal refit benefit.
+  - The forecast horizon (63 days) per quarter is short, which inflates the sampling-variance
+    component of the per-quarter MAE; the headline is the mean across rolling sub-windows.
+  - The rolling refit can move ν* across the discrete grid {2,3,4,5,6,8,10,15,20,30} from
+    quarter to quarter; the per-quarter ν* values are reported above.

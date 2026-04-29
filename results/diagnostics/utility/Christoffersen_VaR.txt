@@ -1,0 +1,45 @@
+==============================================================================================================
+Christoffersen conditional-coverage VaR back-test  (SPY, seed=20260420, K=18, paths=1000)
+==============================================================================================================
+Window  : IS = SPY 2014-01-03 .. 2024-01-03 (2516 days);  OoS = 2024-01-04 .. (572 days).
+Test    : Kupiec LR_uc (unconditional coverage, ~chi^2_1)
+          Christoffersen LR_ind (independence of breaches, ~chi^2_1)
+          Christoffersen LR_cc = LR_uc + LR_ind (joint conditional coverage, ~chi^2_2)
+Critical: chi^2_1(0.05) = 3.841;  chi^2_2(0.05) = 5.991.  PASS if test stat < critical.
+Construct: pooled-archive VaR threshold (alpha-quantile of vec(sim_archive)),
+           breach series = (R_target <= VaR_alpha), all paths pooled.
+
+Model      Win  alpha  | VaR_alpha brches  br rate | LR_uc   p_uc    | LR_ind  p_ind   | LR_cc   p_cc   
+--------------------------------------------------------------------------------------------------------------
+Bootstrap  IS   0.01   |   -6.3874 26      0.010   | 0.028   0.867   | 15.283  0.000   | 15.311  0.000  
+Bootstrap  IS   0.05   |   -3.4575 126     0.050   | 0.000   0.985   | 56.455  0.000   | 56.456  0.000  
+Bootstrap  OoS  0.01   |   -6.4710 5       0.009   | 0.096   0.757   | 13.182  0.000   | 13.277  0.001  
+Bootstrap  OoS  0.05   |   -3.4575 19      0.033   | 3.828   0.050   | 5.256   0.022   | 9.084   0.011  
+GARCH      IS   0.01   |   -6.2584 31      0.012   | 1.275   0.259   | 12.447  0.000   | 13.722  0.001  
+GARCH      IS   0.05   |   -3.2771 139     0.055   | 1.412   0.235   | 45.379  0.000   | 46.791  0.000  
+GARCH      OoS  0.01   |   -5.8938 6       0.010   | 0.014   0.907   | 20.873  0.000   | 20.887  0.000  
+GARCH      OoS  0.05   |   -3.2024 24      0.042   | 0.822   0.365   | 5.870   0.015   | 6.692   0.035  
+CHMM-N     IS   0.01   |   -6.8298 20      0.008   | 1.150   0.284   | 12.800  0.000   | 13.950  0.001  
+CHMM-N     IS   0.05   |   -3.4793 123     0.049   | 0.066   0.797   | 47.329  0.000   | 47.395  0.000  
+CHMM-N     OoS  0.01   |   -6.8405 3       0.005   | 1.581   0.209   | 18.975  0.000   | 20.556  0.000  
+CHMM-N     OoS  0.05   |   -3.4657 19      0.033   | 3.828   0.050   | 5.256   0.022   | 9.084   0.011  
+CHMM-t     IS   0.01   |   -6.6741 22      0.009   | 0.419   0.518   | 11.624  0.001   | 12.042  0.002  
+CHMM-t     IS   0.05   |   -3.4102 127     0.050   | 0.012   0.913   | 55.537  0.000   | 55.549  0.000  
+CHMM-t     OoS  0.01   |   -6.6227 4       0.007   | 0.584   0.445   | 15.534  0.000   | 16.118  0.000  
+CHMM-t     OoS  0.05   |   -3.3834 20      0.035   | 3.028   0.082   | 4.709   0.030   | 7.738   0.021  
+CHMM-L     IS   0.01   |   -6.9767 19      0.008   | 1.664   0.197   | 13.442  0.000   | 15.106  0.001  
+CHMM-L     IS   0.05   |   -3.3317 134     0.053   | 0.551   0.458   | 49.427  0.000   | 49.978  0.000  
+CHMM-L     OoS  0.01   |   -7.0071 2       0.003   | 3.261   0.071   | 9.151   0.002   | 12.412  0.002  
+CHMM-L     OoS  0.05   |   -3.3295 20      0.035   | 3.028   0.082   | 4.709   0.030   | 7.738   0.021  
+CHMM-GED   IS   0.01   |   -6.9058 20      0.008   | 1.150   0.284   | 12.800  0.000   | 13.950  0.001  
+CHMM-GED   IS   0.05   |   -3.4312 126     0.050   | 0.000   0.985   | 56.455  0.000   | 56.456  0.000  
+CHMM-GED   OoS  0.01   |   -6.9434 2       0.003   | 3.261   0.071   | 9.151   0.002   | 12.412  0.002  
+CHMM-GED   OoS  0.05   |   -3.4406 19      0.033   | 3.828   0.050   | 5.256   0.022   | 9.084   0.011  
+
+Notes:
+  - LR_uc near critical for CHMM rows at 5%% reflects the integer-breach grid at T_OoS = 572:
+    19 breaches gives LR_uc = 3.828 (just below the 3.841 critical value).
+  - LR_ind tests whether breaches cluster (positive) or spread (negative). For unconditional
+    CHMM the threshold is constant across t, so a positive LR_ind reflects volatility-clustering
+    in R_oos itself rather than CHMM mis-specification of conditional dynamics.
+  - LR_cc is the joint test (Kupiec + independence) and the headline conditional-coverage diagnostic.
