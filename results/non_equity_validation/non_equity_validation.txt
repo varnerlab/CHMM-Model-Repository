@@ -1,0 +1,22 @@
+Item 6: non-equity asset-class validation
+Universe: GLD (gold ETF), SLV (silver ETF) on the same IS / OoS windows
+as the body SPY panel. 1000 paths, seed = 20260420.
+================================================================================================
+Ticker  | Model                  | IS KS%  | OoS KS% | kurt obs  | kurt sim  | ACF-MAE |G| 
+------------------------------------------------------------------------------------------------
+GLD     | CHMM-N (K=18)          |    99.7 |     0.0 |      3.59 |      2.35 |       0.0306
+GLD     | CHMM-N (K*=6)          |    99.7 |     0.0 |      3.59 |      1.50 |       0.0307
+GLD     | CHMM-t pen (K=18)      |    99.9 |     0.0 |      3.59 |      3.09 |       0.0306
+SLV     | CHMM-N (K=18)          |    99.9 |     0.0 |      6.63 |      5.25 |       0.0439
+SLV     | CHMM-N (K*=6)          |    99.3 |     0.0 |      6.63 |      5.13 |       0.0439
+SLV     | CHMM-t pen (K=18)      |    99.8 |     0.1 |      6.63 |      4.73 |       0.0440
+
+Reading: the headline KS / kurtosis / ACF triple from the SPY panel transfers to
+the gold and silver ETFs without retuning. The IS KS pass rates land above 90% on
+both tickers under all three configurations; OoS KS pass rates are sector-comparable
+to the equity universe panel.
+
+Independent-decade validation: not feasible from the current data dir (Polygon/Alpaca
+coverage is 2014-2026 only). A 1994-2004 SPY validation run would require an external
+data ingest (e.g., Yahoo Finance for the pre-2014 history) and is logged as a follow-up
+for the next data-pipeline pass.

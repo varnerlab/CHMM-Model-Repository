@@ -1,0 +1,15 @@
+Quarterly-refit regime-conditional VaR back-test (peer-review item 8)
+Refit cadence: every 63 OoS days, train window = 1260 obs
+Critical values: chi^2_1(0.05) = 3.841, chi^2_2(0.05) = 5.991
+================================================================================
+K     α       breaches  br_rate   med_VaR   LR_uc     LR_ind    LR_cc     p_uc    p_ind   p_cc   
+--------------------------------------------------------------------------------
+3     0.01    6         0.0105    -5.100    0.014     3.968     3.982     0.9071  0.0464  0.1366 
+3     0.05    29        0.0507    -3.125    0.006     0.190     0.196     0.9390  0.6626  0.9066 
+18    0.01    6         0.0105    -5.835    0.014     3.968     3.982     0.9071  0.0464  0.1366 
+18    0.05    19        0.0332    -3.140    3.828     2.084     5.911     0.0504  0.1489  0.0520 
+
+Reading: compare against the IS-fixed conditional-VaR results in
+results/diagnostics/conditional_var.txt. The refit construction does not
+discard any IS information; it just gives the model the opportunity to track
+regime drift across the OoS window.

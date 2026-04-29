@@ -1,0 +1,20 @@
+Peer-review item 2: SV / MSM / Merton-JD baseline panel on SPY
+Same protocol as Table 1 of the paper: 1000 paths, seed = 20260420.
+================================================================================================
+model           | window  | KS%     | kurt_obs  | kurt_sim  | ACF-MAE |G|  | ACF-MAE raw 
+------------------------------------------------------------------------------------------------
+SV-AR(1)        | IS      |    38.2 |      7.68 |      7.52 |       0.0466 |       0.0239
+SV-AR(1)        | OoS     |    35.3 |      5.29 |      5.26 |       0.0546 |       0.0434
+MSM kbar=8      | IS      |     0.0 |      7.68 |      0.62 |       0.0605 |       0.0235
+MSM kbar=8      | OoS     |     7.2 |      5.29 |      0.60 |       0.0530 |       0.0435
+Merton-JD       | IS      |    98.3 |      7.68 |      3.12 |       0.0627 |       0.0236
+Merton-JD       | OoS     |    91.1 |      5.29 |      2.98 |       0.0544 |       0.0435
+
+Reading:
+  SV-AR(1): Taylor 1986 / Harvey-Ruiz-Shephard 1994 lognormal SV.
+  MSM:      Calvet-Fisher 2004 binomial multifractal with kbar = 8.
+  Merton-JD: Merton 1976 jump-diffusion (Poisson-Gaussian jump mixture).
+
+  SV-AR(1)        parameters: (mu = 0.0944046224251106, sigma2 = 2.3940016146024004, phi = 0.954188763975003, sigma_eta2 = 0.12150558731892906, log_likelihood = -5824.858733079851)
+  MSM kbar=8      parameters: (mu = 0.0944046224251106, sigma_bar = 2.188884520528593, m0 = 1.1550542205502432, gamma_1 = 0.027182653363716325, b = 1.8760830993001005, kbar = 8, fit_loss = 0.2814697789000739)
+  Merton-JD       parameters: (mu = 0.2798991771077233, sigma = 1.045320850989247, lambda = 0.5501141121141966, mu_J = -0.3371864204222142, sigma_J = 2.4867963979523893, log_likelihood = -5251.4362843380995)

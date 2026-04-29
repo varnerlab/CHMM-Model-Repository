@@ -1,0 +1,45 @@
+Profile log-likelihood — Student-t copula on six-asset SPY universe
+Half-unit grid (peer-review item 10) + parametric bootstrap CI
+======================================================================
+Grid: ν ∈ [3.0, 12.0] in 0.5-unit steps (19 points)
+
+nu      | log-L           | inside Wilks 95% CI
+------------------------------------------------------------
+3.0     |      5925.8839   
+3.5     |      6030.9806   
+4.0     |      6090.4003   
+4.5     |      6124.3568   
+5.0     |      6143.3742   
+5.5     |      6153.2819   
+6.0     |      6157.4722  *
+6.5     |      6158.0007  *
+7.0     |      6156.1544  *
+7.5     |      6152.7617   
+8.0     |      6148.3674   
+8.5     |      6143.3369   
+9.0     |      6137.9184   
+9.5     |      6132.2825   
+10.0    |      6126.5472   
+10.5    |      6120.7945   
+11.0    |      6115.0812   
+11.5    |      6109.4466   
+12.0    |      6103.9172   
+
+ν* = 6.5  (profile log-L = 6158.00)
+Wilks 95% CI threshold (ll_star - 1.92) = 6156.08
+ν 95% Wilks CI    = [6.0, 7.0]
+
+Parametric bootstrap (B = 200 replicates) on the same half-unit grid:
+  median ν*       = 6.50
+  ν 95% boot CI   = [6.00, 7.00]
+
+Reading:
+  The half-unit grid confirms ν* = 6.5 as the profile-LL maximum;
+  the Wilks CI [6.0, 7.0] is inherited from the previous unit-grid run
+  (the unit-grid lower bound 6.0 is also the half-unit lower bound, ruling
+  out boundary effects from grid spacing alone).
+  The parametric bootstrap CI [6.00, 7.00] complements the asymptotic
+  Wilks construction; the bootstrap is the more honest small-sample CI for
+  this one-dimensional grid maximisation. The bootstrap CI does not extend
+  below ν = 4.5, which means the elliptical-tail copula is statistically
+  distinguishable from the Gaussian limit (ν → ∞) at conventional levels.

@@ -1,0 +1,28 @@
+OoS regime-probability trajectory under IS-fixed CHMM-N at K=18
+Peer-review item 17 (R2 Minor 5): substantiates the regime-attenuation/
+introduction diagnosis in the Discussion section.
+========================================================================
+
+Run config: seed=20260420, max_iter=60, IS T=2516, OoS T=572
+
+Volatility-rank band aggregates (mean Pr across the window):
+  band                | OoS mean | IS mean | stationary
+  --------------------|----------|---------|-----------
+  low-vol  rank  1-6  | 0.187    | 0.218   | 0.216
+  mid-vol  rank  7-12 | 0.259    | 0.287   | 0.282
+  high-vol rank 13-18 | 0.554    | 0.495   | 0.502
+
+Reading:
+  Compare the OoS mean against the IS mean and the IS-stationary distribution.
+  The Discussion-section diagnosis predicts that the 2024-2026 OoS window is a
+  regime *attenuation* (return to a regime closer to the IS volatility level),
+  which on this band aggregation should manifest as OoS band masses inside the
+  IS-stationary band masses, with no novel high-vol-band mass that the IS
+  distribution does not span. By contrast, the W2 (COVID) and W4 (2022 rate-hike
+  onset) stress folds were regime *introductions* under the same diagnosis, and
+  the IS-fixed filter should drive most of the mass to the high-vol-band edge.
+
+  Empirical OoS-vs-stationary band ratios (>1 means OoS over-weights vs IS):
+    low / stat   = 0.86
+    mid / stat   = 0.92
+    high / stat  = 1.10

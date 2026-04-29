@@ -1,0 +1,7 @@
+model,window,KS_pct,kurt_obs,kurt_sim,ACF_MAE_abs,ACF_MAE_raw
+SV-AR(1),IS,38.2,7.68,7.52,0.0466,0.0239
+SV-AR(1),OoS,35.3,5.29,5.26,0.0546,0.0434
+MSM kbar=8,IS,0.0,7.68,0.62,0.0605,0.0235
+MSM kbar=8,OoS,7.2,5.29,0.60,0.0530,0.0435
+Merton-JD,IS,98.3,7.68,3.12,0.0627,0.0236
+Merton-JD,OoS,91.1,5.29,2.98,0.0544,0.0435

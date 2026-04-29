@@ -1,0 +1,23 @@
+Stationary block bootstrap CIs on excess kurtosis (peer-review item 9 / R3 W7-RE4)
+Source data: SPY IS (T = 2516) and SPY OoS (T = 572) excess log growth
+Bootstrap construction: Politis-Romano 1994, mean block length L, 5000 replicates per L.
+========================================================================================
+
+Observed excess kurtosis: IS = 7.686   OoS = 5.323   IS - OoS = 2.364
+
+Bootstrap distributions:
+L     | IS median | IS 95% CI         | OoS median | OoS 95% CI         | Pr(IS > OoS)
+----------------------------------------------------------------------------------------
+5     |     7.212 | [2.985, 12.833]   |      5.068 | [1.089, 8.975]   | 0.748
+10    |     7.337 | [2.491, 12.591]   |      4.911 | [0.987, 8.662]   | 0.756
+20    |     7.302 | [2.167, 12.400]   |      4.906 | [0.903, 8.260]   | 0.739
+50    |     7.183 | [1.924, 12.418]   |      4.985 | [0.957, 7.697]   | 0.733
+
+Reading:
+  - IS 95% CI lower bound across all L: 1.92; OoS 95% CI upper bound across all L: 8.97
+  - IS and OoS CIs overlap; the IS-OoS kurtosis difference (~2.4 units) is
+    not robustly distinguishable at conventional levels under this bootstrap.
+
+  - Pr(IS > OoS) at L = 10: 0.756. Read as the bootstrap empirical p-value for the
+    one-sided null 'IS kurtosis = OoS kurtosis' against the alternative that IS
+    is heavier than OoS. Values close to 1 favour the alternative.

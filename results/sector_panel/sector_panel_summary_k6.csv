@@ -1,0 +1,31 @@
+sector,ticker,ks_is_pct,ks_oos_pct,kurt_obs,kurt_sim,kurt_resid,acf_mae_abs,nu_median
+Information Technology,AAPL,98.6,94.4,3.19,3.52,0.33,0.0407,41.04
+Information Technology,MSFT,97.0,92.6,4.20,4.31,0.11,0.0370,50.00
+Information Technology,NVDA,97.6,60.6,5.53,5.20,-0.33,0.0463,50.00
+Health Care,JNJ,99.9,95.7,8.97,39.14,30.17,0.0333,50.00
+Health Care,UNH,99.6,11.9,8.85,26.12,17.27,0.0378,50.00
+Health Care,LLY,99.1,10.7,13.60,51.98,38.38,0.0290,50.00
+Financials,JPM,96.7,55.1,7.62,8.09,0.47,0.0447,50.00
+Financials,BAC,99.1,82.4,5.76,6.64,0.88,0.0389,50.00
+Financials,WFC,93.5,53.6,7.53,7.65,0.12,0.0721,50.00
+Consumer Discretionary,AMZN,97.8,94.4,4.31,3.50,-0.81,0.0378,50.00
+Consumer Discretionary,HD,99.2,40.8,12.92,13.26,0.34,0.0363,50.00
+Consumer Discretionary,MCD,99.1,70.9,18.38,88.82,70.44,0.0399,50.00
+Communication Services,NFLX,98.6,55.6,12.60,8.56,-4.04,0.0322,50.00
+Communication Services,VZ,99.4,52.1,5.14,18.42,13.28,0.0272,50.00
+Communication Services,DIS,96.8,92.6,10.77,45.93,35.16,0.0610,47.26
+Industrials,CAT,98.6,79.3,4.34,4.36,0.02,0.0318,50.00
+Industrials,BA,97.7,62.8,20.59,53.16,32.57,0.0796,50.00
+Industrials,HON,98.4,95.3,21.93,18.28,-3.65,0.0572,50.00
+Consumer Staples,PG,99.3,92.6,8.15,56.84,48.69,0.0342,50.00
+Consumer Staples,KO,99.4,92.2,10.57,28.01,17.44,0.0461,50.00
+Consumer Staples,WMT,98.9,22.7,13.84,170.25,156.41,0.0278,50.00
+Energy,XOM,79.3,52.3,5.61,13.65,8.04,0.0811,42.30
+Energy,CVX,97.5,62.7,12.22,24.85,12.63,0.0478,50.00
+Energy,COP,95.9,79.9,17.11,19.88,2.77,0.0471,39.76
+Utilities,NEE,98.3,21.9,10.71,42.39,31.68,0.0483,50.00
+Utilities,DUK,99.3,96.0,9.75,27.27,17.52,0.0465,50.00
+Utilities,SO,99.5,96.1,14.52,104.54,90.02,0.0504,50.00
+Materials,FCX,99.4,79.9,4.83,5.86,1.03,0.0589,50.00
+Materials,NEM,99.6,4.2,3.74,5.39,1.65,0.0376,50.00
+Materials,APD,98.9,93.7,8.40,21.69,13.29,0.0381,50.00

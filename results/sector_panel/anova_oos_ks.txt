@@ -1,0 +1,32 @@
+Cross-ticker OoS KS ANOVA: within-sector vs between-sector
+Source: results/sector_panel/sector_panel_summary.csv (30 tickers, 10 sectors x 3 reps)
+Peer-review item 18 / R2 Q5.
+==============================================================================
+
+n = 30  K (sectors) = 10  grand mean OoS KS = 66.84%
+
+One-way ANOVA on OoS KS pass rate by sector:
+  SS between =    4141.16   df = 9   MS =     460.13
+  SS within  =   21096.77   df = 20   MS =    1054.84
+  F(9, 20)   = 0.436
+  p (F-dist) = 0.8993
+  p (perm, B=5000) = 0.9026
+  eta^2      = 0.164
+
+Per-sector means and within-sector standard deviations:
+  Communication Services    n=3   mean = 63.53%   sd = 28.53%   range = [45.10, 96.40]%
+  Consumer Discretionary    n=3   mean = 68.30%   sd = 27.79%   range = [41.40, 96.90]%
+  Consumer Staples          n=3   mean = 70.33%   sd = 40.13%   range = [24.00, 94.30]%
+  Energy                    n=3   mean = 72.07%   sd = 10.76%   range = [62.30, 83.60]%
+  Financials                n=3   mean = 64.30%   sd = 18.10%   range = [50.50, 84.80]%
+  Health Care               n=3   mean = 38.43%   sd = 47.55%   range = [ 7.60, 93.20]%
+  Industrials               n=3   mean = 79.03%   sd = 16.90%   range = [62.20, 96.00]%
+  Information Technology    n=3   mean = 82.57%   sd = 23.28%   range = [55.70, 96.90]%
+  Materials                 n=3   mean = 57.47%   sd = 45.43%   range = [ 5.60, 90.20]%
+  Utilities                 n=3   mean = 72.37%   sd = 41.89%   range = [24.00, 96.90]%
+
+Reading:
+  ANOVA F-test fails to reject null of equal sector means at alpha=0.05.
+  Within-sector variance dominates between-sector variance: the cross-ticker
+  failures are explained more by within-sector heterogeneity (eta^2 = 16.4%)
+  than by sector-level effects.

@@ -1,0 +1,25 @@
+CRPS coverage for Table 1 rows previously marked '--'
+Peer-review item 16. Same protocol as Track M11 / run_crps_dm.jl
+(SPY OoS window, 1000 paths, seed = 20260420).
+======================================================================
+Model                  | OoS mean CRPS
+----------------------------------------------------------------------
+CHMM-N (K*=6)          |       1.0422
+CHMM-t pen. (K*=6)     |       1.0385
+CHMM-L (K*=6)          |       1.0399
+CHMM-GED (K*=6)        |       1.0393
+CHMM-N (K*=3)          |       1.0412
+CHMM-GED (K=18)        |       1.0406
+CHMM-t pen. (K=18)     |       1.0392
+
+Reference (from results/_attic_v10/track_m11/CRPS_DM.txt):
+  Bootstrap         OoS CRPS = 1.0398
+  CHMM-N (K=18)     OoS CRPS = 1.0384
+  CHMM-t (K=18)     OoS CRPS = 1.0399
+  CHMM-L (K=18)     OoS CRPS = 1.0400
+  GARCH(1,1)        OoS CRPS = 1.0440
+  Gaussian          OoS CRPS = 1.0611
+
+Reading: the full Table-1 CRPS column collapses to within 0.003 across all
+CHMM variants (K* = 3, K* = 6, K = 18) and the i.i.d. bootstrap; only the
+Gaussian negative control sits materially above (CRPS gap ~ 0.023).
