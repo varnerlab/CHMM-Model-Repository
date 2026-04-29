@@ -58,7 +58,7 @@ open(TXT_PATH, "r") do io
             obs[:os_v05] = parse(Float64, m.captures[1]);
             obs[:os_e05] = parse(Float64, m.captures[2]);
         else
-            for name in ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L"]
+            for name in ["Bootstrap", "GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"]
                 if startswith(ln, name)
                     cells = strip.(split(ln, "|"));
                     # cells[1]=name,
@@ -88,14 +88,14 @@ open(TXT_PATH, "r") do io
     end
 end
 
-@assert length(models_var) == 5  "Expected 5 models, got $(length(models_var))"
+@assert length(models_var) == 6  "Expected 6 models, got $(length(models_var))"
 @assert haskey(obs, :is_v01) && haskey(obs, :os_v05)  "Observed values not parsed"
 
 println("Parsed observed values: ", obs);
 println("Parsed models: ", collect(keys(models_var)));
 
 # ----- Render figure: 4 separate panels (no top titles; (a)-(d) come from LaTeX subcaptions) ----- #
-model_names = ["GARCH", "CHMM-N", "CHMM-t", "CHMM-L"];
+model_names = ["GARCH", "CHMM-N", "CHMM-t", "CHMM-L", "CHMM-GED"];
 xs = 1:length(model_names);
 panel_size = (700, 500);
 

@@ -317,8 +317,20 @@ function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String
     savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.pdf"));
 end
 
-# NOTE: save_stationary_distribution and save_trajectory were removed (2026-04-28)
-# because their outputs are not panelled in the paper.
+# NOTE: save_stationary_distribution was removed (2026-04-28) because its
+# output is not panelled in the paper. The per-family K=18 trajectory below
+# IS panelled in Figure~\ref{fig:trajectory_families} (sensitivity appendix).
+function save_trajectory(sim_is::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
+    Random.seed!(SEED + 17);
+    idx = rand(1:N_PATHS);
+    traj_len = min(500, n_steps);
+    p = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed IS",
+        xlabel="Trading day (IS index)", ylabel="Annualized excess log return G_t",
+        size=(700, 350));
+    plot!(p, sim_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-$family_tag (single sim path)");
+    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.svg"));
+    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.pdf"));
+end
 
 # ========================================================================================= #
 # Main loop: train + evaluate + (at K=18) generate figures
@@ -383,6 +395,7 @@ for family in EMISSION_FAMILIES
             save_residence_times(T_mat, tag, K, out_dir);
             save_is_comparison(sim_is, m_is, tag, K, out_dir);
             save_oos_validation(sim_oos, m_oos, tag, K, out_dir);
+            save_trajectory(sim_is, tag, K, out_dir);
         elseif K in (3, 12)
             save_emission_pdfs(model, tag, K, out_dir);
             save_is_comparison(sim_is, m_is, tag, K, out_dir);
@@ -430,6 +443,7 @@ if isdir(PAPER_FIGS_DIR)
         "Fig-Convergence-K18",
         "Fig-Emission-PDFs-K18",
         "Fig-Residence-Times-K18",
+        "Fig-Trajectory-Example-K18",
     ];
     for fam in ("N", "t", "L", "GED")
         src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);
