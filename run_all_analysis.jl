@@ -566,12 +566,12 @@ const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
 if isdir(PAPER_FIGS)
     println("\nCopying figures to paper figs: $PAPER_FIGS")
     # Fig 1: stylized facts (4 split panels, ticker-level)
-    for letter in ("a", "b", "c", "d"), ext in ("pdf", "svg")
+    for letter in ("a", "b", "c", "d"), ext in ("pdf",)
         src = joinpath(RESULTS_DIR, TICKER, "stylized_facts", "Fig-1-Stylized-Facts-$letter.$ext");
         if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-1-Stylized-Facts-$letter.$ext"); force=true); end
     end
     # Per-K convergence (rename Fig-Convergence.{pdf,svg} -> Fig-Convergence-K{K}.{pdf,svg})
-    for K in K_VALUES, ext in ("pdf", "svg")
+    for K in K_VALUES, ext in ("pdf",)
         src = joinpath(RESULTS_DIR, TICKER, "K$K", "Fig-Convergence.$ext");
         if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-Convergence-K$K.$ext"); force=true); end
     end

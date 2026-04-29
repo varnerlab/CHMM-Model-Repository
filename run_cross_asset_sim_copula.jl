@@ -320,7 +320,7 @@ println("\nCross-asset run complete. Output directory: $figs_dir");
 # ========================================================================================= #
 const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "CHMM-paper", "figs"));
 if isdir(PAPER_FIGS)
-    for letter in ("a", "b", "c", "d", "e"), ext in ("pdf", "svg")
+    for letter in ("a", "b", "c", "d", "e"), ext in ("pdf",)
         src = joinpath(figs_dir, "Fig-Cross-Asset-Correlation-$letter.$ext");
         if isfile(src); cp(src, joinpath(PAPER_FIGS, "Fig-Cross-Asset-Correlation-$letter.$ext"); force=true); end
     end

@@ -126,7 +126,7 @@ for (i, (tag, obs_v, obs_e, key)) in enumerate([
     savefig(p, joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.pdf"));
     savefig(p, joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.svg"));
     if isdir(PAPER_FIGS)
-        for ext in ("pdf", "svg")
+        for ext in ("pdf",)
             cp(joinpath(OUT_DIR, "VaR_ES_Backtest-$letter.$ext"),
                joinpath(PAPER_FIGS, "Fig-VaR-ES-$letter.$ext"); force=true);
         end

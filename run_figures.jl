@@ -108,7 +108,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
     density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
     xlims!(p_a, x_lo, x_hi);
-    savefig(p_a, out_path * "-a.pdf"); savefig(p_a, out_path * "-a.svg");
+    savefig(p_a, out_path * "-a.pdf");
 
     # Panel (b): tail Q-Q
     probs_qq = range(0.001, 0.999, length=200);
@@ -118,7 +118,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
         xlabel="Observed quantiles", ylabel="Simulated quantiles",
         size=panel_size; _STYLE...);
     scatter!(p_b, q_obs, q_sim, ms=3, alpha=0.7, color=_SIM_C, label="CHMM-$tag");
-    savefig(p_b, out_path * "-b.pdf"); savefig(p_b, out_path * "-b.svg");
+    savefig(p_b, out_path * "-b.pdf");
 
     # Panel (c): raw-return ACF (linear autocorrelation)
     p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
@@ -127,7 +127,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99, -ci99], lw=1, color=:gray, ls=:dash, label="99% CI");
-    savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
+    savefig(p_c, out_path * "-c.pdf");
 
     # Panel (d): |Gₜ| ACF (volatility clustering)
     p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
@@ -135,7 +135,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
         size=panel_size; _STYLE...);
     plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
-    savefig(p_d, out_path * "-d.pdf"); savefig(p_d, out_path * "-d.svg");
+    savefig(p_d, out_path * "-d.pdf");
 end
 
 function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
@@ -154,7 +154,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
     oos_pad = 0.20 * (oos_hi - oos_lo);
     xlims!(p_a, oos_lo - oos_pad, oos_hi + oos_pad);
-    savefig(p_a, out_path * "-a.pdf"); savefig(p_a, out_path * "-a.svg");
+    savefig(p_a, out_path * "-a.pdf");
 
     # Panel (b): KS p-value histogram (marginal fidelity, numerical)
     p_b = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.75, color=_SIM_C,
@@ -162,7 +162,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
         xlabel="p-value against OoS series", ylabel="Density",
         size=panel_size; _STYLE...);
     vline!(p_b, [0.05], lw=2, color=_OBS_C, ls=:dash, label="α = 0.05");
-    savefig(p_b, out_path * "-b.pdf"); savefig(p_b, out_path * "-b.svg");
+    savefig(p_b, out_path * "-b.pdf");
 
     # ACF computations
     τ_oos = 1:min(L_LAGS, n_oos-1);
@@ -190,7 +190,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
-    savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
+    savefig(p_c, out_path * "-c.pdf");
 
     # Panel (d): |Gₜ| OoS ACF
     p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
@@ -198,7 +198,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
         size=panel_size; _STYLE...);
     plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
-    savefig(p_d, out_path * "-d.pdf"); savefig(p_d, out_path * "-d.svg");
+    savefig(p_d, out_path * "-d.pdf");
 end
 
 function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
@@ -213,7 +213,6 @@ function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
         colorbar_title="log₁₀ Tᵢⱼ",
         colorbar_titlefontsize=TFS);
     savefig(p, out_path * ".pdf");
-    savefig(p, out_path * ".svg");
 end
 
 function kfigs_save_trajectory(observed, simulated, window_label, tag, K, out_path)
@@ -227,7 +226,6 @@ function kfigs_save_trajectory(observed, simulated, window_label, tag, K, out_pa
         size=(1200, 350); _STYLE...);
     plot!(p, simulated[1:traj_len, idx], lw=0.6, color=_SIM_C, alpha=0.55, label="CHMM-$tag (single sim path)");
     savefig(p, out_path * ".pdf");
-    savefig(p, out_path * ".svg");
 end
 
 # ----- Fit + simulate + render for each family -----
@@ -244,10 +242,15 @@ for (tag, build_fn) in [
     m_is  = eval_metrics(R_is,  sis);
     m_oos = eval_metrics(R_oos, sos);
 
-    kfigs_save_is_comparison(sis, m_is, tag, K,
-        joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K-$tag"));
-    kfigs_save_oos_validation(sos, m_oos, tag, K,
-        joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K-$tag"));
+    # Per-family suffixed IS / OoS panels are panelled in the supplementary for
+    # CHMM-{t,L,GED}; for tag="N" the canonical main-body files are the unsuffixed
+    # variant written in the if-block below, so we skip the duplicate here.
+    if tag != "N"
+        kfigs_save_is_comparison(sis, m_is, tag, K,
+            joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K-$tag"));
+        kfigs_save_oos_validation(sos, m_oos, tag, K,
+            joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K-$tag"));
+    end
     kfigs_save_transition_heatmap(T_mat, tag, K,
         joinpath(PAPER_FIGS_DIR, "Fig-Transition-Matrix-K$K-$tag"));
     println("  [$tag] Figures written.")

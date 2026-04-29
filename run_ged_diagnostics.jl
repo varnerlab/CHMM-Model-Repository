@@ -213,7 +213,7 @@ end
 # Copy headline figure to paper figs/
 # ========================================================================================= #
 if isdir(PAPER_FIGS)
-    for letter in ("a", "b"), ext in ("pdf", "svg")
+    for letter in ("a", "b"), ext in ("pdf",)
         cp(joinpath(RESULTS_DIR, "Fig-p-Histogram-$letter.$ext"),
            joinpath(PAPER_FIGS, "Fig-p-Histogram-$letter.$ext"); force=true);
     end
