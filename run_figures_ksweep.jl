@@ -9,7 +9,8 @@ using Random
 const SEED = 20260420;
 
 const TICKER = "SPY";
-const K_VALUES = [3, 6, 9, 12, 15, 21];
+const K_VALUES = [3, 6, 12, 21];   # K=9 and K=15 dropped: not displayed in the paper.
+                                    # Re-add them here if you want to extend the K-sweep panel.
 const MAX_ITER = 60;
 const N_PATHS = 1000; const L_LAGS = 252;
 const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");

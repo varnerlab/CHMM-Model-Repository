@@ -440,15 +440,28 @@ end
 println("\n[4/4] Copying figures to the paper's figs directory...")
 
 if isdir(PAPER_FIGS_DIR)
+    # Only files actually included in paper.tex via \includegraphics. The
+    # per-family Transition-Matrix, Stationary-Distribution, and Trajectory-Example
+    # figures are produced for inspection but are not panelled in the paper, so
+    # we no longer copy them into the paper figs directory. The CHMM-N variant
+    # of IS-Comparison and OoS-Validation also duplicates the unsuffixed K18
+    # main-body files produced by run_figures.jl, so we omit -N here too and
+    # only copy the -t, -L, -GED family rows. Re-add a stem here if a future
+    # paper revision starts including it.
     per_family_figs_K18 = [
-        "Fig-Convergence-K18", "Fig-Emission-PDFs-K18",
-        "Fig-Transition-Matrix-K18", "Fig-Stationary-Distribution-K18",
-        "Fig-Residence-Times-K18", "Fig-Trajectory-Example-K18",
-        "Fig-3-IS-Comparison-K18", "Fig-4-OoS-Validation-K18",
+        "Fig-Convergence-K18",
+        "Fig-Emission-PDFs-K18",
+        "Fig-Residence-Times-K18",
+    ];
+    per_family_figs_K18_non_N = [
+        "Fig-3-IS-Comparison-K18",
+        "Fig-4-OoS-Validation-K18",
     ];
     for fam in ("N", "t", "L", "GED")
         src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);
-        for stem in per_family_figs_K18
+        stems = fam == "N" ? per_family_figs_K18 :
+                              vcat(per_family_figs_K18, per_family_figs_K18_non_N);
+        for stem in stems
             for ext in (".pdf", ".svg")
                 src = joinpath(src_dir, stem * "-" * fam * ext);
                 if isfile(src)
@@ -458,21 +471,11 @@ if isdir(PAPER_FIGS_DIR)
             end
         end
     end
-    # K=3 and K=12 side figures (emission PDFs + IS panel) for appendix
-    for fam in ("N", "t", "L", "GED")
-        for K_extra in (3, 12)
-            src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K$(K_extra)", fam);
-            for stem in ("Fig-Emission-PDFs-K$(K_extra)", "Fig-3-IS-Comparison-K$(K_extra)")
-                for ext in (".pdf", ".svg")
-                    src = joinpath(src_dir, stem * "-" * fam * ext);
-                    if isfile(src)
-                        dst = joinpath(PAPER_FIGS_DIR, stem * "-" * fam * ext);
-                        cp(src, dst; force=true);
-                    end
-                end
-            end
-        end
-    end
+    # The K=3 and K=12 family-suffixed Emission-PDFs and IS-Comparison files
+    # produced by this script are not included in paper.tex (the appendix uses
+    # only the unsuffixed K=3 and K=12 IS panels produced by run_figures_ksweep.jl,
+    # and the K=18 family-suffixed emissions). Removed the copy block on
+    # 2026-04-28 to keep figs/ in sync with what paper.tex actually loads.
     println("  Copied figures to: $PAPER_FIGS_DIR")
 else
     println("  (Skipped copy: $PAPER_FIGS_DIR not found)")

@@ -315,3 +315,31 @@ for row in eachrow(summary_rows)
         "$(round(row.crps_rel_S0, digits=4))"
     );
 end
+
+# ========================================================================================= #
+# Copy paper-relevant per-ticker figures into the paper's figs directory.
+# Paper includes PriceFan for non-SPY tickers and TerminalDist for all tickers.
+# ========================================================================================= #
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+if isdir(PAPER_FIGS)
+    paper_tickers = ("SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ");
+    for tk in paper_tickers
+        for ext in ("pdf", "svg")
+            # TerminalDist: paper includes all six tickers.
+            term_src = joinpath(OUT_DIR, "Fig-$tk-TerminalDist-N.$ext");
+            if isfile(term_src)
+                cp(term_src, joinpath(PAPER_FIGS, "Fig-$tk-TerminalDist-N.$ext"); force=true);
+            end
+            # PriceFan: paper includes only the five non-SPY tickers.
+            if tk != "SPY"
+                fan_src = joinpath(OUT_DIR, "Fig-$tk-PriceFan-N.$ext");
+                if isfile(fan_src)
+                    cp(fan_src, joinpath(PAPER_FIGS, "Fig-$tk-PriceFan-N.$ext"); force=true);
+                end
+            end
+        end
+    end
+    println("[done] Copied per-ticker figures to: $PAPER_FIGS")
+else
+    println("[skip] Paper copy: $PAPER_FIGS not found")
+end
