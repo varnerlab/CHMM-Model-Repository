@@ -217,15 +217,15 @@ function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
 end
 
 function kfigs_save_trajectory(observed, simulated, window_label, tag, K, out_path)
-    # Single-panel trajectory plot of observed vs one simulated path.
+    # Single-panel trajectory plot of observed vs one simulated path over the full window.
     # window_label is "IS" or "OoS"; out_path is the suffix-free path stem.
-    traj_len = min(500, length(observed));
+    traj_len = length(observed);
     Random.seed!(SEED + 17);
     idx = rand(1:size(simulated, 2));
-    p = plot(observed[1:traj_len], lw=1, color=_OBS_C, alpha=0.7, label="Observed $window_label",
+    p = plot(observed[1:traj_len], lw=0.6, color=_OBS_C, alpha=0.75, label="Observed $window_label",
         xlabel="Trading day ($window_label index)", ylabel="Annualized excess log return Gₜ",
-        size=(900, 350); _STYLE...);
-    plot!(p, simulated[1:traj_len, idx], lw=1, color=_SIM_C, alpha=0.7, label="CHMM-$tag (single sim path)");
+        size=(1200, 350); _STYLE...);
+    plot!(p, simulated[1:traj_len, idx], lw=0.6, color=_SIM_C, alpha=0.55, label="CHMM-$tag (single sim path)");
     savefig(p, out_path * ".pdf");
     savefig(p, out_path * ".svg");
 end
