@@ -1,0 +1,35 @@
+==============================================================================================================
+MS-GARCH at higher K  (R2-W3)
+==============================================================================================================
+Setup: SPY IS = 2516 days, OoS = 572 days, paths = 1000, seed = 20260422.
+Generalised Haas-Mittnik-Paolella 2004 specification: regime-specific GARCH(1,1) with
+  σ²_t(k) = ω_k + α_k * (G_{t-1} - μ)² + β_k * σ²_{t-1}(k)
+and a hidden Markov chain T (transition matrix) modulating regimes. Fit by Nelder-Mead
+with diagonal-dominant T initialisation, geometric variance-ratio spread across regimes,
+and ascending-variance regime canonicalisation.
+
+K   | #params | log-lik   | KS IS%  | KS OoS% | kurt sim  | kurt obs  | |G| ACF-MAE
+--------------------------------------------------------------------------------------------------------------
+4   | 24      | -4952.48  | 37.6    | 38.2    | 3.80      | 7.68      | 0.0437   
+6   | 48      | -4955.55  | 34.5    | 33.4    | 4.41      | 7.68      | 0.0429   
+
+Comparison points (from existing tables):
+  MS-GARCH K=2 (Haas):  KS IS = 27.7%   KS OoS = 38.7%   kurt = 4.7   |G| ACF-MAE = 0.0367
+  MS-GARCH K=3:          KS IS = 36.1%   KS OoS = 33.1%   kurt = 4.1   |G| ACF-MAE = 0.0284
+  CHMM-N K=18:           KS IS = 94.1%   KS OoS = 81.8%   kurt = 5.0   |G| ACF-MAE = 0.0509
+
+Per-regime parameter detail:
+
+K = 4:
+  regime 1: ω=0.0000  α=0.0575  β=0.7904  uncond σ=0.009  T_kk=0.622
+  regime 2: ω=0.0201  α=0.1026  β=0.8860  uncond σ=1.327  T_kk=0.859
+  regime 3: ω=0.1399  α=0.1511  β=0.8133  uncond σ=1.981  T_kk=0.805
+  regime 4: ω=1.1746  α=0.1473  β=0.8339  uncond σ=7.907  T_kk=0.556
+
+K = 6:
+  regime 1: ω=0.1235  α=0.1089  β=0.6163  uncond σ=0.671  T_kk=0.768
+  regime 2: ω=0.0079  α=0.0781  β=0.9114  uncond σ=0.871  T_kk=0.798
+  regime 3: ω=0.1541  α=0.1005  β=0.8622  uncond σ=2.033  T_kk=0.747
+  regime 4: ω=0.0904  α=0.1168  β=0.8789  uncond σ=4.551  T_kk=0.048
+  regime 5: ω=0.4968  α=0.1442  β=0.8418  uncond σ=5.954  T_kk=0.680
+  regime 6: ω=1.2441  α=0.1023  β=0.8779  uncond σ=7.930  T_kk=0.734
