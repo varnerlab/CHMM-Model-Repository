@@ -140,7 +140,7 @@ _ps_p = (700, 500);
 # Panel (a): histogram of fitted p_k.
 p_a = histogram(p_k, bins=range(0.5, 3.05, length=22),
     color=_bar_c, alpha=0.7, lw=0, label="",
-    xlabel="Fitted shape parameter p_k", ylabel="Count (out of $K states)",
+    xlabel="Fitted shape parameter pₖ", ylabel="Count (out of $K states)",
     legend=:topleft, size=_ps_p; _style...);
 vline!(p_a, [1.0], lw=2.5, ls=:dash, color=_sim_c, label="p = 1 (Laplace)");
 vline!(p_a, [2.0], lw=2.5, ls=:dash, color=_mid_c, label="p = 2 (Gaussian)");
@@ -151,8 +151,8 @@ savefig(p_a, joinpath(RESULTS_DIR, "Fig-p-Histogram-a.svg"));
 # Panel (b): p_k vs volatility rank scatter.
 p_b = scatter(1:K, p_k[order], ms=7, color=_obs_c,
     xlabel="State rank ordered by sigma_equivalent",
-    ylabel="Fitted shape parameter p_k",
-    legend=:topright, label="Fitted p_k", size=_ps_p; _style...);
+    ylabel="Fitted shape parameter pₖ",
+    legend=:topright, label="Fitted pₖ", size=_ps_p; _style...);
 hline!(p_b, [2.0], lw=2.0, ls=:dash, color=_mid_c, label="p = 2 (Gaussian)");
 hline!(p_b, [1.0], lw=2.0, ls=:dash, color=_sim_c, label="p = 1 (Laplace)");
 xlims!(p_b, 0.5, K + 0.5);

@@ -83,7 +83,7 @@ const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
 function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
-    # |G_t| ACF: observed + simulated mean / 10-90 band
+    # |Gₜ| ACF: observed + simulated mean / 10-90 band
     acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
     acf_arch_abs = hcat([autocor(abs.(sim_is[:,i]), 1:L_LAGS) for i in 1:n_acf]...);
@@ -91,7 +91,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     acf_10_abs = [quantile(acf_arch_abs[t,:], 0.10) for t in 1:L_LAGS];
     acf_90_abs = [quantile(acf_arch_abs[t,:], 0.90) for t in 1:L_LAGS];
 
-    # Raw G_t ACF: observed + simulated mean / 10-90 band
+    # Raw Gₜ ACF: observed + simulated mean / 10-90 band
     acf_obs_raw = autocor(R_is, 1:L_LAGS);
     acf_arch_raw = hcat([autocor(sim_is[:,i], 1:L_LAGS) for i in 1:n_acf]...);
     acf_m_raw = mean(acf_arch_raw, dims=2)[:];
@@ -122,16 +122,16 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
 
     # Panel (c): raw-return ACF (linear autocorrelation)
     p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        xlabel="Lag (trading days)", ylabel="ACF of Gₜ",
         size=panel_size; _STYLE...);
     plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99, -ci99], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
-    # Panel (d): |G_t| ACF (volatility clustering)
+    # Panel (d): |Gₜ| ACF (volatility clustering)
     p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |Gₜ|",
         size=panel_size; _STYLE...);
     plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
@@ -168,7 +168,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     τ_oos = 1:min(L_LAGS, n_oos-1);
     n_acf = min(200, N_PATHS);
 
-    # Raw G_t ACF (linear autocorrelation)
+    # Raw Gₜ ACF (linear autocorrelation)
     acf_oos_obs_raw = autocor(R_oos, τ_oos);
     acf_arch_raw = hcat([autocor(sim_oos[:,i], τ_oos) for i in 1:n_acf]...);
     acf_m_raw = mean(acf_arch_raw, dims=2)[:];
@@ -176,7 +176,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:length(τ_oos)];
     ci99_oos = 2.576 / sqrt(length(R_oos));
 
-    # |G_t| ACF (volatility clustering)
+    # |Gₜ| ACF (volatility clustering)
     acf_oos_obs_abs = autocor(abs.(R_oos), τ_oos);
     acf_arch_abs = hcat([autocor(abs.(sim_oos[:,i]), τ_oos) for i in 1:n_acf]...);
     acf_m_abs = mean(acf_arch_abs, dims=2)[:];
@@ -185,16 +185,16 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     # Panel (c): raw-return OoS ACF
     p_c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        xlabel="Lag (trading days)", ylabel="ACF of Gₜ",
         size=panel_size; _STYLE...);
     plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
-    # Panel (d): |G_t| OoS ACF
+    # Panel (d): |Gₜ| OoS ACF
     p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |Gₜ|",
         size=panel_size; _STYLE...);
     plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
@@ -210,8 +210,22 @@ function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
         color=:viridis, yflip=true, aspect_ratio=:equal,
         size=(520, 470),
         colorbar=true,
-        colorbar_title="log₁₀ T_{ij}",
+        colorbar_title="log₁₀ Tᵢⱼ",
         colorbar_titlefontsize=TFS);
+    savefig(p, out_path * ".pdf");
+    savefig(p, out_path * ".svg");
+end
+
+function kfigs_save_trajectory(observed, simulated, window_label, tag, K, out_path)
+    # Single-panel trajectory plot of observed vs one simulated path.
+    # window_label is "IS" or "OoS"; out_path is the suffix-free path stem.
+    traj_len = min(500, length(observed));
+    Random.seed!(SEED + 17);
+    idx = rand(1:size(simulated, 2));
+    p = plot(observed[1:traj_len], lw=1, color=_OBS_C, alpha=0.7, label="Observed $window_label",
+        xlabel="Trading day ($window_label index)", ylabel="Annualized excess log return Gₜ",
+        size=(900, 350); _STYLE...);
+    plot!(p, simulated[1:traj_len, idx], lw=1, color=_SIM_C, alpha=0.7, label="CHMM-$tag (single sim path)");
     savefig(p, out_path * ".pdf");
     savefig(p, out_path * ".svg");
 end
@@ -242,11 +256,17 @@ for (tag, build_fn) in [
     # figures use the unsuffixed Fig-3-IS-Comparison-K18-{a,b,c,d}.pdf and
     # Fig-4-OoS-Validation-K18-{a,b,c,d}.pdf split panels). The unsuffixed transition
     # matrix is not referenced by the paper, so we no longer write it here.
+    # The IS and OoS trajectory examples panelled in the supplementary use CHMM-N
+    # at K=18 only — they are written here, beside the main-body splits.
     if tag == "N"
         kfigs_save_is_comparison(sis, m_is, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-3-IS-Comparison-K$K"));
         kfigs_save_oos_validation(sos, m_oos, tag, K,
             joinpath(PAPER_FIGS_DIR, "Fig-4-OoS-Validation-K$K"));
+        kfigs_save_trajectory(R_is,  sis, "IS",  tag, K,
+            joinpath(PAPER_FIGS_DIR, "Fig-Trajectory-IS-K$K"));
+        kfigs_save_trajectory(R_oos, sos, "OoS", tag, K,
+            joinpath(PAPER_FIGS_DIR, "Fig-Trajectory-OoS-K$K"));
         println("  [$tag] Main-body Fig-*-K18 (unsuffixed) also rewritten.")
     end
 end

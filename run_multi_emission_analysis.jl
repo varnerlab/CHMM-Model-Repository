@@ -199,7 +199,7 @@ end
 function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
     colors_k = cgrad(:RdYlBu, K, categorical=true);
     p = plot(title="",
-        xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)", legend=:topright);
+        xlabel="Annualized excess log return Gₜ", ylabel="Probability density (arb. units)", legend=:topright);
     histogram!(p, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS");
     for s in 1:K
         d = model.emission[s];
@@ -210,15 +210,8 @@ function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
     savefig(p, joinpath(out_dir, "Fig-Emission-PDFs-K$K-$family_tag.pdf"));
 end
 
-function save_transition_matrix(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
-    T_log = log10.(T_mat .+ 1e-10);
-    p = heatmap(T_log,
-        titlefontsize=9,
-        xlabel="To state j", ylabel="From state i", color=:viridis,
-        yflip=true, aspect_ratio=:equal, size=(500,450));
-    savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.svg"));
-    savefig(p, joinpath(out_dir, "Fig-Transition-Matrix-K$K-$family_tag.pdf"));
-end
+# NOTE: save_transition_matrix was removed (2026-04-29). The canonical paper-side
+# per-family K=18 transition-matrix heatmaps are produced by run_figures.jl.
 
 function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
     res = [1.0 / max(1.0 - T_mat[k,k], 1e-12) for k in 1:K];
@@ -230,107 +223,11 @@ function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int
     savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.pdf"));
 end
 
-function save_is_comparison(sim_is::Matrix{Float64}, m_is, family_tag::String, K::Int, out_dir::String)
-    acf_obs_is = autocor(abs.(R_is), 1:L);
-    n_acf = min(200, N_PATHS);
-    acf_arch = hcat([autocor(abs.(sim_is[:,i]), 1:L) for i in 1:n_acf]...);
-    acf_m = mean(acf_arch, dims=2)[:];
-    acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
-    acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
-
-    # V2/V13 style defaults (colorblind-safe palette, larger fonts + margins so
-    # axis labels are not clipped in the compiled paper).
-    _obs_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue
-    _sim_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion
-    _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green
-    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
-
-    # NOTE: The canonical paper-side IS comparison panels for K=18 are produced by
-    # run_figures.jl (split panels with no top titles). This combined 3-panel layout
-    # is retained as an internal inspection artefact only.
-    _ps_inspect = (1500, 450);
-    p_a = plot(xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
-    histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed IS (T=$(n_steps))");
-    density!(p_a, sim_is[:,1], lw=2, color=_sim_c, alpha=0.85, label="CHMM-$family_tag (single sim path)");
-    xlims!(p_a, x_lo, x_hi);
-
-    p_b = plot(1:L, acf_obs_is, lw=2, color=_obs_c, ls=:dash, label="Observed |G_t|",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
-    plot!(p_b, 1:L, acf_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
-    plot!(p_b, 1:L, acf_10, fillrange=acf_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
-
-    probs_qq = range(0.001, 0.999, length=200);
-    q_obs = quantile(R_is, probs_qq);
-    q_sim = quantile(vec(sim_is), probs_qq);
-
-    p_c = plot(q_obs, q_obs, lw=2, color=:black, ls=:dash, label="Identity (perfect fit)",
-        xlabel="Observed IS quantiles", ylabel="Simulated quantiles (pooled over paths)"; _style...);
-    scatter!(p_c, q_obs, q_sim, ms=3, alpha=0.7, color=_sim_c, label="CHMM-$family_tag");
-
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=_ps_inspect);
-    savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.svg"));
-    savefig(fig, joinpath(out_dir, "Fig-3-IS-Comparison-K$K-$family_tag.pdf"));
-end
-
-function save_oos_validation(sim_oos::Matrix{Float64}, m_oos, family_tag::String, K::Int, out_dir::String)
-    # V2/V13/V14 style defaults (colorblind-safe palette, larger fonts + margins,
-    # higher contrast for the density fan, explicit legend entry for simulations).
-    _obs_c = RGB(0.835, 0.369, 0.0);        # Okabe-Ito vermillion (observed, high contrast)
-    _sim_c = RGB(0.0, 0.447, 0.698);        # Okabe-Ito blue (simulated paths)
-    _mean_c = RGB(0.0, 0.620, 0.451);       # Okabe-Ito bluish green (mean over sims)
-    _style = (titlefontsize=10, guidefontsize=10, tickfontsize=9, legendfontsize=8);
-
-    # NOTE: Canonical paper-side OoS validation panels for K=18 are produced by
-    # run_figures.jl (split panels, no top titles). This combined 3-panel layout
-    # is retained as an internal inspection artefact only.
-    p_a = histogram(m_oos.ks_pvals, bins=50, normalize=true, alpha=0.7, color=_sim_c,
-        label="CHMM-$family_tag ($(length(m_oos.ks_pvals)) paths, pass: $(m_oos.ks)%)",
-        xlabel="KS p-value against OoS series", ylabel="Density"; _style...);
-    vline!(p_a, [0.05], lw=2, color=_obs_c, ls=:dash, label="alpha = 0.05 threshold");
-
-    p_b = plot(xlabel="Annualized excess log return G_t", ylabel="Probability density (arb. units)"; _style...);
-    _sim_paths_to_plot = min(50, N_PATHS);
-    for i in 1:_sim_paths_to_plot
-        _lbl = (i == 1) ? "CHMM-$family_tag simulated OoS ($(_sim_paths_to_plot) paths)" : "";
-        density!(p_b, sim_oos[:,i], lw=1, color=_sim_c, alpha=0.15, label=_lbl);
-    end
-    density!(p_b, R_oos, lw=3, color=_obs_c, label="Observed OoS");
-    oos_lo = quantile(R_oos, 0.005); oos_hi = quantile(R_oos, 0.995);
-    oos_pad = 0.20 * (oos_hi - oos_lo);
-    xlims!(p_b, oos_lo - oos_pad, oos_hi + oos_pad);
-
-    τ_oos = 1:min(L, n_steps_oos-1);
-    acf_oos_obs = autocor(abs.(R_oos), τ_oos);
-    n_acf = min(200, N_PATHS);
-    acf_oos_arch = hcat([autocor(abs.(sim_oos[:,i]), τ_oos) for i in 1:n_acf]...);
-    acf_oos_m = mean(acf_oos_arch, dims=2)[:];
-    acf_oos_10 = [quantile(acf_oos_arch[t,:], 0.10) for t in 1:length(τ_oos)];
-    acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
-
-    p_c = plot(τ_oos, acf_oos_obs, lw=2, color=_obs_c, ls=:dash, label="Observed OoS |G_t|",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|"; _style...);
-    plot!(p_c, τ_oos, acf_oos_m, lw=2, color=_mean_c, label="CHMM-$family_tag (mean over $n_acf sims)");
-    plot!(p_c, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=_mean_c, label="CHMM-$family_tag 10-90 percentile");
-
-    fig = plot(p_a, p_b, p_c, layout=(1,3), size=(1500,450));
-    savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.svg"));
-    savefig(fig, joinpath(out_dir, "Fig-4-OoS-Validation-K$K-$family_tag.pdf"));
-end
-
-# NOTE: save_stationary_distribution was removed (2026-04-28) because its
-# output is not panelled in the paper. The per-family K=18 trajectory below
-# IS panelled in Figure~\ref{fig:trajectory_families} (sensitivity appendix).
-function save_trajectory(sim_is::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
-    Random.seed!(SEED + 17);
-    idx = rand(1:N_PATHS);
-    traj_len = min(500, n_steps);
-    p = plot(R_is[1:traj_len], lw=1, color=:red, alpha=0.6, label="Observed IS",
-        xlabel="Trading day (IS index)", ylabel="Annualized excess log return G_t",
-        size=(700, 350));
-    plot!(p, sim_is[1:traj_len, idx], lw=1, color=:navy, alpha=0.6, label="CHMM-$family_tag (single sim path)");
-    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.svg"));
-    savefig(p, joinpath(out_dir, "Fig-Trajectory-Example-K$K-$family_tag.pdf"));
-end
+# NOTE: save_is_comparison, save_oos_validation, save_stationary_distribution,
+# and save_trajectory were removed (2026-04-29). The canonical paper-side
+# K=18 IS / OoS panels are 4-panel split PDFs produced by run_figures.jl, and
+# the IS / OoS trajectory pair (CHMM-N at K=18 only) is also produced there.
+# Stationary distributions are not panelled in the paper.
 
 # ========================================================================================= #
 # Main loop: train + evaluate + (at K=18) generate figures
@@ -387,18 +284,15 @@ for family in EMISSION_FAMILIES
             println(io, "Coverage IS (%): $(m_is.cov) | OoS: $(m_oos.cov)")
         end
 
-        # Figures: always save K=18; also save K=3 and K=12 for the appendix panels.
+        # Figures: only at K=18, and only the per-family K=18 inspection figures
+        # actually panelled in the paper (Convergence, Emission-PDFs, Residence-Times).
+        # IS/OoS comparison and trajectory K=18 figures come from run_figures.jl
+        # (split panels with no top titles); the per-family transition-matrix
+        # at K=18 also comes from run_figures.jl.
         if K == 18
             save_convergence(model, tag, K, out_dir);
             save_emission_pdfs(model, tag, K, out_dir);
-            save_transition_matrix(T_mat, tag, K, out_dir);
             save_residence_times(T_mat, tag, K, out_dir);
-            save_is_comparison(sim_is, m_is, tag, K, out_dir);
-            save_oos_validation(sim_oos, m_oos, tag, K, out_dir);
-            save_trajectory(sim_is, tag, K, out_dir);
-        elseif K in (3, 12)
-            save_emission_pdfs(model, tag, K, out_dir);
-            save_is_comparison(sim_is, m_is, tag, K, out_dir);
         end
     end
 end
@@ -443,7 +337,6 @@ if isdir(PAPER_FIGS_DIR)
         "Fig-Convergence-K18",
         "Fig-Emission-PDFs-K18",
         "Fig-Residence-Times-K18",
-        "Fig-Trajectory-Example-K18",
     ];
     for fam in ("N", "t", "L", "GED")
         src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);

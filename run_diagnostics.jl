@@ -358,11 +358,11 @@ open(joinpath(nu_dir, "nu_values_K$(K_MAIN).txt"), "w") do io
 end
 
 # Histogram figure
-nu_hist_fig = plot(xlabel="ν_k", ylabel="Count", title="",
+nu_hist_fig = plot(xlabel="νₖ", ylabel="Count", title="",
     legend=false, size=(700,450));
 histogram!(nu_hist_fig, nu_k_main, bins=range(2.0, 50.0, length=25), color=:steelblue, alpha=0.8);
 vline!(nu_hist_fig, [2.1], color=:red, lw=2, ls=:dash);
-annotate!(nu_hist_fig, 3.0, maximum([1,maximum(ones(length(nu_k_main)))])*0.9, text("ν_min = 2.1", :red, 9, :left));
+annotate!(nu_hist_fig, 3.0, maximum([1,maximum(ones(length(nu_k_main)))])*0.9, text("νₘᵢₙ = 2.1", :red, 9, :left));
 savefig(nu_hist_fig, joinpath(nu_dir, "Fig-nu-Histogram-K$(K_MAIN).pdf"));
 savefig(nu_hist_fig, joinpath(nu_dir, "Fig-nu-Histogram-K$(K_MAIN).svg"));
 

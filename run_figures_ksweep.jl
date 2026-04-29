@@ -73,7 +73,7 @@ const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
 function save_is_comparison(sim_is, m_is, tag, K, out_path)
-    # |G_t| ACF: observed + simulated mean / 10-90 band
+    # |Gₜ| ACF: observed + simulated mean / 10-90 band
     acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
     acf_arch_abs = hcat([autocor(abs.(sim_is[:,i]), 1:L_LAGS) for i in 1:n_acf]...);
@@ -81,7 +81,7 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
     acf_10_abs = [quantile(acf_arch_abs[t,:], 0.10) for t in 1:L_LAGS];
     acf_90_abs = [quantile(acf_arch_abs[t,:], 0.90) for t in 1:L_LAGS];
 
-    # Raw G_t ACF: observed + simulated mean / 10-90 band
+    # Raw Gₜ ACF: observed + simulated mean / 10-90 band
     acf_obs_raw = autocor(R_is, 1:L_LAGS);
     acf_arch_raw = hcat([autocor(sim_is[:,i], 1:L_LAGS) for i in 1:n_acf]...);
     acf_m_raw = mean(acf_arch_raw, dims=2)[:];
@@ -112,16 +112,16 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
 
     # Panel (c): raw-return ACF
     p_c = plot(1:L_LAGS, acf_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        xlabel="Lag (trading days)", ylabel="ACF of Gₜ",
         size=panel_size; _STYLE...);
     plot!(p_c, 1:L_LAGS, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, 1:L_LAGS, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99, -ci99], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
-    # Panel (d): |G_t| ACF
+    # Panel (d): |Gₜ| ACF
     p_d = plot(1:L_LAGS, acf_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |Gₜ|",
         size=panel_size; _STYLE...);
     plot!(p_d, 1:L_LAGS, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, 1:L_LAGS, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
@@ -156,7 +156,7 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     τ_oos = 1:min(L_LAGS, n_oos-1);
     n_acf = min(200, N_PATHS);
 
-    # Raw G_t ACF
+    # Raw Gₜ ACF
     acf_oos_obs_raw = autocor(R_oos, τ_oos);
     acf_arch_raw = hcat([autocor(sim_oos[:,i], τ_oos) for i in 1:n_acf]...);
     acf_m_raw = mean(acf_arch_raw, dims=2)[:];
@@ -164,7 +164,7 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     acf_90_raw = [quantile(acf_arch_raw[t,:], 0.90) for t in 1:length(τ_oos)];
     ci99_oos = 2.576 / sqrt(length(R_oos));
 
-    # |G_t| ACF
+    # |Gₜ| ACF
     acf_oos_obs_abs = autocor(abs.(R_oos), τ_oos);
     acf_arch_abs = hcat([autocor(abs.(sim_oos[:,i]), τ_oos) for i in 1:n_acf]...);
     acf_m_abs = mean(acf_arch_abs, dims=2)[:];
@@ -173,16 +173,16 @@ function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
 
     # Panel (c): raw-return OoS ACF
     p_c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        xlabel="Lag (trading days)", ylabel="ACF of G_t",
+        xlabel="Lag (trading days)", ylabel="ACF of Gₜ",
         size=panel_size; _STYLE...);
     plot!(p_c, τ_oos, acf_m_raw, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_c, τ_oos, acf_10_raw, fillrange=acf_90_raw, alpha=0.2, color=_MEAN_C, label="10-90th pctl");
     hline!(p_c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p_c, out_path * "-c.pdf"); savefig(p_c, out_path * "-c.svg");
 
-    # Panel (d): |G_t| OoS ACF
+    # Panel (d): |Gₜ| OoS ACF
     p_d = plot(τ_oos, acf_oos_obs_abs, lw=2, color=_OBS_C, ls=:dash, label="Observed OoS",
-        xlabel="Lag (trading days)", ylabel="ACF of |G_t|",
+        xlabel="Lag (trading days)", ylabel="ACF of |Gₜ|",
         size=panel_size; _STYLE...);
     plot!(p_d, τ_oos, acf_m_abs, lw=2, color=_MEAN_C, label="CHMM-$tag (mean)");
     plot!(p_d, τ_oos, acf_10_abs, fillrange=acf_90_abs, alpha=0.2, color=_MEAN_C, label="10-90th pctl");

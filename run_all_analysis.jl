@@ -305,11 +305,11 @@ for K in K_VALUES
             μ_s = mean(sim); σ_s = std(sim);
             kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
 
-            # ACF-MAE on |G_t| (volatility clustering)
+            # ACF-MAE on |Gₜ| (volatility clustering)
             acf_sim_val = autocor(abs.(sim), 1:L_use);
             acf_mae_s += mean(abs.(acf_obs_val .- acf_sim_val));
 
-            # ACF-MAE on raw G_t (linear autocorrelation)
+            # ACF-MAE on raw Gₜ (linear autocorrelation)
             acf_sim_raw_val = autocor(sim, 1:L_use);
             acf_mae_raw_s += mean(abs.(acf_obs_raw_val .- acf_sim_raw_val));
 
@@ -393,7 +393,7 @@ for K in K_VALUES
     println("  Generating Figure 3: IS comparison (4 panels)...")
     _ps = (700, 500);
 
-    # |G_t| ACF: observed + simulated mean / 10-90 band
+    # |Gₜ| ACF: observed + simulated mean / 10-90 band
     acf_obs_is = autocor(abs.(R_is), 1:L);
     n_acf_sample = min(200, N_PATHS);
     acf_arch = hcat([autocor(abs.(decoded_is[:,i]), 1:L) for i in 1:n_acf_sample]...);
@@ -401,7 +401,7 @@ for K in K_VALUES
     acf_10 = [quantile(acf_arch[t,:], 0.10) for t in 1:L];
     acf_90 = [quantile(acf_arch[t,:], 0.90) for t in 1:L];
 
-    # Raw G_t ACF
+    # Raw Gₜ ACF
     acf_obs_raw_is = autocor(R_is, 1:L);
     acf_arch_raw = hcat([autocor(decoded_is[:,i], 1:L) for i in 1:n_acf_sample]...);
     acf_m_raw = mean(acf_arch_raw, dims=2)[:];
@@ -427,18 +427,18 @@ for K in K_VALUES
     savefig(p3b, joinpath(out_dir, "Fig-3-IS-Comparison-b.svg"));
     savefig(p3b, joinpath(out_dir, "Fig-3-IS-Comparison-b.pdf"));
 
-    # (c) ACF of raw G_t
+    # (c) ACF of raw Gₜ
     p3c = plot(1:L, acf_obs_raw_is, lw=2, color=:red, ls=:dash, label="Observed",
-        xlabel="Lag", ylabel="ACF of G_t", size=_ps);
+        xlabel="Lag", ylabel="ACF of Gₜ", size=_ps);
     plot!(p3c, 1:L, acf_m_raw, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p3c, 1:L, acf_10_raw, fillrange=acf_90_raw, alpha=0.15, color=:navy, label="10-90th pctl");
     hline!(p3c, [ci99_is, -ci99_is], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p3c, joinpath(out_dir, "Fig-3-IS-Comparison-c.svg"));
     savefig(p3c, joinpath(out_dir, "Fig-3-IS-Comparison-c.pdf"));
 
-    # (d) ACF of |G_t|
+    # (d) ACF of |Gₜ|
     p3d = plot(1:L, acf_obs_is, lw=2, color=:red, ls=:dash, label="Observed",
-        xlabel="Lag", ylabel="ACF of |G_t|", size=_ps);
+        xlabel="Lag", ylabel="ACF of |Gₜ|", size=_ps);
     plot!(p3d, 1:L, acf_m, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p3d, 1:L, acf_10, fillrange=acf_90, alpha=0.15, color=:navy, label="10-90th pctl");
     savefig(p3d, joinpath(out_dir, "Fig-3-IS-Comparison-d.svg"));
@@ -471,7 +471,7 @@ for K in K_VALUES
     savefig(p4b, joinpath(out_dir, "Fig-4-OoS-Validation-b.svg"));
     savefig(p4b, joinpath(out_dir, "Fig-4-OoS-Validation-b.pdf"));
 
-    # (c) ACF of raw G_t (OoS)
+    # (c) ACF of raw Gₜ (OoS)
     τ_oos = 1:min(L, n_steps_oos-1);
     acf_oos_obs_raw = autocor(R_oos, τ_oos);
     n_acf_oos = min(200, N_PATHS);
@@ -482,14 +482,14 @@ for K in K_VALUES
     ci99_oos = 2.576 / sqrt(length(R_oos));
 
     p4c = plot(τ_oos, acf_oos_obs_raw, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        xlabel="Lag", ylabel="ACF of G_t", size=_ps);
+        xlabel="Lag", ylabel="ACF of Gₜ", size=_ps);
     plot!(p4c, τ_oos, acf_oos_m_raw, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p4c, τ_oos, acf_oos_10_raw, fillrange=acf_oos_90_raw, alpha=0.2, color=:navy, label="10-90th");
     hline!(p4c, [ci99_oos, -ci99_oos], lw=1, color=:gray, ls=:dash, label="99% CI");
     savefig(p4c, joinpath(out_dir, "Fig-4-OoS-Validation-c.svg"));
     savefig(p4c, joinpath(out_dir, "Fig-4-OoS-Validation-c.pdf"));
 
-    # (d) ACF of |G_t| (OoS)
+    # (d) ACF of |Gₜ| (OoS)
     acf_oos_obs = autocor(abs.(R_oos), τ_oos);
     acf_oos_arch = hcat([autocor(abs.(decoded_oos[:,i]), τ_oos) for i in 1:n_acf_oos]...);
     acf_oos_m = mean(acf_oos_arch, dims=2)[:];
@@ -497,7 +497,7 @@ for K in K_VALUES
     acf_oos_90 = [quantile(acf_oos_arch[t,:], 0.90) for t in 1:length(τ_oos)];
 
     p4d = plot(τ_oos, acf_oos_obs, lw=2, color=:red, ls=:dash, label="Observed OoS",
-        xlabel="Lag", ylabel="ACF of |G_t|", size=_ps);
+        xlabel="Lag", ylabel="ACF of |Gₜ|", size=_ps);
     plot!(p4d, τ_oos, acf_oos_m, lw=2, color=:navy, label="CHMM (mean)");
     plot!(p4d, τ_oos, acf_oos_10, fillrange=acf_oos_90, alpha=0.2, color=:navy, label="10-90th");
     savefig(p4d, joinpath(out_dir, "Fig-4-OoS-Validation-d.svg"));
