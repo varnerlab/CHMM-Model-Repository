@@ -1,0 +1,26 @@
+==========================================================================================
+Cross-ticker CHMM-t PENALISED ECM at λ = 20.0, K = 18  [peer-review T1.5]
+==========================================================================================
+Setup: per-ticker independent fit, paths = 1000, seed = 20260420.
+Penalty: 1/ν_k shrinkage at rate λ = 20.0 on the per-state ECM Q-function.
+Bracket: (ν_min, ν_max) = (2.1, 50).
+
+Body Table tab:cross_ticker columns (replacement panel):
+
+Ticker | IS KS% | OoS KS% | Kurt obs | Kurt sim | |G| ACF-MAE | ν median | ν range
+------------------------------------------------------------------------------------------
+SPY    |   95.8 |    85.0 |     7.68 |     8.01 |      0.0541 |     50.0 | [4.89, 50.0]
+NVDA   |   99.5 |    53.8 |     5.53 |     5.23 |      0.0473 |     50.0 | [3.7, 50.0]
+JNJ    |   99.8 |    92.3 |     8.97 |    12.28 |      0.0334 |     50.0 | [3.37, 50.0]
+JPM    |   97.8 |    53.8 |     7.62 |      7.7 |      0.0457 |     50.0 | [5.83, 50.0]
+AAPL   |   99.1 |    95.1 |     3.19 |     2.84 |      0.0418 |     50.0 | [10.46, 50.0]
+QQQ    |   96.1 |    91.8 |      3.4 |     2.88 |      0.0569 |     50.0 | [11.88, 50.0]
+
+Compare against unpenalised CHMM-t in body Table 3 (sourced from
+results/SPY/Table-T2-Per-Ticker-Emission-Families.txt CHMM-t rows):
+  SPY :  IS KS 95.2  OoS KS 84.1  sim kurt 14.68
+  NVDA:  IS KS 99.1  OoS KS 57.2  sim kurt 46.40
+  JNJ :  IS KS 99.8  OoS KS 94.3  sim kurt 99.66
+  JPM :  IS KS 99.2  OoS KS 53.0  sim kurt 18.82
+  AAPL:  IS KS 99.1  OoS KS 94.7  sim kurt  7.54
+  QQQ :  IS KS 96.1  OoS KS 90.3  sim kurt  3.30
