@@ -213,9 +213,10 @@ end
 
 # ----- Fit + simulate + render for each family -----
 for (tag, build_fn) in [
-    ("N", () -> build(MyContinuousHiddenMarkovModel, (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
-    ("t", () -> build(MyStudentTHiddenMarkovModel,   (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
-    ("L", () -> build(MyLaplaceHiddenMarkovModel,    (observations=R_is, number_of_states=K, max_iter=MAX_ITER)))]
+    ("N",   () -> build(MyContinuousHiddenMarkovModel, (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
+    ("t",   () -> build(MyStudentTHiddenMarkovModel,   (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
+    ("L",   () -> build(MyLaplaceHiddenMarkovModel,    (observations=R_is, number_of_states=K, max_iter=MAX_ITER))),
+    ("GED", () -> build(MyGEDHiddenMarkovModel,        (observations=R_is, number_of_states=K, max_iter=MAX_ITER)))]
     println("\n[$tag] Training CHMM-$tag at K=$K...")
     Random.seed!(SEED);
     model = build_fn();
