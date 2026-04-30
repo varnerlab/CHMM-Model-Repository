@@ -1,0 +1,23 @@
+==============================================================================================================
+Block-aware OoS KS recalibration at the body headline K*=3 and K*=6 sensitivity reference.
+==============================================================================================================
+
+Setup     : SPY OoS (572 obs); 500 OoS-length simulated paths per generator under seed 20260422.
+Block boot: stationary block bootstrap of R_oos at mean block length L = 20, B = 1000.
+OoS-anchored 95% block-bootstrap KS critical value : 0.0647
+Asymptotic 95% two-sample KS critical value         : 0.0804  (1.36 * sqrt(2 / n_oos))
+
+Model                             asymp %    block L=20%  KS q50     mean p-val
+--------------------------------------------------------------------------------------------------------------
+CHMM-N (K* = 3)                   79.8       58.6        0.0594     0.325    
+CHMM-t pen. (λ=20) (K* = 3)       79.8       54.2        0.0629     0.288    
+CHMM-L (K* = 3)                   65.0       33.4        0.0717     0.184    
+CHMM-GED (K* = 3)                 79.2       51.6        0.0629     0.303    
+CHMM-N (K* = 6)                   80.0       53.2        0.0629     0.294    
+CHMM-t pen. (λ=20) (K* = 6)       81.2       56.4        0.0612     0.308    
+CHMM-L (K* = 6)                   76.6       50.2        0.0647     0.278    
+CHMM-GED (K* = 6)                 82.0       54.6        0.0612     0.308    
+
+Body Table tab:ks_block_body row order (alongside existing K=18 rows):
+  bootstrap, GARCH(1,1) [existing], plus the K*=3 four-emission block (headline),
+  plus the K*=6 four-emission block (sensitivity), plus the existing K=18 four-emission block.

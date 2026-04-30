@@ -1,0 +1,196 @@
+==============================================================================================================
+Per-state Frobenius distances on the 30-ticker panel (R2 RE3)
+K = 3, λ = 20.0, 3 seeds per family per ticker
+==============================================================================================================
+
+Aggregate distribution across 30 tickers:
+  pair     ‖Δμ‖_F med [Q1, Q3]     ‖Δσ‖_F med [Q1, Q3]     ‖ΔT‖_F med [Q1, Q3]   
+  N-t      2.2171 [1.9461, 3.4881]  3.8884 [2.3688, 5.3167]  0.4584 [0.4027, 0.5344]
+  N-L      2.2083 [1.5719, 2.9278]  4.9308 [3.7072, 7.5338]  0.4410 [0.3613, 0.6421]
+  N-GED    2.3522 [1.6971, 3.3218]  3.6272 [2.5298, 5.1940]  0.4454 [0.3408, 0.5531]
+  t-L      1.3525 [0.9047, 2.4806]  2.1222 [1.6224, 2.6128]  0.2553 [0.1611, 0.6595]
+  t-GED    0.6952 [0.4028, 1.2219]  0.3902 [0.2184, 0.7132]  0.2331 [0.1255, 0.2974]
+  L-GED    1.4878 [0.6246, 2.5141]  1.9750 [1.8012, 2.7002]  0.3253 [0.1599, 0.5546]
+
+Per-ticker per-pair distances (full panel):
+  Sector                      Ticker   Pair     ‖Δμ‖_F        ‖Δσ‖_F        ‖ΔT‖_F      
+  Information Technology      AAPL     N-t      3.32482       1.21755       0.48407     
+  Information Technology      AAPL     N-L      2.19536       2.67660       0.17980     
+  Information Technology      AAPL     N-GED    2.93825       1.06061       0.38002     
+  Information Technology      AAPL     t-L      1.27804       1.75208       0.30830     
+  Information Technology      AAPL     t-GED    0.44558       0.36373       0.23339     
+  Information Technology      AAPL     L-GED    0.91532       1.67517       0.22399     
+  Information Technology      MSFT     N-t      2.61111       1.99796       0.53646     
+  Information Technology      MSFT     N-L      2.74645       3.22037       0.56417     
+  Information Technology      MSFT     N-GED    2.87993       2.10641       0.58360     
+  Information Technology      MSFT     t-L      0.14140       1.85248       0.03364     
+  Information Technology      MSFT     t-GED    0.40629       0.17308       0.08024     
+  Information Technology      MSFT     L-GED    0.33543       1.93891       0.06248     
+  Information Technology      NVDA     N-t      7.55665       6.16389       0.77122     
+  Information Technology      NVDA     N-L      5.72154       8.02929       0.87699     
+  Information Technology      NVDA     N-GED    6.40296       5.71169       0.84494     
+  Information Technology      NVDA     t-L      1.95371       3.74828       0.27496     
+  Information Technology      NVDA     t-GED    1.27939       0.55799       0.18479     
+  Information Technology      NVDA     L-GED    0.75306       3.82898       0.10495     
+  Health Care                 JNJ      N-t      1.57274       3.73118       0.45387     
+  Health Care                 JNJ      N-L      1.62012       4.51239       0.41843     
+  Health Care                 JNJ      N-GED    1.65238       3.85224       0.59586     
+  Health Care                 JNJ      t-L      0.47765       0.82382       0.14621     
+  Health Care                 JNJ      t-GED    0.77750       0.36399       0.38641     
+  Health Care                 JNJ      L-GED    0.31428       0.79557       0.42116     
+  Health Care                 UNH      N-t      3.81830       5.80222       0.57939     
+  Health Care                 UNH      N-L      2.94961       7.70074       0.48152     
+  Health Care                 UNH      N-GED    3.50411       5.86676       0.56715     
+  Health Care                 UNH      t-L      0.95457       2.16644       0.23556     
+  Health Care                 UNH      t-GED    0.49434       0.27236       0.14644     
+  Health Care                 UNH      L-GED    0.56970       1.98223       0.17615     
+  Health Care                 LLY      N-t      2.12044       7.51549       0.67616     
+  Health Care                 LLY      N-L      1.25043       9.73946       0.65735     
+  Health Care                 LLY      N-GED    1.60136       7.40714       0.58203     
+  Health Care                 LLY      t-L      0.90275       2.30214       0.16018     
+  Health Care                 LLY      t-GED    0.64087       0.15403       0.11851     
+  Health Care                 LLY      L-GED    0.60396       2.43744       0.14144     
+  Financials                  JPM      N-t      3.54256       3.61279       0.60187     
+  Financials                  JPM      N-L      1.55289       5.31304       0.42548     
+  Financials                  JPM      N-GED    2.86727       3.03987       0.38060     
+  Financials                  JPM      t-L      3.93138       2.18739       0.87831     
+  Financials                  JPM      t-GED    1.64677       0.60875       0.26756     
+  Financials                  JPM      L-GED    3.38613       2.71521       0.71418     
+  Financials                  BAC      N-t      3.32235       3.76520       0.41383     
+  Financials                  BAC      N-L      2.55877       5.22859       0.39519     
+  Financials                  BAC      N-GED    3.62765       3.40211       0.43504     
+  Financials                  BAC      t-L      0.97465       1.74091       0.14062     
+  Financials                  BAC      t-GED    2.20389       0.42675       0.27590     
+  Financials                  BAC      L-GED    1.76095       2.11886       0.34349     
+  Financials                  WFC      N-t      0.92550       2.24401       0.16871     
+  Financials                  WFC      N-L      2.98486       4.66544       0.44927     
+  Financials                  WFC      N-GED    1.26688       2.15313       0.13937     
+  Financials                  WFC      t-L      2.08009       2.56833       0.29929     
+  Financials                  WFC      t-GED    0.36924       0.14730       0.04849     
+  Financials                  WFC      L-GED    1.80751       2.70117       0.32946     
+  Consumer Discretionary      AMZN     N-t      9.09051       1.08721       0.30616     
+  Consumer Discretionary      AMZN     N-L      8.24586       3.63503       0.35368     
+  Consumer Discretionary      AMZN     N-GED    8.83799       0.92432       0.33476     
+  Consumer Discretionary      AMZN     t-L      0.91045       2.62759       0.08510     
+  Consumer Discretionary      AMZN     t-GED    0.40760       0.22633       0.04300     
+  Consumer Discretionary      AMZN     L-GED    0.60455       2.84480       0.05178     
+  Consumer Discretionary      HD       N-t      2.00452       3.58774       0.39999     
+  Consumer Discretionary      HD       N-L      1.26601       4.91670       0.35400     
+  Consumer Discretionary      HD       N-GED    1.88649       3.26563       0.31803     
+  Consumer Discretionary      HD       t-L      2.56230       1.46309       0.58149     
+  Consumer Discretionary      HD       t-GED    1.04929       0.48931       0.19865     
+  Consumer Discretionary      HD       L-GED    2.63592       1.82550       0.58751     
+  Consumer Discretionary      MCD      N-t      1.23413       4.01213       0.30783     
+  Consumer Discretionary      MCD      N-L      1.22597       4.43614       0.49678     
+  Consumer Discretionary      MCD      N-GED    1.93970       2.54031       0.28810     
+  Consumer Discretionary      MCD      t-L      1.87533       0.81217       0.60766     
+  Consumer Discretionary      MCD      t-GED    1.29418       1.50537       0.29796     
+  Consumer Discretionary      MCD      L-GED    2.02839       1.96774       0.37279     
+  Communication Services      NFLX     N-t      5.98350       5.35585       0.36453     
+  Communication Services      NFLX     N-L      5.27010       6.64807       0.27479     
+  Communication Services      NFLX     N-GED    6.20888       4.80184       0.31223     
+  Communication Services      NFLX     t-L      1.38627       2.66567       0.17850     
+  Communication Services      NFLX     t-GED    1.79568       0.84155       0.31477     
+  Communication Services      NFLX     L-GED    1.08151       2.46256       0.24431     
+  Communication Services      VZ       N-t      1.97799       2.74323       0.42492     
+  Communication Services      VZ       N-L      1.80636       3.61189       0.32934     
+  Communication Services      VZ       N-GED    2.15044       2.84983       0.48790     
+  Communication Services      VZ       t-L      0.39171       1.04929       0.16385     
+  Communication Services      VZ       t-GED    0.17387       0.28472       0.17926     
+  Communication Services      VZ       L-GED    0.50653       0.88773       0.21766     
+  Communication Services      DIS      N-t      3.06287       5.19926       0.53776     
+  Communication Services      DIS      N-L      2.23860       7.47657       0.73411     
+  Communication Services      DIS      N-GED    3.13142       3.88643       0.30586     
+  Communication Services      DIS      t-L      3.34357       2.75627       0.82415     
+  Communication Services      DIS      t-GED    5.80678       1.50597       0.56666     
+  Communication Services      DIS      L-GED    4.54995       4.19748       0.92781     
+  Industrials                 CAT      N-t      3.14091       1.83293       0.23129     
+  Industrials                 CAT      N-L      2.54100       3.33703       0.26394     
+  Industrials                 CAT      N-GED    3.38528       1.86746       0.32652     
+  Industrials                 CAT      t-L      0.85723       2.11657       0.10716     
+  Industrials                 CAT      t-GED    0.37302       0.44483       0.25102     
+  Industrials                 CAT      L-GED    1.21461       1.79612       0.32122     
+  Industrials                 BA       N-t      2.14521       9.06759       0.23755     
+  Industrials                 BA       N-L      2.38212       12.08740      0.59957     
+  Industrials                 BA       N-GED    0.52263       7.38875       0.07957     
+  Industrials                 BA       t-L      3.43682       3.23827       0.66480     
+  Industrials                 BA       t-GED    1.88657       1.83566       0.23290     
+  Industrials                 BA       L-GED    2.43622       4.97952       0.55316     
+  Industrials                 HON      N-t      2.12845       4.90008       0.52807     
+  Industrials                 HON      N-L      1.79336       6.75275       0.43264     
+  Industrials                 HON      N-GED    2.21998       4.83536       0.54063     
+  Industrials                 HON      t-L      0.59711       2.12790       0.17500     
+  Industrials                 HON      t-GED    0.35487       0.28373       0.10776     
+  Industrials                 HON      L-GED    0.90919       2.34212       0.26284     
+  Consumer Staples            PG       N-t      1.84238       3.34782       0.46289     
+  Consumer Staples            PG       N-L      1.59418       4.82345       0.67084     
+  Consumer Staples            PG       N-GED    2.24837       3.28669       0.51731     
+  Consumer Staples            PG       t-L      2.23775       1.58923       0.90951     
+  Consumer Staples            PG       t-GED    0.64019       0.08274       0.28894     
+  Consumer Staples            PG       L-GED    2.54010       1.64493       0.85758     
+  Consumer Staples            KO       N-t      1.40089       2.90347       0.41070     
+  Consumer Staples            KO       N-L      1.17119       3.40203       0.64143     
+  Consumer Staples            KO       N-GED    1.32777       2.76939       0.37405     
+  Consumer Staples            KO       t-L      1.93697       0.71944       0.86814     
+  Consumer Staples            KO       t-GED    0.24956       0.21571       0.20181     
+  Consumer Staples            KO       L-GED    1.96941       0.91570       0.80114     
+  Consumer Staples            WMT      N-t      1.65402       4.01153       0.52741     
+  Consumer Staples            WMT      N-L      1.56450       4.94487       0.73773     
+  Consumer Staples            WMT      N-GED    1.83123       4.84661       0.50278     
+  Consumer Staples            WMT      t-L      2.69465       0.96508       0.64350     
+  Consumer Staples            WMT      t-GED    0.76477       0.92585       0.41210     
+  Consumer Staples            WMT      L-GED    2.67972       0.43740       0.50441     
+  Energy                      XOM      N-t      2.28903       1.88412       0.42489     
+  Energy                      XOM      N-L      2.93173       3.92353       0.57034     
+  Energy                      XOM      N-GED    2.92201       2.29745       0.55728     
+  Energy                      XOM      t-L      0.89570       2.22132       0.18284     
+  Energy                      XOM      t-GED    0.88690       0.41647       0.17111     
+  Energy                      XOM      L-GED    0.01069       1.86334       0.01350     
+  Energy                      CVX      N-t      2.87521       5.37842       0.48699     
+  Energy                      CVX      N-L      1.64615       7.55291       0.78655     
+  Energy                      CVX      N-GED    3.06247       5.21558       0.45584     
+  Energy                      CVX      t-L      3.55628       2.55944       0.92689     
+  Energy                      CVX      t-GED    0.40161       0.17358       0.05669     
+  Energy                      CVX      L-GED    3.68914       2.69720       0.91817     
+  Energy                      COP      N-t      3.57559       5.72475       0.54575     
+  Energy                      COP      N-L      4.24470       8.33925       0.64228     
+  Energy                      COP      N-GED    3.77033       5.66488       0.56489     
+  Energy                      COP      t-L      1.29337       2.82057       0.17456     
+  Energy                      COP      t-GED    0.22260       0.10346       0.02919     
+  Energy                      COP      L-GED    1.13026       2.85831       0.15444     
+  Utilities                   NEE      N-t      0.32230       2.01302       0.42398     
+  Utilities                   NEE      N-L      1.17901       3.52248       0.35243     
+  Utilities                   NEE      N-GED    0.99913       1.76564       0.42625     
+  Utilities                   NEE      t-L      1.31871       2.01342       0.37813     
+  Utilities                   NEE      t-GED    0.77581       0.72809       0.39274     
+  Utilities                   NEE      L-GED    2.09314       1.90299       0.10766     
+  Utilities                   DUK      N-t      2.12958       6.35669       0.62128     
+  Utilities                   DUK      N-L      1.92509       7.57057       0.64391     
+  Utilities                   DUK      N-GED    2.45612       6.43538       0.71119     
+  Utilities                   DUK      t-L      2.56150       1.26081       0.88379     
+  Utilities                   DUK      t-GED    0.91389       0.25369       0.33520     
+  Utilities                   DUK      L-GED    2.70805       1.14130       0.78431     
+  Utilities                   SO       N-t      1.93549       4.47890       0.47942     
+  Utilities                   SO       N-L      1.11745       3.01775       0.40111     
+  Utilities                   SO       N-GED    1.34778       5.12944       0.37362     
+  Utilities                   SO       t-L      2.65145       1.76178       0.72467     
+  Utilities                   SO       t-GED    0.74951       0.66861       0.29571     
+  Utilities                   SO       L-GED    2.27455       2.34735       0.49627     
+  Materials                   FCX      N-t      14.17136      4.63697       0.44050     
+  Materials                   FCX      N-L      13.30637      7.83075       0.36030     
+  Materials                   FCX      N-GED    1.27493       6.53118       0.46585     
+  Materials                   FCX      t-L      1.40002       3.52435       0.11547     
+  Materials                   FCX      t-GED    14.71927      3.69825       0.59054     
+  Materials                   FCX      L-GED    13.76954      2.74034       0.55512     
+  Materials                   NEM      N-t      3.79584       2.03442       0.48814     
+  Materials                   NEM      N-L      2.91616       4.14052       0.36411     
+  Materials                   NEM      N-GED    3.50967       2.52624       0.48930     
+  Materials                   NEM      t-L      1.08706       2.67386       0.20437     
+  Materials                   NEM      t-GED    0.44790       0.85390       0.28440     
+  Materials                   NEM      L-GED    0.68495       1.95582       0.18760     
+  Materials                   APD      N-t      2.12609       4.47910       0.38777     
+  Materials                   APD      N-L      2.22117       5.99678       0.40310     
+  Materials                   APD      N-GED    2.08776       4.38462       0.35902     
+  Materials                   APD      t-L      0.12421       1.72200       0.05537     
+  Materials                   APD      t-GED    0.21416       0.11633       0.04865     
+  Materials                   APD      L-GED    0.31081       1.81641       0.08958     

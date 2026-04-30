@@ -1,0 +1,187 @@
+scope,sector,ticker,pair,d_mu_F,d_sigma_F,d_T_F
+spy,,SPY,N-t,2.090308,0.960072,0.530472
+spy,,SPY,N-L,1.942717,1.893976,0.508143
+spy,,SPY,N-GED,2.024823,0.944555,0.520253
+spy,,SPY,t-L,0.161101,0.986811,0.031474
+spy,,SPY,t-GED,0.213657,0.026130,0.042429
+spy,,SPY,L-GED,0.165015,1.009226,0.022569
+panel,Information Technology,AAPL,N-t,3.324823,1.217553,0.484068
+panel,Information Technology,AAPL,N-L,2.195358,2.676604,0.179800
+panel,Information Technology,AAPL,N-GED,2.938254,1.060607,0.380021
+panel,Information Technology,AAPL,t-L,1.278035,1.752076,0.308301
+panel,Information Technology,AAPL,t-GED,0.445583,0.363735,0.233390
+panel,Information Technology,AAPL,L-GED,0.915319,1.675170,0.223989
+panel,Information Technology,MSFT,N-t,2.611108,1.997955,0.536456
+panel,Information Technology,MSFT,N-L,2.746453,3.220374,0.564171
+panel,Information Technology,MSFT,N-GED,2.879931,2.106413,0.583597
+panel,Information Technology,MSFT,t-L,0.141404,1.852476,0.033638
+panel,Information Technology,MSFT,t-GED,0.406292,0.173078,0.080244
+panel,Information Technology,MSFT,L-GED,0.335428,1.938907,0.062477
+panel,Information Technology,NVDA,N-t,7.556653,6.163885,0.771218
+panel,Information Technology,NVDA,N-L,5.721543,8.029292,0.876989
+panel,Information Technology,NVDA,N-GED,6.402959,5.711690,0.844943
+panel,Information Technology,NVDA,t-L,1.953707,3.748276,0.274961
+panel,Information Technology,NVDA,t-GED,1.279390,0.557993,0.184789
+panel,Information Technology,NVDA,L-GED,0.753064,3.828977,0.104948
+panel,Health Care,JNJ,N-t,1.572737,3.731180,0.453870
+panel,Health Care,JNJ,N-L,1.620118,4.512385,0.418425
+panel,Health Care,JNJ,N-GED,1.652376,3.852237,0.595860
+panel,Health Care,JNJ,t-L,0.477652,0.823820,0.146210
+panel,Health Care,JNJ,t-GED,0.777504,0.363988,0.386411
+panel,Health Care,JNJ,L-GED,0.314282,0.795573,0.421162
+panel,Health Care,UNH,N-t,3.818297,5.802215,0.579391
+panel,Health Care,UNH,N-L,2.949613,7.700744,0.481519
+panel,Health Care,UNH,N-GED,3.504110,5.866760,0.567155
+panel,Health Care,UNH,t-L,0.954573,2.166438,0.235559
+panel,Health Care,UNH,t-GED,0.494341,0.272361,0.146438
+panel,Health Care,UNH,L-GED,0.569696,1.982227,0.176148
+panel,Health Care,LLY,N-t,2.120439,7.515486,0.676162
+panel,Health Care,LLY,N-L,1.250435,9.739457,0.657351
+panel,Health Care,LLY,N-GED,1.601357,7.407136,0.582027
+panel,Health Care,LLY,t-L,0.902751,2.302135,0.160177
+panel,Health Care,LLY,t-GED,0.640873,0.154025,0.118509
+panel,Health Care,LLY,L-GED,0.603958,2.437437,0.141445
+panel,Financials,JPM,N-t,3.542559,3.612790,0.601871
+panel,Financials,JPM,N-L,1.552894,5.313041,0.425481
+panel,Financials,JPM,N-GED,2.867274,3.039870,0.380598
+panel,Financials,JPM,t-L,3.931377,2.187392,0.878306
+panel,Financials,JPM,t-GED,1.646773,0.608751,0.267555
+panel,Financials,JPM,L-GED,3.386134,2.715212,0.714176
+panel,Financials,BAC,N-t,3.322347,3.765199,0.413832
+panel,Financials,BAC,N-L,2.558767,5.228594,0.395193
+panel,Financials,BAC,N-GED,3.627649,3.402114,0.435035
+panel,Financials,BAC,t-L,0.974653,1.740907,0.140623
+panel,Financials,BAC,t-GED,2.203887,0.426750,0.275901
+panel,Financials,BAC,L-GED,1.760954,2.118863,0.343488
+panel,Financials,WFC,N-t,0.925505,2.244009,0.168709
+panel,Financials,WFC,N-L,2.984855,4.665437,0.449266
+panel,Financials,WFC,N-GED,1.266877,2.153132,0.139365
+panel,Financials,WFC,t-L,2.080092,2.568326,0.299292
+panel,Financials,WFC,t-GED,0.369238,0.147305,0.048490
+panel,Financials,WFC,L-GED,1.807513,2.701170,0.329457
+panel,Consumer Discretionary,AMZN,N-t,9.090508,1.087206,0.306159
+panel,Consumer Discretionary,AMZN,N-L,8.245863,3.635026,0.353685
+panel,Consumer Discretionary,AMZN,N-GED,8.837992,0.924317,0.334762
+panel,Consumer Discretionary,AMZN,t-L,0.910451,2.627588,0.085102
+panel,Consumer Discretionary,AMZN,t-GED,0.407595,0.226327,0.043001
+panel,Consumer Discretionary,AMZN,L-GED,0.604549,2.844804,0.051782
+panel,Consumer Discretionary,HD,N-t,2.004523,3.587744,0.399986
+panel,Consumer Discretionary,HD,N-L,1.266008,4.916702,0.353997
+panel,Consumer Discretionary,HD,N-GED,1.886492,3.265627,0.318034
+panel,Consumer Discretionary,HD,t-L,2.562298,1.463094,0.581492
+panel,Consumer Discretionary,HD,t-GED,1.049287,0.489310,0.198654
+panel,Consumer Discretionary,HD,L-GED,2.635925,1.825500,0.587512
+panel,Consumer Discretionary,MCD,N-t,1.234134,4.012128,0.307833
+panel,Consumer Discretionary,MCD,N-L,1.225975,4.436139,0.496777
+panel,Consumer Discretionary,MCD,N-GED,1.939702,2.540305,0.288100
+panel,Consumer Discretionary,MCD,t-L,1.875334,0.812173,0.607656
+panel,Consumer Discretionary,MCD,t-GED,1.294177,1.505366,0.297963
+panel,Consumer Discretionary,MCD,L-GED,2.028391,1.967741,0.372789
+panel,Communication Services,NFLX,N-t,5.983499,5.355850,0.364532
+panel,Communication Services,NFLX,N-L,5.270097,6.648069,0.274791
+panel,Communication Services,NFLX,N-GED,6.208885,4.801839,0.312232
+panel,Communication Services,NFLX,t-L,1.386265,2.665673,0.178497
+panel,Communication Services,NFLX,t-GED,1.795679,0.841547,0.314774
+panel,Communication Services,NFLX,L-GED,1.081513,2.462556,0.244307
+panel,Communication Services,VZ,N-t,1.977993,2.743232,0.424918
+panel,Communication Services,VZ,N-L,1.806357,3.611885,0.329341
+panel,Communication Services,VZ,N-GED,2.150442,2.849828,0.487901
+panel,Communication Services,VZ,t-L,0.391707,1.049293,0.163845
+panel,Communication Services,VZ,t-GED,0.173873,0.284724,0.179264
+panel,Communication Services,VZ,L-GED,0.506534,0.887730,0.217655
+panel,Communication Services,DIS,N-t,3.062872,5.199260,0.537762
+panel,Communication Services,DIS,N-L,2.238604,7.476574,0.734109
+panel,Communication Services,DIS,N-GED,3.131415,3.886431,0.305858
+panel,Communication Services,DIS,t-L,3.343571,2.756266,0.824146
+panel,Communication Services,DIS,t-GED,5.806780,1.505973,0.566656
+panel,Communication Services,DIS,L-GED,4.549951,4.197481,0.927812
+panel,Industrials,CAT,N-t,3.140912,1.832926,0.231289
+panel,Industrials,CAT,N-L,2.541000,3.337032,0.263941
+panel,Industrials,CAT,N-GED,3.385279,1.867455,0.326517
+panel,Industrials,CAT,t-L,0.857230,2.116568,0.107155
+panel,Industrials,CAT,t-GED,0.373016,0.444827,0.251024
+panel,Industrials,CAT,L-GED,1.214614,1.796120,0.321219
+panel,Industrials,BA,N-t,2.145211,9.067586,0.237555
+panel,Industrials,BA,N-L,2.382118,12.087400,0.599572
+panel,Industrials,BA,N-GED,0.522634,7.388749,0.079568
+panel,Industrials,BA,t-L,3.436825,3.238269,0.664795
+panel,Industrials,BA,t-GED,1.886572,1.835655,0.232895
+panel,Industrials,BA,L-GED,2.436221,4.979519,0.553162
+panel,Industrials,HON,N-t,2.128454,4.900079,0.528067
+panel,Industrials,HON,N-L,1.793362,6.752749,0.432641
+panel,Industrials,HON,N-GED,2.219980,4.835362,0.540631
+panel,Industrials,HON,t-L,0.597109,2.127900,0.175001
+panel,Industrials,HON,t-GED,0.354870,0.283730,0.107757
+panel,Industrials,HON,L-GED,0.909192,2.342117,0.262836
+panel,Consumer Staples,PG,N-t,1.842383,3.347818,0.462894
+panel,Consumer Staples,PG,N-L,1.594177,4.823448,0.670844
+panel,Consumer Staples,PG,N-GED,2.248374,3.286692,0.517310
+panel,Consumer Staples,PG,t-L,2.237750,1.589229,0.909513
+panel,Consumer Staples,PG,t-GED,0.640186,0.082744,0.288942
+panel,Consumer Staples,PG,L-GED,2.540101,1.644928,0.857576
+panel,Consumer Staples,KO,N-t,1.400893,2.903470,0.410697
+panel,Consumer Staples,KO,N-L,1.171188,3.402029,0.641433
+panel,Consumer Staples,KO,N-GED,1.327771,2.769395,0.374053
+panel,Consumer Staples,KO,t-L,1.936970,0.719441,0.868138
+panel,Consumer Staples,KO,t-GED,0.249558,0.215706,0.201808
+panel,Consumer Staples,KO,L-GED,1.969408,0.915696,0.801138
+panel,Consumer Staples,WMT,N-t,1.654015,4.011531,0.527413
+panel,Consumer Staples,WMT,N-L,1.564504,4.944870,0.737730
+panel,Consumer Staples,WMT,N-GED,1.831229,4.846605,0.502782
+panel,Consumer Staples,WMT,t-L,2.694647,0.965082,0.643504
+panel,Consumer Staples,WMT,t-GED,0.764773,0.925848,0.412101
+panel,Consumer Staples,WMT,L-GED,2.679716,0.437403,0.504406
+panel,Energy,XOM,N-t,2.289032,1.884123,0.424893
+panel,Energy,XOM,N-L,2.931728,3.923531,0.570337
+panel,Energy,XOM,N-GED,2.922009,2.297448,0.557281
+panel,Energy,XOM,t-L,0.895704,2.221316,0.182838
+panel,Energy,XOM,t-GED,0.886900,0.416469,0.171107
+panel,Energy,XOM,L-GED,0.010687,1.863338,0.013497
+panel,Energy,CVX,N-t,2.875206,5.378417,0.486990
+panel,Energy,CVX,N-L,1.646155,7.552906,0.786555
+panel,Energy,CVX,N-GED,3.062468,5.215579,0.455840
+panel,Energy,CVX,t-L,3.556285,2.559439,0.926894
+panel,Energy,CVX,t-GED,0.401607,0.173583,0.056690
+panel,Energy,CVX,L-GED,3.689141,2.697197,0.918169
+panel,Energy,COP,N-t,3.575586,5.724746,0.545749
+panel,Energy,COP,N-L,4.244702,8.339248,0.642284
+panel,Energy,COP,N-GED,3.770328,5.664884,0.564887
+panel,Energy,COP,t-L,1.293370,2.820566,0.174564
+panel,Energy,COP,t-GED,0.222599,0.103463,0.029190
+panel,Energy,COP,L-GED,1.130265,2.858307,0.154440
+panel,Utilities,NEE,N-t,0.322295,2.013016,0.423984
+panel,Utilities,NEE,N-L,1.179006,3.522475,0.352426
+panel,Utilities,NEE,N-GED,0.999129,1.765639,0.426249
+panel,Utilities,NEE,t-L,1.318714,2.013419,0.378131
+panel,Utilities,NEE,t-GED,0.775807,0.728092,0.392743
+panel,Utilities,NEE,L-GED,2.093143,1.902987,0.107660
+panel,Utilities,DUK,N-t,2.129583,6.356693,0.621282
+panel,Utilities,DUK,N-L,1.925086,7.570569,0.643913
+panel,Utilities,DUK,N-GED,2.456116,6.435382,0.711189
+panel,Utilities,DUK,t-L,2.561501,1.260812,0.883789
+panel,Utilities,DUK,t-GED,0.913887,0.253691,0.335196
+panel,Utilities,DUK,L-GED,2.708053,1.141297,0.784309
+panel,Utilities,SO,N-t,1.935486,4.478899,0.479420
+panel,Utilities,SO,N-L,1.117453,3.017753,0.401111
+panel,Utilities,SO,N-GED,1.347779,5.129437,0.373620
+panel,Utilities,SO,t-L,2.651450,1.761781,0.724666
+panel,Utilities,SO,t-GED,0.749510,0.668607,0.295707
+panel,Utilities,SO,L-GED,2.274548,2.347348,0.496274
+panel,Materials,FCX,N-t,14.171356,4.636968,0.440505
+panel,Materials,FCX,N-L,13.306372,7.830755,0.360297
+panel,Materials,FCX,N-GED,1.274933,6.531183,0.465854
+panel,Materials,FCX,t-L,1.400022,3.524346,0.115473
+panel,Materials,FCX,t-GED,14.719273,3.698247,0.590544
+panel,Materials,FCX,L-GED,13.769539,2.740340,0.555119
+panel,Materials,NEM,N-t,3.795839,2.034422,0.488145
+panel,Materials,NEM,N-L,2.916161,4.140521,0.364112
+panel,Materials,NEM,N-GED,3.509671,2.526238,0.489296
+panel,Materials,NEM,t-L,1.087061,2.673856,0.204367
+panel,Materials,NEM,t-GED,0.447902,0.853900,0.284398
+panel,Materials,NEM,L-GED,0.684949,1.955820,0.187600
+panel,Materials,APD,N-t,2.126090,4.479101,0.387773
+panel,Materials,APD,N-L,2.221169,5.996777,0.403096
+panel,Materials,APD,N-GED,2.087763,4.384623,0.359022
+panel,Materials,APD,t-L,0.124206,1.721999,0.055373
+panel,Materials,APD,t-GED,0.214157,0.116327,0.048653
+panel,Materials,APD,L-GED,0.310806,1.816410,0.089580

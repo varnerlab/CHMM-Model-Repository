@@ -1,0 +1,16 @@
+QuantGAN TCN with Lambert-W input pre-processing on SPY (P2.9 / R3 RE1).
+Goerg (2011, 2015) Lambert-W * Gaussian heavy-tail transformation: forward pre-train,
+inverse post-synthesis.  delta fit on IS by IGMM-order-4 (kurt(z) = 3) bracket-bisection.
+
+  Fitted Lambert-W delta = 0.1016
+  Pre-Lambert-W IS raw kurtosis = 10.678 (target 3.0 for Gaussian)
+  Post-Lambert-W IS raw kurtosis = 3.000
+
+  Architecture : 5-conv WGAN, hidden = 48, kernel = 3, window = 64, epochs = 20
+  Generator parameters = 29089, critic parameters = 28081
+
+  IS  : KS pass% = 0.0, kurt sim = 0.40 vs obs 7.68, |G| ACF-MAE = 0.0624, finite paths = 500 / 500
+  OoS : KS pass% = 0.0, kurt sim = 0.36 vs obs 5.29, |G| ACF-MAE = 0.0577, finite paths = 500 / 500
+
+Comparison reference (run_quantgan_tcn.jl, same architecture, no Lambert-W):
+  see results/quantgan_tcn/quantgan_tcn_metrics.txt

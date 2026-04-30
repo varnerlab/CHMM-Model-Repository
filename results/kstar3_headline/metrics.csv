@@ -1,0 +1,5 @@
+family,label,K,is_ks_pct,is_sim_kurt,is_acf_mae,is_acf_mae_raw,oos_ks_pct,oos_sim_kurt,oos_acf_mae,oos_acf_mae_raw,oos_crps,fit_time_s
+gaussian,"CHMM-N",3,89.7,3.83,0.0460,0.0240,80.5,3.53,0.0545,0.0438,1.0393,0.43
+student_t_pen,"CHMM-t (penalised, lambda = 20)",3,90.6,14.91,0.0537,0.0235,83.2,8.50,0.0502,0.0435,1.0373,0.97
+laplace,"CHMM-L",3,79.8,5.30,0.0532,0.0236,63.1,4.85,0.0497,0.0437,1.0405,0.39
+ged,"CHMM-GED",3,90.5,5.48,0.0526,0.0236,77.4,5.12,0.0502,0.0434,1.0389,0.99

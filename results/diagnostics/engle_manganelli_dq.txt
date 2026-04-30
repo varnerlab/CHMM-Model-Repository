@@ -1,0 +1,21 @@
+==============================================================================================================
+Engle-Manganelli (2004) DQ test on the regime-conditional VaR back-test
+Higher-power conditional-coverage alternative to Christoffersen-cc (P2.10 / R3 RE2)
+==============================================================================================================
+
+Specification: Hit_t - α = β_0 + sum_{i=1}^q β_i (Hit_{t-i} - α) + β_{q+1} VaR_t + u_t
+Test statistic: DQ = β̂' (X'X) β̂ / [α(1-α)] ~ chi^2(6) under H0
+(q = 4 lagged hits, intercept, contemporaneous VaR_t; matches Engle-Manganelli 2004 eq.\ 16)
+
+K    α      breach%   n_br     cc LR      cc p       DQ         DQ p     
+------------------------------------------------------------------------------------------
+3    0.01   1.57      9        3.980      0.137      12.289     0.056    
+3    0.05   6.12      35       1.423      0.491      9.319      0.156    
+18   0.01   1.57      9        3.980      0.137      15.461     0.017    
+18   0.05   4.55      26       0.777      0.678      3.988      0.678    
+
+Reading: each row reports both the Christoffersen-cc statistic and the
+Engle-Manganelli DQ statistic on the same breach series. Reject correct
+conditional coverage if p < 0.05 under either test. The DQ test has higher
+power against longer-memory or quantile-dependent miscalibration than the
+Christoffersen-cc Markov-chain alternative.
