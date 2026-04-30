@@ -1,0 +1,41 @@
+============================================================================================================================================
+K_eff-corrected information-criterion re-rank  (peer-review P4.7 / R2 Tier 2).
+============================================================================================================================================
+
+Estimation slice  : 2014-01-03 through 2018-06-29 (1130 observations, pre-COVID).
+Method            : refit CHMM-N at each K in [3, 6, 9, 12, 15, 18, 21], compute K_eff via the
+                    standardized-distance single-linkage diagnostic of
+                    run_state_distinctness.jl (Euclidean in z-scored (mu, sigma),
+                    tau = 0.2), then re-evaluate AIC/BIC/HQC/CAIC with
+                    p_eff = K_eff * (K_eff - 1) + 2 * K_eff in the penalty term.
+                    Log-likelihood unchanged from the K_nom fit.
+
+Reading           : if K_eff < K_nom at large K, the parameter-count penalty drops
+                    and the IC at the corrected operating point can re-rank.  The
+                    expected pattern: AIC, which is least sensitive to p, will be
+                    near-monotone in ll; BIC/CAIC, which scale with log(n)*p, will
+                    favour higher K under K_eff than under K_nom whenever K_eff
+                    is meaningfully below K_nom.
+
+K   | K_eff | p_nom | p_eff | ll       | AIC_n     | AIC_e     | BIC_n     | BIC_e     | HQC_n     | HQC_e     | CAIC_n    | CAIC_e   
+--------------------------------------------------------------------------------------------------------------------------------------------
+3   | 3     | 12    | 12    | -2213.0  | 4450.0    | 4450.0    | 4510.3    | 4510.3    | 4472.8    | 4472.8    | 4522.3    | 4522.3   
+6   | 6     | 42    | 42    | -2185.7  | 4455.4    | 4455.4    | 4666.6    | 4666.6    | 4535.2    | 4535.2    | 4708.6    | 4708.6   
+9   | 9     | 90    | 90    | -2168.7  | 4517.5    | 4517.5    | 4970.2    | 4970.2    | 4688.5    | 4688.5    | 5060.2    | 5060.2   
+12  | 9     | 156   | 90    | -2106.2  | 4524.4    | 4392.4    | 5309.1    | 4845.1    | 4820.8    | 4563.4    | 5465.1    | 4935.1   
+15  | 9     | 240   | 90    | -2074.9  | 4629.7    | 4329.7    | 5836.9    | 4782.4    | 5085.8    | 4500.8    | 6076.9    | 4872.4   
+18  | 11    | 342   | 132   | -2011.5  | 4707.0    | 4287.0    | 6427.3    | 4951.0    | 5356.9    | 4537.9    | 6769.3    | 5083.0   
+21  | 9     | 462   | 90    | -1949.3  | 4822.5    | 4078.5    | 7146.4    | 4531.2    | 5700.5    | 4249.5    | 7608.4    | 4621.2   
+============================================================================================================================================
+
+K* under K_nom (textbook penalty):
+  AIC  : 3
+  BIC  : 3
+  HQC  : 3
+  CAIC : 3
+
+K* under K_eff (corrected penalty):
+  AIC  : 21
+  BIC  : 3
+  HQC  : 21
+  CAIC : 3
