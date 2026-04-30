@@ -1,0 +1,21 @@
+================================================================================================
+Markov-Switching Stochastic Volatility (MSSV) baseline  (peer-review P3.2 / R3.W2)
+================================================================================================
+Setup: 2-state MSSV with regime-dependent (c_k, phi_k, sigma_eta_k); Hamilton/Kim-Nelson
+       quasi-MLE on the log-squared linearisation y = log((r-mu)^2) - E[log chi2_1].
+       Fit by Nelder-Mead. Specification follows Carvalho-Lopes (2007) and So-Lam-Li (1998);
+       quasi-MLE shortcut following Harvey-Ruiz-Shephard (1994) / Kim-Nelson (1999).
+Source: results/mssv_baseline/mssv_baseline.txt
+
+Fitted parameters:
+  mu          = -0.1202
+  c (regime 1, 2)         = (-0.155, 0.040)
+  phi (regime 1, 2)       = (0.9997, 0.9542)
+  sigma_eta2 (regime 1, 2) = (1.6487, 0.1195)
+  T = [0.9982 0.0018; 0.0000 1.0000]
+  log-lik (quasi)   = -5825.59
+
+Comparison row for body Table tab:model_comparison
+Model           IS KS%     OoS KS%    IS kurt    OoS kurt   |G| ACF-MAE  raw ACF-MAE 
+------------------------------------------------------------------------------------------------
+MSSV (K=2)      0.0        0.1        14.58      14.64      0.0739       0.0324      

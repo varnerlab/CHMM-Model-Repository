@@ -1,0 +1,4 @@
+Fetch attempt: SPY 1994-2004 via Alpaca SDK
+  iex bars: 0
+  sip bars: 0   (err: nothing)
+  resolution: no data; scope downstream runner to available range

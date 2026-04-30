@@ -1,0 +1,23 @@
+========================================================================================================
+CRPS Diebold-Mariano bandwidth-sensitivity sweep  (peer-review P4.2 / R2.W5)
+========================================================================================================
+Setup : SPY OoS T = 572 days, archive seed = 20260422.
+Test  : H0 : E[CRPS_A - CRPS_B] = 0,  HAC variance = Newey-West Bartlett kernel.
+        Default bandwidth in run_crps_dm.jl is h = floor(T^(1/3)) = 8
+
+Reading: bandwidth-sensitivity is the question of whether DM p-values move when the
+         long-run variance estimator's truncation lag changes. If p-values are stable
+         across h ∈ {4, 8, 16, 32}, the within-CHMM equivalence finding is robust.
+
+Pair (A vs B)          | h=4   (DM, p)  h=8   (DM, p)  h=16  (DM, p)  h=32  (DM, p)
+--------------------------------------------------------------------------------------------------------
+CHMM-N vs CHMM-t       | (-0.708, 0.479)  (-0.726, 0.468)  (-0.702, 0.483)  (-0.656, 0.512)
+CHMM-N vs CHMM-L       | (-0.714, 0.475)  (-0.750, 0.453)  (-0.834, 0.404)  (-0.875, 0.381)
+CHMM-t vs CHMM-L       | (-0.046, 0.963)  (-0.044, 0.965)  (-0.043, 0.966)  (-0.045, 0.964)
+CHMM-N vs Bootstrap    | (-0.703, 0.482)  (-0.707, 0.480)  (-0.725, 0.468)  (-0.809, 0.419)
+CHMM-N vs GARCH        | (-1.710, 0.087)  (-1.645, 0.100)  (-1.525, 0.127)  (-1.358, 0.175)
+CHMM-t vs GARCH        | (-1.215, 0.225)  (-1.148, 0.251)  (-1.036, 0.300)  (-0.945, 0.345)
+
+Robustness check:
+  Within-CHMM pairs (CHMM-N vs CHMM-t/-L) should retain p > 0.05 across all h.
+  CHMM-vs-baseline pairs should retain their direction across all h.

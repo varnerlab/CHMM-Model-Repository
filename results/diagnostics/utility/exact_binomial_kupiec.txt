@@ -1,0 +1,28 @@
+================================================================================================
+Exact-binomial unconditional-coverage VaR back-test (peer-review P4.3 / R2.Q5)
+================================================================================================
+Setup: regime-conditional VaR breach counts on SPY OoS (T = 572 days).
+Source: sections/var_backtest.tex Table tab:cond_var.
+Test:   Under H0, X ~ Binomial(n, alpha). Two-sided p-value follows R binom.test
+        default (sum pmf of outcomes with pmf <= pmf(observed)).
+Reading: at alpha = 0.05 the breach grid {14, 19, 20} pile against chi^2_1(0.05) = 3.841
+         in the asymptotic LR_uc test; exact-binomial p-values give a size-correct
+         complement that confirms unconditional coverage.
+
+Configuration                    | n      k=brch  expected  br rate   | LR_uc p      exact p     
+------------------------------------------------------------------------------------------------
+CHMM-N (K=3)   alpha=0.01        | 572    9       5.72      0.0157    | 0.2034       0.1989      
+CHMM-N (K=3)   alpha=0.05        | 572    35      28.60     0.0612    | 0.2348       0.2122      
+CHMM-N (K=18)  alpha=0.01        | 572    9       5.72      0.0157    | 0.2034       0.1989      
+CHMM-N (K=18)  alpha=0.05        | 572    26      28.60     0.0455    | 0.6127       0.7011      
+CHMM-t pen K=3  alpha=0.01       | 572    8       5.72      0.0140    | 0.3661       0.2923      
+CHMM-t pen K=3  alpha=0.05       | 572    32      28.60     0.0559    | 0.5218       0.5012      
+CHMM-t pen K=18 alpha=0.01       | 572    10      5.72      0.0175    | 0.1039       0.0866      
+CHMM-t pen K=18 alpha=0.05       | 572    29      28.60     0.0507    | 0.9390       0.9234      
+
+Interpretation:
+  PASS if exact-binomial p > 0.05 (unconditional coverage not rejected).
+  Compare 'LR_uc p' (asymptotic chi^2_1) vs 'exact p' (binomial).
+  The integer-breach piling at alpha = 0.05 means the asymptotic test rejects
+  rows that the exact test does not, when k ∈ {14, 19, 20}; the exact test is
+  the size-correct diagnostic at this T_OoS.

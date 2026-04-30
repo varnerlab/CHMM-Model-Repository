@@ -1,0 +1,27 @@
+======================================================================================================================================================
+OoS-anchored KS p-value distribution + block-bootstrap recalibration.
+======================================================================================================================================================
+
+Setup     : SPY OoS (572 observations); 500 OoS-length simulated paths per generator under seed 20260422.
+Block boot: stationary block bootstrap of OoS at mean block length L ∈ [5, 10, 20], B = 1000.
+
+Block-bootstrap KS critical values (95% null quantile, OoS-anchored):
+  L = 5    crit = 0.0577
+  L = 10   crit = 0.0629
+  L = 20   crit = 0.0647
+  asymp.   crit = 0.0804   (1.36 * sqrt(2 / n_oos))
+
+Generator      | asymp pass% | mean pv | med pv | pv q05 | pv q25 | pv q75 | pv q95 | KS q05 | KS q50 | KS q95 | blk5% | blk10% | blk20%
+------------------------------------------------------------------------------------------------------------------------------------------------------
+iid bootstrap  | 90.4        | 0.437   | 0.411  | 0.03   | 0.183  | 0.695  | 0.912  | 0.033  | 0.052  | 0.086  | 60.8  | 69.0   | 73.2  
+GARCH(1,1)     | 59.2        | 0.164   | 0.092  | 0.0    | 0.018  | 0.235  | 0.645  | 0.044  | 0.073  | 0.121  | 19.4  | 26.0   | 31.4  
+CHMM-N         | 81.0        | 0.318   | 0.235  | 0.01   | 0.079  | 0.5    | 0.876  | 0.035  | 0.061  | 0.096  | 41.2  | 51.2   | 56.4  
+CHMM-t         | 84.8        | 0.355   | 0.297  | 0.018  | 0.106  | 0.547  | 0.911  | 0.033  | 0.058  | 0.091  | 47.4  | 58.4   | 61.6  
+CHMM-L         | 77.4        | 0.266   | 0.183  | 0.008  | 0.058  | 0.411  | 0.744  | 0.04   | 0.065  | 0.098  | 36.0  | 45.4   | 49.4  
+CHMM-GED       | 81.0        | 0.327   | 0.235  | 0.01   | 0.079  | 0.547  | 0.837  | 0.037  | 0.061  | 0.096  | 44.4  | 53.6   | 58.4  
+======================================================================================================================================================
+
+Reading: 'asymp pass%' is the headline OoS metric (fraction of paths with two-sample KS p-value ≥ 0.05).
+         'mean pv' and the q05..q95 are the p-value distribution across the 500 simulated paths.
+         'blkL%' is the OoS block-bootstrap pass rate at mean block length L: fraction of paths whose KS
+         statistic D < OoS block-bootstrap 95% null quantile.

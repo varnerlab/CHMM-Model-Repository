@@ -1,0 +1,46 @@
+Full one-shot Student-t copula MLE on six-asset US-equity universe
+Tickers: ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"]
+T = 2516, d = 6, seed = 20260420
+
+Two-step estimator (body construction):
+  ν̂_two-step = 6.00, log-L = 6157.4722
+
+Full one-shot MLE (this runner):
+  ν̂_full     = 6.4025, log-L = 6163.0217
+  log-L improvement: +5.5495
+
+Profile log-L curve at Σ̂_full (Wilks 95% CI marked with *):
+ν      log-L         in_CI
+2.00      5344.0226    
+3.00      5923.4307    
+4.00      6091.8197    
+5.00      6146.8158    
+6.00      6162.0622   *
+7.00      6161.4211   *
+8.00      6154.0321    
+10.00     6132.5438    
+15.00     6079.3387    
+20.00     6038.8873    
+30.00     5985.3126    
+
+Σ̂ comparison (two-step vs full one-shot):
+  SPY/NVDA :  two-step +0.6369  full +0.6222  Δ -0.0147
+  SPY/JNJ :  two-step +0.4834  full +0.4934  Δ +0.0100
+  SPY/JPM :  two-step +0.6856  full +0.6965  Δ +0.0110
+  SPY/AAPL :  two-step +0.6982  full +0.6951  Δ -0.0032
+  SPY/QQQ :  two-step +0.9110  full +0.9152  Δ +0.0043
+  NVDA/JNJ :  two-step +0.1824  full +0.1669  Δ -0.0156
+  NVDA/JPM :  two-step +0.3735  full +0.3492  Δ -0.0243
+  NVDA/AAPL :  two-step +0.5472  full +0.5348  Δ -0.0124
+  NVDA/QQQ :  two-step +0.7288  full +0.7172  Δ -0.0116
+  JNJ/JPM :  two-step +0.3131  full +0.3372  Δ +0.0242
+  JNJ/AAPL :  two-step +0.2769  full +0.2973  Δ +0.0205
+  JNJ/QQQ :  two-step +0.3729  full +0.3812  Δ +0.0082
+  JPM/AAPL :  two-step +0.3577  full +0.3642  Δ +0.0066
+  JPM/QQQ :  two-step +0.5068  full +0.5130  Δ +0.0062
+  AAPL/QQQ :  two-step +0.7881  full +0.7835  Δ -0.0046
+
+Reading: if ν̂_full ≈ ν̂_two-step (within 1 unit) and log-L improvement < 5,
+the two-step estimator is empirically not biased toward the Gaussian limit on
+this universe. A larger improvement or a markedly different ν̂_full would
+indicate the bias concern is operative.

@@ -1,0 +1,54 @@
+================================================================================================
+Cross-ticker spectral effective-rank diagnostic  (peer-review P2.1 / R2.W1)
+================================================================================================
+Setup: CHMM-N at K = 18, sector-balanced 30-ticker panel + SPY control,
+       seed = 20260420, n_draw = 200000 per state for m_k.
+Per-ticker columns: dom_share = (dominant non-unit eigenvalue's |w_k λ_k|) /
+       (sum of |w_k λ_k| over all non-unit eigenvalues, lag = 1).
+       n95 = number of modes carrying ≥ 95% of cumulative |w_k λ_k|.
+       n>1%% = number of modes with > 1% of total |w_k λ_k|.
+
+ticker sector                     dom_share  n95    n99    n>1%   
+------------------------------------------------------------------------------------------------
+AAPL   Information Technology     0.642      7      12     8      
+MSFT   Information Technology     0.784      8      13     8      
+NVDA   Information Technology     0.747      8      13     10     
+JNJ    Health Care                0.717      7      14     7      
+LLY    Health Care                0.857      6      12     7      
+UNH    Health Care                0.617      6      13     6      
+BAC    Financials                 0.795      7      12     7      
+JPM    Financials                 0.621      6      12     6      
+WFC    Financials                 0.860      6      11     7      
+AMZN   Consumer Discretionary     0.860      6      11     6      
+HD     Consumer Discretionary     0.743      7      11     9      
+MCD    Consumer Discretionary     0.909      4      10     5      
+DIS    Communication Services     0.495      2      9      2      
+NFLX   Communication Services     0.853      5      11     3      
+VZ     Communication Services     0.756      8      12     10     
+BA     Industrials                0.918      3      9      2      
+CAT    Industrials                0.890      5      11     6      
+HON    Industrials                0.765      5      11     6      
+KO     Consumer Staples           0.445      5      11     3      
+PG     Consumer Staples           0.828      5      10     5      
+WMT    Consumer Staples           0.621      4      10     4      
+COP    Energy                     0.578      4      11     4      
+CVX    Energy                     0.889      2      7      2      
+XOM    Energy                     0.680      4      10     5      
+DUK    Utilities                  0.694      3      8      3      
+NEE    Utilities                  0.881      4      11     4      
+SO     Utilities                  0.856      6      10     6      
+APD    Materials                  0.740      7      11     9      
+FCX    Materials                  0.736      6      12     6      
+NEM    Materials                  0.326      11     14     14     
+SPY    Index                      0.943      2      10     2      
+
+------------------------------------------------------------------------------------------------
+Cross-ticker distribution (n = 31 tickers)
+------------------------------------------------------------------------------------------------
+  dominant lag-1 share : median 0.756  Q1 0.661  Q3 0.858  min 0.326
+  n_for_95             : median 6.0  Q1 4.0  Q3 7.0  max 11
+  n_for_99             : median 11.0  Q1 10.0  Q3 12.0  max 14
+
+Reading: if median dom_share is ≥ 0.90, the rank-non-binding claim of
+Section 3 (theory.tex) is supported across the cross-ticker panel rather than
+on SPY alone, addressing peer-review item P2.1 / R2.W1.
