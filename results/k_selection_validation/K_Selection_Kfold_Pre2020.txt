@@ -1,0 +1,66 @@
+==================================================================================================================================
+k-fold rolling-origin K-selection on pre-2020 slice  (R1-RE1)
+==================================================================================================================================
+
+Setup
+  Ticker          : SPY
+  Seed            : 20260422
+  K grid          : [3, 6, 9, 12, 18]
+  Folds           : 4 expanding-window rolling-origin
+  Validation len  : ~1 year per fold
+  KS sim paths    : 500
+  EM max_iter     : 60
+
+Folds:
+  Fold 1 : train 2014-01-03 .. 2015-12-31 (~502 obs), val 2016-01-04 .. 2016-12-30 (~251 obs)
+  Fold 2 : train 2014-01-03 .. 2016-12-30 (~754 obs), val 2017-01-03 .. 2017-12-29 (~250 obs)
+  Fold 3 : train 2014-01-03 .. 2017-12-29 (~1005 obs), val 2018-01-02 .. 2018-12-31 (~250 obs)
+  Fold 4 : train 2014-01-03 .. 2018-12-31 (~1256 obs), val 2019-01-02 .. 2019-12-31 (~251 obs)
+
+Per-fold results (CHMM-N):
+
+  fold  K    n_train     train_ll/obs     val_ll/obs       val_KS%  
+  ------------------------------------------------------------------------
+  1     3    502         -2.0874          -2.0133           91.2
+  1     6    502         -2.0206          -2.0673           92.8
+  1     9    502         -1.9800          -2.1193           94.6
+  1     12   502         -1.8975          -2.1815           95.2
+  1     18   502         -1.7689          -2.5881           97.8
+  2     3    754         -2.0619          -1.5552            0.4
+  2     6    754         -2.0246          -1.5376            0.4
+  2     9    754         -1.9807          -1.6089            1.6
+  2     12   754         -1.9217          -1.7323            0.4
+  2     18   754         -1.8358          -1.8880            0.0
+  3     3    1005        -1.9180          -2.2504           73.6
+  3     6    1005        -1.8947          -2.2811           81.4
+  3     9    1005        -1.8781          -2.3104           85.2
+  3     12   1005        -1.8108          -2.3192           83.2
+  3     18   1005        -1.7135          -2.4229           82.8
+  4     3    1256        -1.9813          -2.0011           79.8
+  4     6    1256        -1.9609          -1.9738           86.4
+  4     9    1256        -1.9346          -1.9929           88.6
+  4     12   1256        -1.8966          -2.0552           89.4
+  4     18   1256        -1.8142          -2.1540           89.2
+
+Aggregate (mean +/- s.d. across folds):
+
+  K    n_folds  val_ll/obs (m / sd)  val_KS% (m / sd)   
+  ------------------------------------------------------------
+  3    4        -1.9550 / 0.2902     61.3 / 41.2
+  6    4        -1.9649 / 0.3126     65.2 / 43.5
+  9    4        -2.0078 / 0.2963     67.5 / 44.1
+  12   4        -2.0721 / 0.2508     67.0 / 44.7
+  18   4        -2.2633 / 0.3075     67.5 / 45.4
+
+Selection:
+  K* by mean held-out log-lik per obs : 3
+  K* by mean held-out KS pass rate    : 9
+
+Sampling-error reads on the held-out per-observation log-likelihood:
+  K=6 vs K=3      : diff=-0.0099  pooled SE=0.1508  approx z=-0.07
+  K=18 vs K=6     : diff=-0.2983  pooled SE=0.1550  approx z=-1.92
+
+Substantive read:
+  K=6 vs K=3 mean held-out log-lik gap is NOT significant at 5% (|z| < 1.96).
+  R1 W1's contingency is in scope: body headline rebuild at K=3 is supported
+  by this CV design. Companion-paper sensitivity at K=6 remains valid.
