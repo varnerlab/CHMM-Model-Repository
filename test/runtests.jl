@@ -8,4 +8,5 @@ include(joinpath(@__DIR__, "..", "Include.jl"))
     include("test_factory.jl")
     include("test_compute.jl")
     include("test_visualize.jl")
+    include("test_msgarch_reference.jl")
 end

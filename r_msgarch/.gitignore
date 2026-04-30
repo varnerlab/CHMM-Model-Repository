@@ -1,0 +1,10 @@
+# renv project-local library (binaries; rebuilt from renv.lock)
+renv/library/
+renv/python/
+renv/staging/
+
+# Commit these:
+#   .Rprofile
+#   renv/activate.R
+#   renv/settings.json
+#   renv.lock

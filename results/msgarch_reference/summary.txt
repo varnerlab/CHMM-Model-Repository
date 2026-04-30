@@ -1,0 +1,36 @@
+==============================================================================================================
+MS-GARCH reference baseline  (CRAN MSGARCH 2.51 via RCall)
+Peer-review items addressed: R1 W1, R2 W1, R3 RE1.
+==============================================================================================================
+
+Setup
+  Ticker          : SPY
+  IS / OoS days   : 2516 / 572
+  Paths per K     : 1000
+  Variance spec   : sGARCH
+  Distribution    : norm
+  Fit method      : MCMC
+  MCMC budget     : 12500 draws, 2500 burn-in, thin 10
+  Seed            : 20260422
+  R version       : 4.6.0
+  MSGARCH version : 2.51
+  Platform / OS   : aarch64-apple-darwin25.4.0 / darwin25.4.0
+  Generated (UTC) : 2026-04-30 19:52:18 UTC
+
+Headline panel (KS pass-rate at α = 0.05, asymptotic-iid null):
+  K    KS IS%    KS OoS%   kurt IS   kurt OoS  |G| ACF IS  |G| ACF OoS
+  ------------------------------------------------------------------------------
+  2    0.0       5.8       4.00      2.46      0.0465     0.0551   
+  3    0.1       5.1       4.52      2.53      0.0433     0.0539   
+  4    0.0       5.3       6.01      3.54      0.0446     0.0541   
+
+Reference comparison points (from run_msgarch_higher_k.jl, in-house Nelder-Mead):
+  In-house K=2 :  KS IS = 27.7%   KS OoS = 38.7%   |G| ACF-MAE = 0.0367
+  In-house K=3 :  KS IS = 36.1%   KS OoS = 33.1%   |G| ACF-MAE = 0.0284
+  CHMM-N K=18  :  KS IS = 94.1%   KS OoS = 81.8%   |G| ACF-MAE = 0.0509
+
+Files
+  models_K{K}.jld2   fitted MyMSGARCHReferenceModel per K
+  sims_K{K}.jld2     IS / OoS path matrices (1000 paths each)
+  metrics.csv        machine-readable per-K metrics
+  fit_log.txt        per-K fit timing + parameter posterior detail

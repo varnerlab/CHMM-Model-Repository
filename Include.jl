@@ -44,6 +44,11 @@ include(joinpath(_PATH_TO_SRC, "Visualize.jl"));
 include(joinpath(_PATH_TO_SRC, "Metrics.jl"));
 include(joinpath(_PATH_TO_SRC, "SemiMarkov.jl"));
 include(joinpath(_PATH_TO_SRC, "MSGARCH.jl"));
+# NOTE: MSGARCHReference.jl is intentionally NOT loaded here. It does
+# `using RCall`, which errors at module-load time when R is not installed.
+# The reference MS-GARCH baseline is opt-in: load it from the runner that
+# needs it (see run_msgarch_reference.jl) so the rest of the harness
+# remains usable on machines without R.
 include(joinpath(_PATH_TO_SRC, "GARCHFamily.jl"));
 include(joinpath(_PATH_TO_SRC, "SkewEmissions.jl"));
 include(joinpath(_PATH_TO_SRC, "SVMSMBaselines.jl"));

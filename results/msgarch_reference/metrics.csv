@@ -1,0 +1,4 @@
+K,fit_method,n_paths,n_is,n_oos,loglik,fit_time_s,is_ks_pct,is_sim_kurt,is_obs_kurt,is_acf_mae,is_acf_mae_raw,oos_ks_pct,oos_sim_kurt,oos_obs_kurt,oos_acf_mae,oos_acf_mae_raw
+2,MCMC,1000,2516,572,-5667.0616,198.19,0.0,4.00,7.68,0.0465,0.0240,5.8,2.46,5.29,0.0551,0.0437
+3,MCMC,1000,2516,572,-5666.6492,264.00,0.1,4.52,7.68,0.0433,0.0241,5.1,2.53,5.29,0.0539,0.0435
+4,MCMC,1000,2516,572,-5565.2476,365.67,0.0,6.01,7.68,0.0446,0.0241,5.3,3.54,5.29,0.0541,0.0435

@@ -78,6 +78,34 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. run_full_rebuild.jl
 ```
 
+### Optional: reference MS-GARCH baseline (R + RCall)
+
+The reviewer-requested reference MS-GARCH baseline (Ardia et al. 2019, JSS,
+CRAN `MSGARCH` package) is driven from Julia via [RCall.jl](https://juliainterop.github.io/RCall.jl/).
+This is required only for the `run_msgarch_reference.jl` row in Table 2 and
+its companion artefacts under `results/msgarch_reference/`. Everything else
+in the paper runs without R.
+
+Prerequisites: R >= 4.2 on `PATH`. One-time setup:
+
+```bash
+cd r_msgarch
+Rscript setup.R                                  # first time on a fresh checkout
+# or, if r_msgarch/renv.lock is already committed:
+Rscript -e 'renv::restore(prompt = FALSE)'
+```
+
+This pins MSGARCH (currently 2.51) and all transitive R dependencies into a
+project-local `renv` library. After setup, run the reference baseline:
+
+```bash
+julia --project=. run_msgarch_reference.jl
+```
+
+See [`r_msgarch/README.md`](r_msgarch/README.md) for the full version-pinning
+contract. The Julia test suite skips the MS-GARCH reference test if R is
+unavailable, so `Pkg.test()` works without R.
+
 ## Data
 
 | Dataset | Period | Trading Days | Coverage |
@@ -100,7 +128,9 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |-- run_diagnostics.jl                    # Diagnostic metrics
 |-- run_figures.jl                        # Paper figures
 |-- run_quantgan_baseline.jl              # QuantGAN deep-generative baseline row
-|-- run_msgarch_baselines.jl              # MS-GARCH K=2/3 rows in extended panel
+|-- run_msgarch_baselines.jl              # MS-GARCH K=2/3 rows in extended panel (in-house Nelder-Mead)
+|-- run_msgarch_reference.jl              # MS-GARCH K=2/3/4 rows via CRAN MSGARCH (RCall)
+|-- r_msgarch/                            # R-side scaffolding (renv-pinned, setup.R + fit_msgarch.R)
 |-- run_smchmm_baseline.jl                # Semi-Markov CHMM rows in extended panel
 |-- run_cross_asset_large_universe.jl     # Large-universe cross-asset scaling
 |-- run_garch_suite.jl, run_ks_block_bootstrap.jl, ...   # Standalone CSV producers (results/robustness/*.csv)
