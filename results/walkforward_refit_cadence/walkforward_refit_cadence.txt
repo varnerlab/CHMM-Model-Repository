@@ -1,0 +1,40 @@
+========================================================================================================================
+Walk-forward conditional-VaR refit-cadence sweep, CHMM-N at K=3, α=0.05  (R1#3 / Item B5)
+========================================================================================================================
+Setup: 6 folds (train 5y / test 1y); refit at cadences ∈ {monthly=21, weekly=5}
+       trading days. Fold-IS-fixed baseline (cadence = ∞) read from cached
+       results/walkforward/walkforward_conditional_var.csv.
+       At each refit, CHMM-N is re-fit on the most recent 1260-obs window ending the day before
+       the refit-target test day; the predictive filter is re-primed by running through the new train
+       window. The forward filter then continues on the test slice from that posterior.
+Tests: Christoffersen-cc joint conditional coverage; critical χ²₂(0.05) = 5.991 (p_cc > 0.05 = pass).
+
+fold | cadence       | breaches  | br rate    | med VaR   | LR_uc   p      | LR_cc   p_cc  
+--------------------------------------------------------------------------------------------------------------
+W1   | fold-IS-fixed | 15        | 0.0598     | -2.427    | 0.475   0.491  | 1.651   0.438 
+W2   | fold-IS-fixed | 23        | 0.0913     | -4.587    | 7.341   0.007  | 9.053   0.011 
+W3   | fold-IS-fixed | 20        | 0.0797     | -2.472    | 3.976   0.046  | 4.276   0.118 
+W4   | fold-IS-fixed | 18        | 0.0720     | -4.160    | 2.256   0.133  | 4.241   0.120 
+W5   | fold-IS-fixed | 8         | 0.0321     | -3.897    | 1.907   0.167  | 2.440   0.295 
+W6   | fold-IS-fixed | 13        | 0.0518     | -2.848    | 0.017   0.897  | 0.170   0.919 
+W1   | 21d           | 15        | 0.0595     | -2.410    | 0.455   0.500  | 1.640   0.440 
+W1   | 5d            | 15        | 0.0595     | -2.193    | 0.455   0.500  | 1.640   0.440 
+W2   | 21d           | 22        | 0.0870     | -4.681    | 6.017   0.014  | 8.195   0.017 
+W2   | 5d            | 21        | 0.0830     | -4.681    | 4.882   0.027  | 7.567   0.023 
+W3   | 21d           | 22        | 0.0873     | -2.655    | 6.097   0.014  | 6.113   0.047 
+W3   | 5d            | 23        | 0.0913     | -2.639    | 7.341   0.007  | 7.341   0.025 
+W4   | 21d           | 21        | 0.0837     | -4.411    | 5.025   0.025  | 7.667   0.022 
+W4   | 5d            | 19        | 0.0757     | -4.404    | 3.035   0.081  | 4.606   0.100 
+W5   | 21d           | 8         | 0.0320     | -3.532    | 1.944   0.163  | 2.475   0.290 
+W5   | 5d            | 8         | 0.0320     | -3.483    | 1.944   0.163  | 2.475   0.290 
+W6   | 21d           | 14        | 0.0556     | -2.765    | 0.158   0.691  | 0.222   0.895 
+W6   | 5d            | 14        | 0.0556     | -2.730    | 0.158   0.691  | 0.222   0.895 
+
+Reading.
+  Each row passes Christoffersen-cc at α=0.05 when p_cc > 0.05. The body walk-forward result
+  (fold-IS-fixed) sees rejections concentrated on W2 (COVID) and W4 (2022 rate-hike).
+  Question: do faster refits close 2-3 of those rejections?
+    - If monthly or weekly refit raises p_cc above 0.05 on W2 / W4, faster refit is the
+      production recipe.
+    - If p_cc remains below 0.05 on W2 / W4 across all cadences, the failures are intrinsic
+      regime breaks no refit cadence can adapt to in time.
