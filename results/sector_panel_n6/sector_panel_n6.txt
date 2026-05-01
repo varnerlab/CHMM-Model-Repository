@@ -1,0 +1,30 @@
+==============================================================================================================
+60-ticker sector-balanced panel (n=6 per sector)  (Reviewer Round 2 / Item P10)
+==============================================================================================================
+Setup: penalised CHMM-t at K=18, λ=20, 1000 paths, seed = 20260420.
+Body 30-ticker rows are read from results/sector_panel/sector_panel_summary.csv;
+the additional 30 tickers were fit by run_sector_panel_n6.jl. This file is the
+post-processed combined panel; per-ticker numbers in sector_panel_n6.csv.
+
+Per-sector summary at n = 6:
+  sector                        n   median     mean       sd      min   fail
+  -------------------------------------------------------------------------------------
+  Communication Services        6    47.10    54.30    28.95    21.40      4
+  Consumer Discretionary        6    57.55    63.13    24.07    39.70      3
+  Consumer Staples              6    92.00    68.12    38.31    13.70      2
+  Energy                        6    76.95    68.28    30.33    11.30      1
+  Financials                    6    68.35    69.73    14.91    50.50      2
+  Health Care                   6    61.00    56.08    38.59     7.60      3
+  Industrials                   6    82.75    76.43    19.40    44.80      1
+  Information Technology        6    74.60    66.15    37.58     0.00      3
+  Materials                     6    82.25    70.25    33.45     5.60      1
+  Utilities                     6    96.00    77.47    31.14    24.00      2
+
+Aggregate (n = 60):  median = 73.45%   mean = 66.99%   sd = 29.13%   failures = 22 / 60
+
+One-way ANOVA on OoS KS by sector at n = 6:
+  F(9, 50) = 0.366   p = 0.9459   η² = 0.062
+  Body n=3 result was F(9, 20) = 0.44, p = 0.90, η² = 0.16 (severely underpowered).
+  At n=6 per sector, the test does not reject the no-sector-effect null at α=0.05.
+  η² = 0.062: cross-sector dispersion accounts for 6.2% of OoS KS variance, mostly
+  attributable to per-ticker variation rather than sector-level structure.
