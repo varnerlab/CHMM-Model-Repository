@@ -1,7 +1,0 @@
-Track B3. Joint p-value coverage pv̄ with diffusion row.
-Model      | pv̄ IS   | pv̄ OoS
-GARCH      | 0.54    | 0.468  
-Diffusion  | 0.003   | 0.204  
-CHMM-N     | 0.39    | 0.539  
-CHMM-t     | 0.324   | 0.661  
-CHMM-L     | 0.14    | 0.692  

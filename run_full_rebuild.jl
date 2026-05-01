@@ -17,12 +17,11 @@
 #   9.  run_figures.jl                       (K=18 main-body figures)
 #
 # Earlier journal-revision stages (Track A extended evaluation, Track B3 diffusion,
-# Track C3 conditional-VaR variants, Track C4 leverage emission, GRU baseline) are
-# archived under _attic_v10/runners/. The descriptive run_*.jl scripts that produce
-# CSVs in ../CHMM-paper/results/robustness/ (run_garch_suite.jl, run_ks_block_bootstrap.jl,
-# run_multiseed_headline.jl, run_k_selection_validation.jl, run_nu_shrinkage_sweep.jl, etc.)
-# are intentionally not in this dispatcher; they are standalone exploratory runners
-# called manually when their CSVs need refreshing.
+# Track C3 conditional-VaR variants, Track C4 leverage emission, GRU baseline) and
+# superseded one-shot runners (run_copula_profile_ci.jl, run_hsmm_ml.jl,
+# run_multiseed_headline.jl, regen_var_es_fig.jl, et al.) are archived under
+# _attic_v10/runners/. Descriptive runners cited only as standalone exploratory
+# runs are invoked manually outside this dispatcher.
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
