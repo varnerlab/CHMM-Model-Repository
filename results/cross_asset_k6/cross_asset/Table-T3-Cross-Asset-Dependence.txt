@@ -1,0 +1,67 @@
+====================================================================================================
+TABLE T3. Cross-asset dependence: SIM, Gaussian copula, Student-t copula, truncated C-vine on CHMM marginals.
+          Pipeline B (cross-asset extension): marginals come from Pipeline A; dependence is added.
+====================================================================================================
+
+Pipeline      : B. Cross-asset extension on top of Pipeline A marginals.
+Tickers       : SPY, NVDA, JNJ, JPM, AAPL, QQQ
+Marginals     : Per-asset CHMM-N (Gaussian emissions, K = 6), trained independently per ticker
+                (same fits as the CHMM-N rows of Table T2).
+Dependence    : Four competing constructions
+                  SIM              : Single Index Model regressing each non-market ticker on SPY.
+                  Gaussian copula  : rank-reordering with Kendall-tau-based correlation matrix.
+                  Student-t copula : rank-reordering with profile-MLE nu* = 6.0.
+                  Truncated C-vine : root-centered pair-copula vine, edge family chosen by AIC.
+Market factor : SPY (drives the SIM factor path).
+Paths / alpha : 200 simulated paths per dependence model; KS thresholded at alpha = 0.05.
+
+What this table tests:
+  Given per-ticker CHMM marginals that already pass univariate fidelity (Table T2), which
+  dependence mechanism best reproduces the empirical cross-asset correlation matrix?
+  Two metrics are reported: per-asset KS pass rates (sanity check on marginals after
+  dependence is injected) and correlation-matrix distance (the core dependence metric).
+
+How this differs from Table T2:
+  Table T2 (results/SPY/Table-T2-Per-Ticker-Emission-Families.txt) evaluates the per-ticker
+  marginal only, across THREE EMISSION FAMILIES, with NO dependence. Table T3 holds the
+  emission family fixed (Gaussian) and varies the DEPENDENCE MECHANISM.
+==============================================================================================================
+
+1. Per-asset KS pass rates (%)
+--------------------------------------------------------------------------------------------------------------
+Ticker    SIM IS   SIM OoS   Gauss IS   Gauss OoS    t IS      t OoS    Vine IS   Vine OoS
+  SPY        91.5      80.0       93.5       76.5      92.0       81.5       89.5        80.5
+  NVDA       76.0      83.5       97.5       52.5      96.5       59.0       97.5        57.5
+  JNJ        84.0      97.0      100.0       92.5      99.0       94.5       99.5        92.0
+  JPM        31.0      29.5       99.5       57.5      98.5       57.0       98.5        49.5
+  AAPL       68.0      87.0       99.0       95.5      95.0       94.0       98.5        93.0
+  QQQ        78.0      87.0       89.0       90.5      90.5       89.0       89.0        87.5
+  Mean       71.4      77.3       96.4       77.5      95.2       79.2       95.4        76.7
+  Median     77.0      85.2       98.2       83.5      95.8       85.2       98.0        84.0
+
+2. Cross-asset correlation reproduction (||Sigma_sim - Sigma_obs||_F over 200 paths)
+--------------------------------------------------------------------------------------------------------------
+Model              Frobenius IS        Off-diag MAE IS   Frobenius OoS       Off-diag MAE OoS
+SIM                   0.529               0.077             1.755               0.251
+Gaussian copula       0.196                0.03              1.47               0.203
+Student-t copula      0.182               0.027             1.507               0.209
+Truncated C-vine      0.465               0.068             1.661               0.236
+
+3a. Truncated C-vine edge summary (root = SPY)
+--------------------------------------------------------------------------------------------------------------
+Child      family       rho_hat    nu_hat
+  NVDA      student_t      0.637      5.0
+  JNJ       student_t      0.483      4.0
+  JPM       student_t      0.686      4.0
+  AAPL      student_t      0.698      4.0
+  QQQ       student_t      0.911      3.0
+
+3b. SIM regression summary (non-market assets, SPY as market factor)
+--------------------------------------------------------------------------------------------------------------
+Ticker     alpha_hat   beta_hat   R2
+  NVDA       0.3207   1.694  0.371
+  JNJ        0.0018   0.576   0.26
+  JPM       -0.0081   1.223  0.507
+  AAPL       0.1113   1.205  0.492
+  QQQ        0.0467   1.122   0.84
+==============================================================================================================

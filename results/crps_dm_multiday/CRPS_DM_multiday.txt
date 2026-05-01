@@ -1,0 +1,30 @@
+==============================================================================================================
+Multi-day cumulative-return CRPS + Diebold-Mariano  (P3.16 / R3 RE4)
+==============================================================================================================
+
+Setup  : SPY OoS (572 days), non-overlapping h-day cumulative-return blocks.
+Test   : DM = mean(loss_CHMM - loss_Bootstrap) / NW-HAC SE, two-sided normal.
+         Negative DM => CHMM has lower CRPS than Bootstrap at horizon h.
+Models : Bootstrap, GARCH, CHMM-N, CHMM-t, CHMM-L
+
+h    model    ref        ΔCRPS         CRPS model  CRPS ref    DM       p      
+------------------------------------------------------------------------------------------------------------
+1    CHMM-N   Bootstrap    -0.00139  1.03844     1.03982      -0.707  0.480
+1    CHMM-t   Bootstrap    +0.00007  1.03989     1.03982      +0.037  0.971
+1    CHMM-L   Bootstrap    +0.00017  1.03999     1.03982      +0.078  0.938
+5    CHMM-N   Bootstrap    -0.01967  2.43270     2.45237      -1.487  0.137
+5    CHMM-t   Bootstrap    -0.00990  2.44247     2.45237      -0.773  0.439
+5    CHMM-L   Bootstrap    -0.02852  2.42384     2.45237      -2.034  0.042
+20   CHMM-N   Bootstrap    -0.17981  4.72648     4.90629      -2.988  0.003
+20   CHMM-t   Bootstrap    -0.08956  4.81673     4.90629      -1.203  0.229
+20   CHMM-L   Bootstrap    -0.18580  4.72049     4.90629      -2.216  0.027
+
+Reading: at h = 1 the bootstrap dominates on per-day CRPS (the body acknowledges
+this in Section 5.2). The substantive question R3 RE4 raises is whether the
+regime structure of CHMM produces lower CRPS than the bootstrap at multi-day
+horizons (h = 5, 20). Negative ΔCRPS at h ∈ {5, 20} would support the body's
+'use-case differentiation' framing on a forecast-horizon axis; positive ΔCRPS
+at every horizon reads as 'no horizon at which CHMM dominates the bootstrap on
+CRPS', which is consistent with the body's 'CHMM beats bootstrap on structural
+use cases (regime-conditional VaR, parametric copula composition, parametric
+privacy)' rather than on the marginal-distribution axis.
