@@ -1,0 +1,18 @@
+==============================================================================================================
+K_eff = 11 nominal rebuild  (Reviewer Round 2 / Item B6)
+==============================================================================================================
+
+Setup: SPY CHMM-N, IS = 2516, OoS = 572, paths = 1000, seed = 20260420.
+Question: at K_nominal = K_eff = 11, does the headline metric panel match the K = 18
+nominal row?
+
+  K    IS_KS%   IS_kurt    |G|_MAE_IS    raw_MAE_IS    OoS_KS%   OoS_kurt   |G|_MAE_OoS   raw_MAE_OoS 
+  --------------------------------------------------------------------------------------------------------------
+  11      94.4       4.52        0.0505        0.0238      82.8       4.11        0.0528        0.0436
+  18      94.0       5.04        0.0514        0.0237      81.0       4.42        0.0526        0.0435
+
+Reading.
+  If K=11 metrics ≈ K=18 metrics within sampling noise, the K=18 over-parameterization is
+  purely a high-K artefact and the K_eff parameterization is the operationally identical
+  but more parsimonious choice. If K=11 underperforms K=18 substantively, the K_eff merge
+  loses information that the K=18 nominal panel exploits.

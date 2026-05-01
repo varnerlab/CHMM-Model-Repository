@@ -1,0 +1,27 @@
+==============================================================================================================
+Bootstrap-CI placement of penalised CHMM-t IS kurtosis  (Reviewer Round 2 / Item B3)
+==============================================================================================================
+
+Setup     : SPY IS, T = 2516, paths = 1000, seed = 20260420, penalty rate λ = 20.0
+CI source : Stationary block bootstrap of Politis-Romano 1994 at L=20, B=5000 (Appendix sec:kurtosis_bootstrap_ci)
+CI used   : [2.167, 12.400]   (observed IS excess kurt = 7.678)
+
+  K    agg_kurt   median   sd      Q5       Q95      in_CI      ≤ CI_HI(%)    in_CI(%)    
+  ----------------------------------------------------------------------------------------------------
+  3    16.649     7.774    74.402  3.749    34.624   766/1000           76.6           76.6
+  6    10.129     6.742    13.476  3.629    26.296   817/1000           81.8           81.7
+  18   8.938      6.089    16.876  3.536    18.115   899/1000           89.9           89.9
+
+Reading.
+  At each operating point, 'in_CI(%)' is the fraction of simulated IS paths whose
+  per-path excess kurtosis falls inside the L=20 bootstrap CI on observed [2.17, 12.40].
+  '≤ CI_HI(%)' is the fraction below the upper bound (the relevant one-sided test for
+  overshoot, since at this λ the constraint is not undershoot).
+
+  R2 concern: at K*=3 the aggregate sim kurt 14.91 sits ABOVE the upper bound 12.40, so
+  the headline heavy-tail row could be statistically distinguishable from observed at α=0.05
+  on a one-sided over-shoot test. The per-path 'in_CI(%)' and '≤ CI_HI(%)' columns above
+  quantify this directly: if 'in_CI(%)' is well below 50%, the penalised CHMM-t IS kurtosis
+  distribution is not centred inside the bootstrap envelope and the headline framing should
+  be revised. If 'in_CI(%)' is above 50% even with aggregate kurt above the upper bound,
+  the result is a heavy-right-tail-of-paths effect with most of the mass inside the CI.

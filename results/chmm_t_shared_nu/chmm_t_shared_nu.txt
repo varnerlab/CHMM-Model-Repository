@@ -1,0 +1,23 @@
+==============================================================================================================
+Shared-ν Student-t HMM ablation (R2/R3 / Item B4)
+==============================================================================================================
+
+Setup: SPY IS = 2516, OoS = 572, paths = 1000, seed = 20260420.
+ECM: shared ν across all K states, GSS on aggregate Q-function over ν_bounds = (2.1, 50.0).
+
+  K    ν_shared  IS_KS%     IS_kurt    |G|_MAE_IS    raw_MAE_IS    OoS_KS%    OoS_kurt   |G|_MAE_OoS   raw_MAE_OoS 
+  --------------------------------------------------------------------------------------------------------------
+  3       5.808       91.9       4.68        0.0531        0.0236       82.1       4.46        0.0502        0.0436
+  6       4.672       92.7       9.38        0.0518        0.0235       82.6       6.95        0.0503        0.0433
+  18      5.796       95.8       6.25        0.0542        0.0234       88.0       5.00        0.0508        0.0433
+
+Comparison against per-state ν_k (body Table tab:model_comparison):
+  K=3 per-state (penalised λ=20): IS KS 90.6%, IS kurt 14.91, OoS KS 83.2%, OoS kurt 8.50
+  K=18 per-state (penalised λ=20): IS KS 95.0%, IS kurt 8.56, OoS KS 85.8%, OoS kurt 7.07
+  K=18 per-state (unpenalised):    IS KS 95.6%, IS kurt 14.35, OoS KS 85.7%, OoS kurt 10.71
+
+Reading.
+  If shared-ν IS kurtosis matches observed (~7.7) without the penalty, the per-state ν_k
+  is the binding constraint on the overshoot; the body's λ-shrinkage and bracket-lift
+  discussion is downstream of the wrong design choice. If shared-ν also overshoots,
+  the per-state structure is not the issue and the per-state ν_k design is justified.

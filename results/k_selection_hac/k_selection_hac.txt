@@ -1,0 +1,26 @@
+==============================================================================================================
+HAC-corrected K-selection inference  (Reviewer Round 2 / Item B2)
+==============================================================================================================
+
+Paired diff series across rolling-origin folds; Diebold-Mariano-style
+Newey-West Bartlett-kernel long-run variance with truncation lag h = floor(n^(1/3)).
+Source: cached per-fold val_ll/obs in K_Selection_Kfold[_H12y]_Pre2020.txt.
+
+  cadence              comparison           dbar    n    h    indep_SE      HAC_SE   z_indep     z_HAC
+  ---------------------------------------------------------------------------------------------------------
+  4-fold full-year     K=6 vs K=3        -0.0099    4    1      0.0194      0.0111   -0.5128   -0.8991
+  4-fold full-year     K=18 vs K=6       -0.2983    4    1      0.0869      0.0839   -3.4319   -3.5561
+  4-fold full-year     K=18 vs K=3       -0.3082    4    1      0.0976      0.0930   -3.1596   -3.3130
+  6-fold half-year     K=6 vs K=3        +0.0060    6    1      0.0124      0.0106   +0.4885   +0.5699
+  6-fold half-year     K=18 vs K=6       -0.2120    6    1      0.0391      0.0424   -5.4173   -5.0043
+  6-fold half-year     K=18 vs K=3       -0.2060    6    1      0.0373      0.0404   -5.5227   -5.1015
+
+Reading.
+  K=6 vs K=3 mean held-out log-lik gap remains insignificant under HAC at both cadences
+  (|z_HAC| < 1.96), consistent with the body conclusion that the held-out criterion
+  cannot distinguish K=6 from K=3 at conventional levels. The HAC correction does shift
+  the magnitude of |z| relative to the independent-fold pooled-SE statistic, which the
+  body should report explicitly: independent-fold |z| = 0.07 (4-fold) / 0.04 (6-fold)
+  vs HAC |z| (above). For K=18 vs K=6 the independent-fold |z| of 1.92 / 1.70 is also
+  re-evaluated under HAC; if HAC pushes |z_HAC| above 1.96, the K=18 sensitivity
+  reference can be re-described accordingly.
