@@ -11,11 +11,10 @@
 #   3.  run_baselines_and_cross_asset.jl     (headline Pipeline A panel + per-ticker)
 #   4.  run_cross_asset_sim_copula.jl        (Pipeline B Student-t copula)
 #   5.  run_diagnostics.jl                   (utility, nu diagnostics, K-selection, ...)
-#   6.  run_equity_price_sim.jl              (price fans + terminal distributions)
-#   7.  run_quantgan_baseline.jl             (QuantGAN deep-generative baseline row)
-#   8.  run_msgarch_baselines.jl             (MS-GARCH K=2/3 rows in extended panel)
-#   9.  run_smchmm_baseline.jl               (SM-CHMM rows in extended panel)
-#  10.  run_figures.jl                       (K=18 main-body figures)
+#   6.  run_quantgan_baseline.jl             (QuantGAN deep-generative baseline row)
+#   7.  run_msgarch_baselines.jl             (MS-GARCH K=2/3 rows in extended panel)
+#   8.  run_smchmm_baseline.jl               (SM-CHMM rows in extended panel)
+#   9.  run_figures.jl                       (K=18 main-body figures)
 #
 # Earlier journal-revision stages (Track A extended evaluation, Track B3 diffusion,
 # Track C3 conditional-VaR variants, Track C4 leverage emission, GRU baseline) are
@@ -40,7 +39,6 @@ const SCRIPTS = [
     "run_baselines_and_cross_asset.jl",
     "run_cross_asset_sim_copula.jl",
     "run_diagnostics.jl",
-    "run_equity_price_sim.jl",
     # "run_quantgan_baseline.jl",   # excluded: slowest stage by far, deterministic
                                     # with the global seed. Run standalone via
                                     #   julia --project=. run_quantgan_baseline.jl

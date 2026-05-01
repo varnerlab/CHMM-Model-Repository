@@ -1,6 +1,0 @@
-mode,n_blocks,delta_crps,DM,p_value
-non-overlapping,28,-0.076651,-1.1650,0.2440
-overlap (bw=default),553,-0.058939,-1.8587,0.0631
-overlap (bw=19),553,-0.058939,-1.4597,0.1444
-overlap (bw=30),553,-0.058939,-1.3298,0.1836
-overlap (bw=60),553,-0.058939,-1.2336,0.2174
