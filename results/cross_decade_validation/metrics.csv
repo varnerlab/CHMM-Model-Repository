@@ -1,0 +1,4 @@
+family,K,scope,is_ks_pct,is_sim_kurt,is_obs_kurt,is_acf_mae,oos_ks_pct,oos_sim_kurt,oos_obs_kurt,oos_acf_mae
+gaussian,3,1994-2004 IS / 2004-2006 OoS,84.9,2.20,3.05,0.0696,3.3,2.24,0.06,0.0491
+gaussian,18,1994-2004 IS / 2004-2006 OoS,89.8,1.84,3.05,0.0720,3.4,1.74,0.06,0.0499
+student_t_pen,3,1994-2004 IS / 2004-2006 OoS,89.1,4.97,3.05,0.0682,5.4,4.18,0.06,0.0501

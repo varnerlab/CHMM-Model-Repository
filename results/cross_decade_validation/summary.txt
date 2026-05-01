@@ -1,0 +1,29 @@
+==============================================================================================================
+Cross-decade validation: SPY 1994-2004 IS / 2004-2006 OoS  (P2.12 / R3 W6 / R3 RE3)
+==============================================================================================================
+
+Source: CRSP daily stock file via WRDS (data/external/crsp_1994_2006.csv)
+Adjusted close = DlyPrc / DlyFacPrc (CRSP CIZ format).
+IS slice  : 1994-01-03 .. 2004-01-02 (2519 obs)
+OoS slice : 2004-01-05 .. 2006-04-28 (583 obs)
+Observed excess kurtosis: IS = 3.05, OoS = 0.06
+
+Cross-decade panel:
+  Model                            K    IS KS%    OoS KS%   kurt IS    kurt OoS   |G| IS     |G| OoS  
+  ------------------------------------------------------------------------------------------------------
+  CHMM-N                           3    84.9      3.3       2.20       2.24       0.0696     0.0491   
+  CHMM-N                           18   89.8      3.4       1.84       1.74       0.0720     0.0499   
+  CHMM-t (penalised, λ = 20)       3    89.1      5.4       4.97       4.18       0.0682     0.0501   
+
+Body comparison (2014-2024 IS / 2024-2026 OoS, results/kstar3_headline/metrics.csv):
+  CHMM-N (K* = 3)                      89.7      80.5      3.83       3.53       0.0460     0.0545
+  CHMM-t pen. (λ = 20, K* = 3)         90.6      83.2      14.91      8.50       0.0537     0.0502
+  CHMM-N (K = 18)                      94.1      81.8      5.04       4.44       0.0509     ~0.054
+
+Reading: the cross-decade panel reports CHMM behaviour on a structurally different
+decade (dot-com peak 2000, dot-com bust 2000-2002, post-bust recovery 2003-2006) than
+the body 2014-2024 / 2024-2026 window (post-GFC normalisation, COVID, 2022 rate hike).
+If the IS / OoS KS pass-rates and kurtosis-fidelity are within sampling error of the
+body figures, the body's 'CHMM as a synthetic-data generator' claim is not decade-
+specific. Material divergence flags the headline as 2014-2024-specific and the
+manuscript scope statement should be tightened accordingly.
