@@ -109,7 +109,7 @@ function build(model::Type{MyContinuousHiddenMarkovModel}, data::NamedTuple)::My
     max_iterations = haskey(data, :max_iter) ? data.max_iter : 30
     
     # Pass max_iterations to the baum_welch function
-    T_matrix, μ_vec, σ_vec, π_vec, ll_hist, γ = baum_welch(obs, n_states, max_iter=max_iterations)
+    T_matrix, μ_vec, σ_vec, _, ll_hist, _ = baum_welch(obs, n_states, max_iter=max_iterations)
     
     # Initialize an empty model instance
     m = model()
@@ -158,7 +158,7 @@ function build(model::Type{MyStudentTHiddenMarkovModel}, data::NamedTuple)::MySt
     ν_bounds = haskey(data, :ν_bounds) ? data.ν_bounds : (2.1, 50.0);
     ν_shrink_rate = haskey(data, :ν_shrink_rate) ? data.ν_shrink_rate : 0.0;
 
-    T_matrix, μ_vec, σ_vec, ν_vec, π_vec, ll_hist, γ =
+    T_matrix, μ_vec, σ_vec, ν_vec, _, ll_hist, _ =
         baum_welch_student_t(obs, n_states;
                              max_iter=max_iterations, ν_init=ν_init, ν_bounds=ν_bounds,
                              ν_shrink_rate=ν_shrink_rate);
@@ -195,7 +195,7 @@ function build(model::Type{MyLaplaceHiddenMarkovModel}, data::NamedTuple)::MyLap
     n_states = data.number_of_states;
     max_iterations = haskey(data, :max_iter) ? data.max_iter : 30;
 
-    T_matrix, μ_vec, b_vec, π_vec, ll_hist, γ =
+    T_matrix, μ_vec, b_vec, _, ll_hist, _ =
         baum_welch_laplace(obs, n_states; max_iter=max_iterations);
 
     m = model();
@@ -236,7 +236,7 @@ function build(model::Type{MyGEDHiddenMarkovModel}, data::NamedTuple)::MyGEDHidd
     p_init = haskey(data, :p_init) ? data.p_init : 1.5;
     p_bounds = haskey(data, :p_bounds) ? data.p_bounds : (0.5, 3.0);
 
-    T_matrix, μ_vec, α_vec, p_vec, π_vec, ll_hist, γ =
+    T_matrix, μ_vec, α_vec, p_vec, _, ll_hist, _ =
         baum_welch_ged(obs, n_states;
                        max_iter=max_iterations, p_init=p_init, p_bounds=p_bounds);
 

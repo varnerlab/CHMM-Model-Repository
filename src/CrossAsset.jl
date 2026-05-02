@@ -341,7 +341,7 @@ function build(model::Type{MyTruncatedCVineCopulaModel}, data::NamedTuple)::MyTr
 
     U = _pit_ranks(R);
     τ = _kendall_tau_matrix(R);
-    root_scores = [sum(abs.(τ[j, setdiff(1:size(τ, 1), [j])])) for j in 1:size(τ, 1)];
+    root_scores = [sum(abs.(τ[j, setdiff(axes(τ, 1), [j])])) for j in axes(τ, 1)];
     root_index = argmax(root_scores);
     children = [j for j in 1:size(R, 2) if j != root_index];
 

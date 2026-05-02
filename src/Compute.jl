@@ -314,7 +314,7 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
     # 2. EM LOOP -------------------------------------------------------------- #
     prev_ll = -Inf;
     
-    for iter in 1:max_iter
+    for _ in 1:max_iter
         
         # --- E-STEP: Compute Forward-Backward Probabilities ---
         log_B = zeros(N, K);
@@ -364,8 +364,7 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
         end
         
         # --- M-STEP: Update Parameters ---
-        new_π = γ[1, :];
-        
+
         # Update Means and Variances
         for k in 1:K
             w_sum = sum(γ[:, k]);
@@ -495,7 +494,7 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
     last_good_μ = copy(curr_μ); last_good_σ = copy(curr_σ); last_good_ν = copy(curr_ν);
     last_good_T = copy(curr_T); last_good_π = copy(curr_π);
 
-    for iter in 1:max_iter
+    for _ in 1:max_iter
 
         # E-STEP: emission log-likelihoods + forward-backward.
         log_B = zeros(N, K);
@@ -652,7 +651,7 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
     final_gamma = zeros(N, K);
     prev_ll = -Inf;
 
-    for iter in 1:max_iter
+    for _ in 1:max_iter
 
         log_B = zeros(N, K);
         for t in 1:N, k in 1:K
@@ -832,7 +831,7 @@ function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
     last_good_μ = copy(curr_μ); last_good_α = copy(curr_α); last_good_p = copy(curr_p);
     last_good_T = copy(curr_T); last_good_π = copy(curr_π);
 
-    for iter in 1:max_iter
+    for _ in 1:max_iter
 
         # E-STEP: emission log-likelihoods + forward-backward.
         log_B = zeros(N, K);
@@ -1180,7 +1179,7 @@ function _fit_garch11(obs::Vector{Float64})
     # Nelder-Mead optimization (simplex method — no gradient needed)
     params = copy(best_params);
     simplex = [copy(params) for _ in 1:(length(params)+1)];
-    for i in 2:length(simplex)
+    for i in 2:lastindex(simplex)
         simplex[i][i-1] *= 1.2; # perturb each dimension
     end
 
@@ -1219,7 +1218,7 @@ function _fit_garch11(obs::Vector{Float64})
                 simplex[end] = contracted;
             else
                 # Shrink
-                for i in 2:length(simplex)
+                for i in 2:lastindex(simplex)
                     simplex[i] = simplex[1] .+ 0.5 .* (simplex[i] .- simplex[1]);
                 end
             end

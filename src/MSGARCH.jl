@@ -134,7 +134,6 @@ Fit MS-GARCH(1,1) with K=2 regimes. Grid-initialize over (ω, α, β) and transi
 then Nelder-Mead. Regime 1 is canonicalized as the calm regime (lower unconditional variance).
 """
 function fit_msgarch_k2(obs::Vector{Float64}; max_iter::Int=2000)::MyMSGARCHModel
-    N = length(obs);
     μ = mean(obs);
     var_obs = var(obs);
 
