@@ -345,6 +345,28 @@ chmm_ged_is, chmm_ged_oos = _simulate_chmm_paths(chmm_ged, start_dist_ged, n_is,
 m_chmm_ged_is = eval_full(R_is, chmm_ged_is);
 m_chmm_ged_oos = eval_full(R_oos, chmm_ged_oos);
 
+# Persist the sim-path archive for downstream baselines (msgarch, smchmm, quantgan, crps_dm).
+# Keys match the MODEL_ORDER conventions in those consumers; values are NamedTuples whose
+# `.is` / `.oos` fields are the (T, N_PATHS) Float64 matrices generated above.
+println("\nSaving sim_archive_cache.jld2 for downstream baselines...")
+const ARCHIVE_DIR = joinpath(RESULTS_DIR, "baselines_archive");
+mkpath(ARCHIVE_DIR);
+const ARCHIVE_PATH = joinpath(ARCHIVE_DIR, "sim_archive_cache.jld2");
+archive_cache = Dict(
+    "Bootstrap"  => (is=boot_is,     oos=boot_oos),
+    "Gaussian"   => (is=gauss_is,    oos=gauss_oos),
+    "Laplace"    => (is=lap_is,      oos=lap_oos),
+    "DiscreteNJ" => (is=disc_is,     oos=disc_oos),
+    "DiscreteWJ" => (is=wj_is,       oos=wj_oos),
+    "GARCH"      => (is=garch_is,    oos=garch_oos),
+    "CHMM-N"     => (is=chmm_is,     oos=chmm_oos),
+    "CHMM-t"     => (is=chmm_t_is,   oos=chmm_t_oos),
+    "CHMM-L"     => (is=chmm_l_is,   oos=chmm_l_oos),
+    "CHMM-GED"   => (is=chmm_ged_is, oos=chmm_ged_oos),
+);
+save(ARCHIVE_PATH, "archive", archive_cache);
+println("  wrote $ARCHIVE_PATH")
+
 # Print Table 2
 println("\nTable 2: Model Comparison — $TICKER ($N_PATHS paths, α=0.05)")
 println("="^130)

@@ -31,7 +31,7 @@ const SIG_DEPTH    = 3;
 const MAX_LAG_LEV  = 20;
 const HORIZONS_AG  = [1, 5, 10, 21];
 
-const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "baselines_archive", "sim_archive_cache.jld2");
 const MSGARCH_DIR      = joinpath(_ROOT, "results", "msgarch_baselines");
 mkpath(MSGARCH_DIR);
 

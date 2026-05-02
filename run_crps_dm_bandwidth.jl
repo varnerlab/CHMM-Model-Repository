@@ -7,7 +7,7 @@
 # Sweep h in {4, 8, 16, 32}; report DM p-values for the within-CHMM family pairs and
 # the CHMM-vs-best-baseline pairs.
 #
-# Inputs : results/_attic_v10/track_a/sim_archive_cache.jld2 (legacy harness cache)
+# Inputs : results/baselines_archive/sim_archive_cache.jld2 (produced by run_baselines_and_cross_asset.jl)
 # Output : results/crps_dm/CRPS_DM_bandwidth_sweep.txt
 # ========================================================================================= #
 
@@ -22,7 +22,7 @@ const TICKER     = "SPY";
 const RISK_FREE  = 0.0;
 const DT         = 1/252;
 
-const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "baselines_archive", "sim_archive_cache.jld2");
 const OUT_DIR          = joinpath(_ROOT, "results", "crps_dm");
 mkpath(OUT_DIR);
 

@@ -8,7 +8,7 @@
 #
 # Inputs:
 #   data/... (via Files.jl)
-#   results/_attic_v10/track_a/sim_archive_cache.jld2 (legacy harness cache)
+#   results/baselines_archive/sim_archive_cache.jld2 (produced by run_baselines_and_cross_asset.jl)
 #
 # Outputs:
 #   results/smchmm_baseline/sim_archive_sm.jld2          SM-CHMM simulation archives
@@ -43,7 +43,7 @@ const SIG_DEPTH    = 3;
 const MAX_LAG_LEV  = 20;
 const HORIZONS_AG  = [1, 5, 10, 21];
 
-const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "_attic_v10", "track_a", "sim_archive_cache.jld2");
+const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "baselines_archive", "sim_archive_cache.jld2");
 const SMCHMM_DIR       = joinpath(_ROOT, "results", "smchmm_baseline");
 mkpath(SMCHMM_DIR);
 
