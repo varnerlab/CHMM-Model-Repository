@@ -33,22 +33,22 @@ println("  Start: ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS"));
 println("="^72);
 
 const SCRIPTS = [
-    "run_all_analysis.jl",
-    "run_multi_emission_analysis.jl",
-    "run_baselines_and_cross_asset.jl",
-    "run_cross_asset_sim_copula.jl",
-    "run_diagnostics.jl",
-    # "run_quantgan_baseline.jl",   # excluded: slowest stage by far, deterministic
-                                    # with the global seed. Run standalone via
-                                    #   julia --project=. run_quantgan_baseline.jl
+    "runners/headline/run_all_analysis.jl",
+    "runners/headline/run_multi_emission_analysis.jl",
+    "runners/headline/run_baselines_and_cross_asset.jl",
+    "runners/headline/run_cross_asset_sim_copula.jl",
+    "runners/diagnostics/run_diagnostics.jl",
+    # "runners/headline/run_quantgan_baseline.jl",   # excluded: slowest stage by far,
+                                    # deterministic with the global seed. Run standalone via
+                                    #   julia --project=. runners/headline/run_quantgan_baseline.jl
                                     # only when the QuantGAN row in the extended
                                     # panel needs refreshing (architecture, training
                                     # data, or seed change). Re-include here only
                                     # if you want a single-command end-to-end
                                     # rebuild including the deep-generative row.
-    "run_msgarch_baselines.jl",
-    "run_smchmm_baseline.jl",
-    "run_figures.jl",
+    "runners/headline/run_msgarch_baselines.jl",
+    "runners/headline/run_smchmm_baseline.jl",
+    "runners/headline/run_figures.jl",
 ];
 
 stage_times = Dict{String, Float64}();

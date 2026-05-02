@@ -85,7 +85,7 @@ julia --project=. run_full_rebuild.jl
 
 The reviewer-requested reference MS-GARCH baseline (Ardia et al. 2019, JSS,
 CRAN `MSGARCH` package) is driven from Julia via [RCall.jl](https://juliainterop.github.io/RCall.jl/).
-This is required only for the `run_msgarch_reference.jl` row in Table 2 and
+This is required only for the `runners/headline/run_msgarch_reference.jl` row in Table 2 and
 its companion artefacts under `results/msgarch_reference/`. Everything else
 in the paper runs without R.
 
@@ -102,7 +102,7 @@ This pins MSGARCH (currently 2.51) and all transitive R dependencies into a
 project-local `renv` library. After setup, run the reference baseline:
 
 ```bash
-julia --project=. run_msgarch_reference.jl
+julia --project=. runners/headline/run_msgarch_reference.jl
 ```
 
 See [`r_msgarch/README.md`](r_msgarch/README.md) for the full version-pinning
@@ -124,33 +124,44 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 .
 |-- Include.jl                            # Entry point (sets paths, loads src/)
 |-- run_full_rebuild.jl                   # End-to-end rebuild of every paper artefact
-|-- run_all_analysis.jl                   # SPY-only analysis pipeline
-|-- run_multi_emission_analysis.jl        # Pipeline A: three-emission CHMM + benchmarks
-|-- run_baselines_and_cross_asset.jl      # Pipeline A baselines + Pipeline B setup
-|-- run_cross_asset_sim_copula.jl         # Pipeline B: SIM, Gaussian copula, Student-t copula
-|-- run_diagnostics.jl                    # Diagnostic metrics
-|-- run_figures.jl                        # Paper figures
-|-- run_quantgan_baseline.jl              # QuantGAN deep-generative baseline row
-|-- run_msgarch_baselines.jl              # MS-GARCH K=2/3 rows in extended panel (in-house Nelder-Mead)
-|-- run_msgarch_reference.jl              # MS-GARCH K=2/3/4 rows via CRAN MSGARCH (RCall)
-|-- r_msgarch/                            # R-side scaffolding (renv-pinned, setup.R + fit_msgarch.R)
-|-- run_smchmm_baseline.jl                # Semi-Markov CHMM rows in extended panel
-|-- run_cross_asset_large_universe.jl     # Large-universe cross-asset scaling
-|-- run_garch_suite.jl, run_ks_block_bootstrap.jl, ...   # Standalone CSV producers (results/robustness/*.csv)
+|-- runners/                              # All experiment scripts, grouped by paper section
+|   |-- headline/                         # Body §4 (Empirical Study) pipeline
+|   |   |-- run_all_analysis.jl              # SPY-only stylized facts + per-K internals
+|   |   |-- run_multi_emission_analysis.jl   # CHMM-N / -t / -L / -GED at K* block
+|   |   |-- run_baselines_and_cross_asset.jl # Pipeline A baselines + Pipeline B setup
+|   |   |-- run_cross_asset_sim_copula.jl    # Pipeline B: SIM, Gaussian / Student-t copula
+|   |   |-- run_msgarch_baselines.jl         # MS-GARCH K in {2,3,6} rows (in-house NM)
+|   |   |-- run_msgarch_reference.jl         # MS-GARCH ref. Bayesian rows (CRAN MSGARCH)
+|   |   |-- run_smchmm_baseline.jl           # Semi-Markov CHMM at K*
+|   |   |-- run_quantgan_baseline.jl         # QuantGAN deep-generative row
+|   |   |-- run_cross_ticker_penalised.jl    # penalised CHMM-t cross-ticker headline
+|   |   |-- run_sector_panel.jl              # 30-ticker sector rollup
+|   |   |-- run_chmm_t_shared_nu.jl          # shared-nu sensitivity
+|   |   `-- run_figures.jl                   # Body Figures 1-4
+|   |-- var_backtest/                     # Body §5 (regime-conditional VaR, Christoffersen, DQ)
+|   |-- robustness/                       # walk-forward, cross-decade, K-selection sensitivity
+|   |-- spectral/                         # body §3.3 spectral / rank diagnostics
+|   |-- cross_asset/                      # half-unit copula CI, non-US stress test
+|   |-- baselines/                        # Appendix B: SV-AR(1), MSM, Merton-JD, HSMM-Gamma, ...
+|   `-- diagnostics/                      # catch-all
 |-- src/
 |   |-- Types.jl                          # HMM / GARCH / copula type definitions
 |   |-- Files.jl                          # JLD2 data loaders
 |   |-- Factory.jl                        # build() constructors
 |   |-- Compute.jl                        # Baum-Welch, ECM, GARCH MLE, simulation
 |   |-- CrossAsset.jl                     # SIM and Gaussian / Student-t copula generators
-|   |-- Visualize.jl                      # Plotting utilities
+|   `-- Visualize.jl                      # Plotting utilities
+|-- r_msgarch/                            # R-side scaffolding (renv-pinned, setup.R + fit_msgarch.R)
 |-- data/                                 # JLD2 datasets (active IS / OoS bundles)
 |-- results/                              # Generated metrics tables (per-ticker, per-K)
 |-- figs/                                 # Generated SVG / PDF figures
 |-- test/                                 # Test suite
 |-- docs/                                 # Documenter.jl docs
-|-- _attic_v10/                           # Archived journal-revision-era runners, results, and docs
+`-- _attic/                               # Archived journal-revision-era runners, results, and docs
 ```
+
+`RUNNERS.md` is the full runner-to-paper-artefact map (every script in
+`runners/` is keyed to the table or figure it produces).
 
 ## Related Repositories
 

@@ -1,0 +1,358 @@
+# ========================================================================================= #
+# run_multi_emission_analysis.jl
+#
+# Regenerates figures and the state-resolution sensitivity table (Table T1)
+# for all three CHMM emission families (Gaussian, Student-t, Laplace) across
+# K ∈ {3, 6, 9, 12, 15, 18, 21}. Full seven-metric validation panel per (family, K).
+#
+# Output:
+#   results/SPY/multi_emission/K<N>/<family>/   per-(K, family) figures + metrics
+#   results/SPY/Table-T1-Multi-Emission.txt     full (K, family) sensitivity table
+#
+# Usage: julia --project=. run_multi_emission_analysis.jl
+# ========================================================================================= #
+
+using Pkg; Pkg.activate(".");
+include(joinpath(@__DIR__, "..", "..", "Include.jl"));
+using Random;
+
+const TICKER = "SPY";
+const RISK_FREE_RATE = 0.0;
+const ΔT = 1/252;
+const MAX_ITER = 60;
+const N_PATHS = 1000;
+const L = 252;
+const K_VALUES = [3, 6, 9, 12, 15, 18, 21];
+const EMISSION_FAMILIES = [:gaussian, :student_t, :laplace, :ged];
+const SEED = 20260420;       # paper-canonical global seed (Section: Evaluation Protocol)
+const RESULTS_DIR = joinpath(_ROOT, "results");
+
+# Also copy selected K=18 figures to the paper's figs folder for LaTeX inclusion.
+const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
+
+println("="^70)
+println("  Multi-Emission Analysis Pipeline")
+println("  Families: CHMM-N (Gaussian), CHMM-t (Student-t), CHMM-L (Laplace), CHMM-GED")
+println("  States:   K ∈ $(K_VALUES)")
+println("  Seed:     $SEED  (paper-canonical global seed)")
+println("="^70)
+
+# ========================================================================================= #
+# Load SPY data (shared across all runs)
+# ========================================================================================= #
+println("\n[1/4] Loading SPY data...")
+train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
+max_days = nrow(train_dataset["AAPL"]);
+dataset = Dict{String,DataFrame}();
+for (t, data) ∈ train_dataset
+    if nrow(data) == max_days; dataset[t] = data; end
+end
+list_of_all_tickers = keys(dataset) |> collect |> sort;
+all_R = log_growth_matrix(dataset, list_of_all_tickers; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+idx_spy = findfirst(x -> x == TICKER, list_of_all_tickers);
+R_is = all_R[:, idx_spy];
+n_steps = length(R_is);
+
+oos_dataset = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
+R_oos = log_growth_matrix(oos_dataset, TICKER; Δt=ΔT, risk_free_rate=RISK_FREE_RATE);
+n_steps_oos = length(R_oos);
+println("  IS: $n_steps obs | OoS: $n_steps_oos obs")
+
+obs_μ = mean(R_is); obs_σ = std(R_is);
+target_kurtosis = sum(((R_is .- obs_μ) ./ obs_σ).^4) / n_steps - 3.0;
+
+x_lo = quantile(R_is, 0.001) * 1.2;
+x_hi = quantile(R_is, 0.999) * 1.2;
+x_grid = range(x_lo, x_hi, length=400);
+
+# ========================================================================================= #
+# Emission-family dispatch helpers
+# ========================================================================================= #
+const FAMILY_TAG = Dict(:gaussian => "N", :student_t => "t", :laplace => "L", :ged => "GED");
+const FAMILY_LABEL = Dict(:gaussian => "CHMM-N (Gaussian)",
+                          :student_t => "CHMM-t (Student-t)",
+                          :laplace => "CHMM-L (Laplace)",
+                          :ged => "CHMM-GED (per-state shape)");
+
+function _train_family(family::Symbol, obs::Vector{Float64}, K::Int, max_iter::Int)
+    if family == :gaussian
+        return build(MyContinuousHiddenMarkovModel,
+            (observations=obs, number_of_states=K, max_iter=max_iter));
+    elseif family == :student_t
+        return build(MyStudentTHiddenMarkovModel,
+            (observations=obs, number_of_states=K, max_iter=max_iter));
+    elseif family == :laplace
+        return build(MyLaplaceHiddenMarkovModel,
+            (observations=obs, number_of_states=K, max_iter=max_iter));
+    elseif family == :ged
+        return build(MyGEDHiddenMarkovModel,
+            (observations=obs, number_of_states=K, max_iter=max_iter));
+    else
+        error("Unknown emission family: $family")
+    end
+end
+
+function _stationary(model, K::Int)
+    T_mat = zeros(K, K);
+    for i in 1:K; T_mat[i, :] = probs(model.transition[i]); end
+    π_stat = (T_mat^1000)[1, :];
+    return T_mat, Categorical(π_stat);
+end
+
+function _simulate_paths(model, start_dist, n_is::Int, n_oos::Int, n_paths::Int)
+    sim_is = Array{Float64,2}(undef, n_is, n_paths);
+    sim_oos = Array{Float64,2}(undef, n_oos, n_paths);
+    for i in 1:n_paths
+        s0 = rand(start_dist);
+        st = model(s0, n_is);
+        for j in 1:n_is; sim_is[j,i] = rand(model.emission[st[j]]); end
+        s0 = rand(start_dist);
+        st = model(s0, n_oos);
+        for j in 1:n_oos; sim_oos[j,i] = rand(model.emission[st[j]]); end
+    end
+    return sim_is, sim_oos;
+end
+
+function eval_metrics(observed, sim_archive; L_val=L)
+    np = size(sim_archive, 2); n_o = length(observed);
+    μ_o = mean(observed); σ_o = std(observed);
+    kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
+    L_use = min(L_val, n_o - 1);
+    acf_o = autocor(abs.(observed), 1:L_use);
+    acf_o_raw = autocor(observed, 1:L_use);
+
+    ks_pass = 0; ad_pass = 0; kurt_s = 0.0; acf_mae_s = 0.0; acf_mae_raw_s = 0.0;
+    w1_s = 0.0; hell_s = 0.0;
+    ks_pvals = Float64[];
+
+    obs_qprobs = range(0.01, 0.99, length=99);
+    obs_quantiles = quantile(observed, obs_qprobs);
+    sim_qmatrix = zeros(99, np);
+
+    for i in 1:np
+        sim = sim_archive[:, i];
+
+        pval_ks = pvalue(ApproximateTwoSampleKSTest(observed, sim));
+        push!(ks_pvals, pval_ks);
+        if pval_ks > 0.05; ks_pass += 1; end
+
+        pval_ad = pvalue(KSampleADTest(observed, sim));
+        if pval_ad > 0.05; ad_pass += 1; end
+
+        μ_s = mean(sim); σ_s = std(sim);
+        kurt_s += sum(((sim .- μ_s) ./ σ_s).^4) / length(sim) - 3.0;
+
+        acf_sim = autocor(abs.(sim), 1:L_use);
+        acf_mae_s += mean(abs.(acf_o .- acf_sim));
+
+        acf_sim_raw = autocor(sim, 1:L_use);
+        acf_mae_raw_s += mean(abs.(acf_o_raw .- acf_sim_raw));
+
+        obs_sorted = sort(observed); sim_sorted = sort(sim);
+        n_min = min(length(obs_sorted), length(sim_sorted));
+        obs_q = [obs_sorted[max(1, round(Int, k*length(obs_sorted)/n_min))] for k in 1:n_min];
+        sim_q = [sim_sorted[max(1, round(Int, k*length(sim_sorted)/n_min))] for k in 1:n_min];
+        w1_s += mean(abs.(obs_q .- sim_q));
+
+        lo = min(minimum(observed), minimum(sim)) - 10;
+        hi = max(maximum(observed), maximum(sim)) + 10;
+        edges = range(lo, hi, length=101);
+        h_o = fit(Histogram, observed, edges).weights ./ n_o;
+        h_s = fit(Histogram, sim, edges).weights ./ length(sim);
+        hell_s += sqrt(sum((sqrt.(h_o) .- sqrt.(h_s)).^2)) / sqrt(2);
+
+        sim_qmatrix[:, i] = quantile(sim, obs_qprobs);
+    end
+
+    cov_count = 0;
+    for q in 1:99
+        lo_env = quantile(sim_qmatrix[q, :], 0.05);
+        hi_env = quantile(sim_qmatrix[q, :], 0.95);
+        if obs_quantiles[q] >= lo_env && obs_quantiles[q] <= hi_env
+            cov_count += 1;
+        end
+    end
+
+    return (ks=round(100*ks_pass/np, digits=1),
+            ad=round(100*ad_pass/np, digits=1),
+            kurt=round(kurt_s/np, digits=2), kurt_obs=round(kurt_o, digits=2),
+            acf_mae=round(acf_mae_s/np, digits=4),
+            acf_mae_raw=round(acf_mae_raw_s/np, digits=4),
+            w1=round(w1_s/np, digits=3), hell=round(hell_s/np, digits=4),
+            cov=round(100.0*cov_count/99, digits=1),
+            ks_pvals=ks_pvals);
+end
+
+# ========================================================================================= #
+# Figure generators (called only at K = 18)
+# ========================================================================================= #
+
+function save_convergence(model, family_tag::String, K::Int, out_dir::String)
+    p = plot(model.log_likelihood_history,
+        title="",
+        xlabel="EM iteration", ylabel="Data log-likelihood",
+        legend=false, lw=2, color=:navy, marker=:circle, ms=3);
+    savefig(p, joinpath(out_dir, "Fig-Convergence-K$K-$family_tag.svg"));
+    savefig(p, joinpath(out_dir, "Fig-Convergence-K$K-$family_tag.pdf"));
+end
+
+function save_emission_pdfs(model, family_tag::String, K::Int, out_dir::String)
+    colors_k = cgrad(:RdYlBu, K, categorical=true);
+    p = plot(title="",
+        xlabel="Annualized excess log return Gₜ", ylabel="Probability density (arb. units)", legend=:topright);
+    histogram!(p, R_is, normalize=:pdf, bins=200, alpha=0.3, color=:lightgray, label="Observed IS");
+    for s in 1:K
+        d = model.emission[s];
+        plot!(p, x_grid, pdf.(d, x_grid), lw=1.5, color=colors_k[s], label="State $s", alpha=0.8);
+    end
+    xlims!(p, x_lo, x_hi);
+    savefig(p, joinpath(out_dir, "Fig-Emission-PDFs-K$K-$family_tag.svg"));
+    savefig(p, joinpath(out_dir, "Fig-Emission-PDFs-K$K-$family_tag.pdf"));
+end
+
+# NOTE: save_transition_matrix was removed (2026-04-29). The canonical paper-side
+# per-family K=18 transition-matrix heatmaps are produced by run_figures.jl.
+
+function save_residence_times(T_mat::Matrix{Float64}, family_tag::String, K::Int, out_dir::String)
+    res = [1.0 / max(1.0 - T_mat[k,k], 1e-12) for k in 1:K];
+    p = bar(1:K, res,
+        title="",
+        xlabel="State index", ylabel="Expected residence time (trading days)",
+        legend=false, color=:steelblue, alpha=0.7);
+    savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.svg"));
+    savefig(p, joinpath(out_dir, "Fig-Residence-Times-K$K-$family_tag.pdf"));
+end
+
+# NOTE: save_is_comparison, save_oos_validation, save_stationary_distribution,
+# and save_trajectory were removed (2026-04-29). The canonical paper-side
+# K=18 IS / OoS panels are 4-panel split PDFs produced by run_figures.jl, and
+# the IS / OoS trajectory pair (CHMM-N at K=18 only) is also produced there.
+# Stationary distributions are not panelled in the paper.
+
+# ========================================================================================= #
+# Main loop: train + evaluate + (at K=18) generate figures
+# ========================================================================================= #
+println("\n[2/4] Training and evaluating all (K, family) combinations...")
+
+summary = Vector{NamedTuple}();
+
+for family in EMISSION_FAMILIES
+    tag = FAMILY_TAG[family];
+    label = FAMILY_LABEL[family];
+    for K in K_VALUES
+        println("\n  $(label) | K = $K")
+
+        out_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K$K", tag);
+        mkpath(out_dir);
+
+        # Reproducibility: deterministic seeding per (family, K) cell. SEED for the
+        # fit step (the EM is deterministic from the quantile init; this is for any
+        # randomness the build path may touch); SEED + 1 for simulation.
+        Random.seed!(SEED);
+        model = _train_family(family, R_is, K, MAX_ITER);
+        T_mat, start_dist = _stationary(model, K);
+        π_stat = T_mat^1000 |> x -> x[1, :];
+
+        Random.seed!(SEED + 1);
+        sim_is, sim_oos = _simulate_paths(model, start_dist, n_steps, n_steps_oos, N_PATHS);
+        m_is = eval_metrics(R_is, sim_is);
+        m_oos = eval_metrics(R_oos, sim_oos);
+
+        push!(summary, (
+            family=tag, K=K,
+            ks_is=m_is.ks, ad_is=m_is.ad,
+            ks_oos=m_oos.ks, ad_oos=m_oos.ad,
+            kurt_obs=m_is.kurt_obs, kurt_sim=m_is.kurt,
+            acf_mae=m_is.acf_mae,
+            acf_mae_raw=m_is.acf_mae_raw,
+            w1=m_is.w1, hell=m_is.hell,
+            cov_is=m_is.cov, cov_oos=m_oos.cov,
+        ));
+
+        # Per-K per-family metrics file
+        open(joinpath(out_dir, "Metrics.txt"), "w") do io
+            println(io, "Validation Metrics (CHMM-$tag, K=$K, $TICKER)")
+            println(io, "="^70)
+            println(io, "KS IS (%):       $(m_is.ks)   | KS OoS (%):  $(m_oos.ks)")
+            println(io, "AD IS (%):       $(m_is.ad)   | AD OoS (%):  $(m_oos.ad)")
+            println(io, "Kurt (IS sim):   $(m_is.kurt)  | Obs IS:      $(m_is.kurt_obs)")
+            println(io, "Kurt (OoS sim):  $(m_oos.kurt) | Obs OoS:     $(m_oos.kurt_obs)")
+            println(io, "ACF-MAE |G|:     $(m_is.acf_mae)")
+            println(io, "ACF-MAE raw:     $(m_is.acf_mae_raw)")
+            println(io, "Wasserstein-1:   $(m_is.w1)")
+            println(io, "Hellinger:       $(m_is.hell)")
+            println(io, "Coverage IS (%): $(m_is.cov) | OoS: $(m_oos.cov)")
+        end
+
+        # Figures: only at K=18, and only the per-family K=18 inspection figures
+        # actually panelled in the paper (Convergence, Emission-PDFs, Residence-Times).
+        # IS/OoS comparison and trajectory K=18 figures come from run_figures.jl
+        # (split panels with no top titles); the per-family transition-matrix
+        # at K=18 also comes from run_figures.jl.
+        if K == 18
+            save_convergence(model, tag, K, out_dir);
+            save_emission_pdfs(model, tag, K, out_dir);
+            save_residence_times(T_mat, tag, K, out_dir);
+        end
+    end
+end
+
+# ========================================================================================= #
+# Table T1: all (K, family) combinations
+# ========================================================================================= #
+println("\n[3/4] Writing Table T1 (multi-emission)...")
+
+open(joinpath(RESULTS_DIR, TICKER, "Table-T1-Multi-Emission.txt"), "w") do io
+    println(io, "Table T1: State-Resolution Sensitivity across Emission Families ($TICKER)")
+    println(io, "$(N_PATHS) simulated paths, α=0.05")
+    println(io, "CHMM-N: Gaussian; CHMM-t: Student-t (per-state ν); CHMM-L: Laplace")
+    println(io, "="^150)
+    println(io, "Family   | K  | KS IS(%) | AD IS(%) | KS OoS(%) | AD OoS(%) | Kurt Obs | Kurt Sim | ACF-MAE|G| | ACF-MAE raw | W1(IS) | H(IS)   | Cov IS(%) | Cov OoS(%)")
+    println(io, "-"^170)
+    for family in ("N", "t", "L", "GED")
+        for K in K_VALUES
+            r = summary[findfirst(s -> s.family == family && s.K == K, summary)];
+            println(io, "CHMM-$(rpad(family,3)) | $(lpad(r.K,2)) | $(lpad(r.ks_is,7)) | $(lpad(r.ad_is,7)) | $(lpad(r.ks_oos,8)) | $(lpad(r.ad_oos,8)) | $(lpad(r.kurt_obs,8)) | $(lpad(r.kurt_sim,8)) | $(lpad(r.acf_mae,9)) | $(lpad(r.acf_mae_raw,10)) | $(lpad(r.w1,5))  | $(lpad(r.hell,5))  | $(lpad(r.cov_is,8))  | $(lpad(r.cov_oos,8))")
+        end
+        println(io, "-"^170)
+    end
+    println(io, "="^170)
+end
+
+# ========================================================================================= #
+# Copy selected K=18 figures into the paper's sections/figs with suffixes.
+# Also copy K=3 and K=12 IS comparison + emission PDFs for the appendix panels.
+# ========================================================================================= #
+println("\n[4/4] Copying figures to the paper's figs directory...")
+
+if isdir(PAPER_FIGS_DIR)
+    # Only files actually included in paper.tex via \includegraphics. The
+    # per-family Transition-Matrix, Stationary-Distribution, Trajectory-Example,
+    # IS-Comparison, and OoS-Validation figures from this script are produced
+    # for inspection but are not panelled in the paper (the canonical paper-side
+    # IS/OoS K=18 family panels are split-panel PDFs produced by run_figures.jl).
+    # We only copy the per-family Convergence, Emission-PDFs, and Residence-Times
+    # figures, which are referenced via subfigure blocks in sensitivity_appendix.tex.
+    per_family_figs_K18 = [
+        "Fig-Convergence-K18",
+        "Fig-Emission-PDFs-K18",
+        "Fig-Residence-Times-K18",
+    ];
+    for fam in ("N", "t", "L", "GED")
+        src_dir = joinpath(RESULTS_DIR, TICKER, "multi_emission", "K18", fam);
+        for stem in per_family_figs_K18
+            for ext in (".pdf", ".svg")
+                src = joinpath(src_dir, stem * "-" * fam * ext);
+                if isfile(src)
+                    dst = joinpath(PAPER_FIGS_DIR, stem * "-" * fam * ext);
+                    cp(src, dst; force=true);
+                end
+            end
+        end
+    end
+    println("  Copied figures to: $PAPER_FIGS_DIR")
+else
+    println("  (Skipped copy: $PAPER_FIGS_DIR not found)")
+end
+
+println("\nDone. See results at: $(joinpath(RESULTS_DIR, TICKER))")
