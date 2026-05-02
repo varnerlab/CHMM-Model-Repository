@@ -98,7 +98,7 @@ post_oos = _filter_posteriors(R_oos, T_mat, μ, σ, prior_oos);
 # at each t, mass in low-vol (rank 1-6), mid-vol (rank 7-12), high-vol (rank 13-18) bands.
 function _band_mass(post::AbstractMatrix, state_order::Vector{Int}, lo::Int, hi::Int)
     states_in_band = state_order[lo:hi];
-    return [sum(post[t, states_in_band]) for t in 1:size(post, 1)];
+    return [sum(post[t, states_in_band]) for t in axes(post, 1)];
 end
 
 low_vol_oos  = _band_mass(post_oos, state_order, 1, 6);

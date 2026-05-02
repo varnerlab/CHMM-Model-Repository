@@ -205,7 +205,7 @@ for k in 1:DISCRETE_K
     bin_centers[k] = isempty(mk) ? 0.0 : mean(R_is[mk]);
 end
 T_counts = zeros(DISCRETE_K, DISCRETE_K);
-for t in 2:length(bin_idx); T_counts[bin_idx[t-1], bin_idx[t]] += 1.0; end
+for t in 2:lastindex(bin_idx); T_counts[bin_idx[t-1], bin_idx[t]] += 1.0; end
 T_disc = copy(T_counts);
 for i in 1:DISCRETE_K
     rs = sum(T_disc[i, :]);

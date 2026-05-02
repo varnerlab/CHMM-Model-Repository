@@ -116,7 +116,7 @@ function fit_and_filter(R_is, R_oos, K)
 end
 
 function eval_conditional_var(fit, R_oos, α; n_is)
-    K = fit.K; μ = fit.μ; σ = fit.σ;
+    μ = fit.μ; σ = fit.σ;
     n_o = length(R_oos);
     var_thr = zeros(n_o);
     breaches = falses(n_o);

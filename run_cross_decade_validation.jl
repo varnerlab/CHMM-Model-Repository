@@ -142,7 +142,6 @@ end
 function _eval(R_obs, sim_archive)
     np = size(sim_archive, 2);
     n_o = length(R_obs);
-    μ_o = mean(R_obs); σ_o = std(R_obs);
     L_use = min(L_LAGS, n_o - 1);
     acf_o     = autocor(abs.(R_obs), 1:L_use);
     acf_o_raw = autocor(R_obs,        1:L_use);

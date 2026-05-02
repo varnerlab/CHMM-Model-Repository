@@ -106,7 +106,7 @@ function _single_linkage(D::AbstractMatrix, tau::Float64)
     end
     # Renumber 1..n_clusters
     uniq = sort(unique(labels));
-    remap = Dict(uniq[k] => k for k in 1:length(uniq));
+    remap = Dict(uniq[k] => k for k in eachindex(uniq));
     return [remap[l] for l in labels];
 end
 

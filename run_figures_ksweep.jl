@@ -36,7 +36,7 @@ println("SPY IS=$n_is OoS=$n_oos. K_VALUES=$K_VALUES. Figs -> $PAPER_FIGS_DIR");
 
 function eval_metrics(observed, sim_archive; L_val=L_LAGS)
     np = size(sim_archive, 2); n_o = length(observed);
-    L_use = min(L_val, n_o - 1);
+    @assert n_o > 1 && L_val >= 1;
     ks_pass = 0; ks_pvals = Float64[];
     for i in 1:np
         sim = sim_archive[:, i];
@@ -72,7 +72,7 @@ const _MEAN_C = RGB(0.0, 0.620, 0.451);
 const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
-function save_is_comparison(sim_is, m_is, tag, K, out_path)
+function save_is_comparison(sim_is, _, tag, _, out_path)
     # |Gₜ| ACF: observed + simulated mean / 10-90 band
     acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
@@ -128,7 +128,7 @@ function save_is_comparison(sim_is, m_is, tag, K, out_path)
     savefig(p_d, out_path * "-d.pdf");
 end
 
-function save_oos_validation(sim_oos, m_oos, tag, K, out_path)
+function save_oos_validation(sim_oos, m_oos, tag, _, out_path)
     panel_size = (700, 500);
 
     # Panel (a): OoS density fan

@@ -85,7 +85,6 @@ function _val_loglik(model::MyStudentTHiddenMarkovModel, R_val::Vector{Float64})
     log_lik = 0.0;
     new_α = similar(α_log);
     for t in 2:n_o
-        m_t = maximum(α_log);
         for k in 1:K
             s = -Inf;
             for j in 1:K

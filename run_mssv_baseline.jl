@@ -94,7 +94,6 @@ end
 
 function _init_mssv(R::Vector{Float64})
     mu = mean(R);
-    K = K_REGIMES;
     c = [-1.0, 1.0];               # low-vol vs high-vol intercepts (in log-vol scale)
     phi = [0.92, 0.85];
     sigma_eta2 = [0.05, 0.30];

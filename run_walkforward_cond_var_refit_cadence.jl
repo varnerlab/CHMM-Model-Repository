@@ -119,7 +119,7 @@ function _filter_through(R::AbstractVector, fit)
     K = length(fit.μ)
     pred = zeros(length(R) + 1, K)
     pred[1, :] = fit.π̄
-    for t in 1:length(R)
+    for t in eachindex(R)
         pred[t + 1, :] = _filter_one_step(pred[t, :], R[t], fit)
     end
     return pred

@@ -99,7 +99,7 @@ end
     # Basic moment sanity: the simulated series should have non-degenerate
     # variance and finite kurtosis. We only check no-NaN and reasonable
     # magnitudes; the per-K behaviour is the runner's job.
-    for j in 1:size(sim, 2)
+    for j in axes(sim, 2)
         @test std(sim[:, j]) > 0;
     end
 end

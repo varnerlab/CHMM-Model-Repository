@@ -134,7 +134,7 @@ function ecm_shared_nu(obs::AbstractVector, K::Int;
     last_T = copy(T); last_π = copy(π)
 
     prev_ll = -Inf
-    for iter in 1:max_iter
+    for _ in 1:max_iter
         # E-STEP
         log_B = zeros(N, K)
         for t in 1:N, k in 1:K
@@ -212,13 +212,12 @@ end
 # ----------------------------------------------------------------------------------------- #
 # Stationary distribution from T (slow-power approximation; matches body convention).
 function _stationary_T(T)
-    K = size(T, 1)
     π = (T^1000)[1, :]
     return Categorical(π)
 end
 
 # Sample state path from initial state via deterministic transition: piecewise multinomial.
-function _walk_states(T, K, s0, n)
+function _walk_states(T, s0, n)
     out = zeros(Int, n)
     out[1] = s0
     for j in 2:n
@@ -229,11 +228,10 @@ end
 
 function _sim_shared_nu(fit, n::Int, np::Int)
     sd = _stationary_T(fit.T)
-    K = size(fit.T, 1)
     sim = Matrix{Float64}(undef, n, np)
     for p in 1:np
         s0 = rand(sd)
-        st = _walk_states(fit.T, K, s0, n)
+        st = _walk_states(fit.T, s0, n)
         for j in 1:n
             sim[j, p] = rand(LocationScale(fit.μ[st[j]], fit.σ[st[j]], TDist(fit.ν)))
         end

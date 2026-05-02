@@ -159,14 +159,18 @@ function fit_msgarch_reference(obs::AbstractVector{<:Real}, K::Int;
         n_thin::Int=10,
         seed::Int)::MyMSGARCHReferenceModel
 
-    @assert K >= 1 "K must be a positive integer";
-    @assert fit_method in ("MCMC", "ML") "fit_method must be MCMC or ML";
+    K; fit_method; n_mcmc; n_burnin; n_thin;  # anchor refs for StaticLint (interpolated into R""" below)
+    K >= 1 || error("K must be a positive integer, got $K");
+    fit_method == "MCMC" || fit_method == "ML" || error("fit_method must be MCMC or ML, got $fit_method");
+    (n_mcmc >= 1 && n_burnin >= 0 && n_thin >= 1) || error("invalid MCMC settings: n_mcmc=$n_mcmc, n_burnin=$n_burnin, n_thin=$n_thin");
 
     _ensure_r_session();
 
     obs_f = convert(Vector{Float64}, collect(obs));
     vs_r = isa(variance_spec, String) ? [variance_spec] : variance_spec;
     di_r = isa(distribution,  String) ? [distribution]  : distribution;
+    isempty(obs_f) && error("obs is empty");
+    (isempty(vs_r) || isempty(di_r)) && error("variance_spec/distribution is empty");
 
     # The R-side fit object holds Rcpp C++ pointers that don't survive
     # serialize/unserialize, so we stash the result in R's global env and
@@ -235,12 +239,14 @@ Reproducibility requires an explicit integer `seed`.
 function simulate_msgarch_reference(m::MyMSGARCHReferenceModel, n_steps::Int;
         n_paths::Int=1, seed::Int)::Matrix{Float64}
 
-    @assert n_steps >= 1;
-    @assert n_paths >= 1;
+    n_steps >= 1 || error("n_steps must be positive, got $n_steps");
+    n_paths >= 1 || error("n_paths must be positive, got $n_paths");
+    seed isa Int || error("seed must be Int, got $(typeof(seed))");
 
     _ensure_r_session();
 
     fit = m.fit_robj;
+    fit !== nothing || error("MSGARCH fit_robj is missing");
     res = R"""
     simulate_msgarch_ref(
       fit     = $fit,

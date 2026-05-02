@@ -177,17 +177,17 @@ obs_lev_oos = leverage_effect(R_oos; max_lag=MAX_LAG_LEV);
 pv_results = Dict{String, NamedTuple}();
 for m in MODEL_ORDER
     s_is, s_oos = archive[m].is, archive[m].oos;
-    kurt_is_s  = [_kurt(s_is[:, i])  for i in 1:size(s_is, 2)];
-    kurt_oos_s = [_kurt(s_oos[:, i]) for i in 1:size(s_oos, 2)];
+    kurt_is_s  = [_kurt(s_is[:, i])  for i in axes(s_is, 2)];
+    kurt_oos_s = [_kurt(s_oos[:, i]) for i in axes(s_oos, 2)];
     lev_is_s = Float64[]; lev_oos_s = Float64[];
     ak5_is_s  = Float64[]; ak21_is_s  = Float64[];
     ak5_oos_s = Float64[]; ak21_oos_s = Float64[];
-    for i in 1:size(s_is, 2)
+    for i in axes(s_is, 2)
         push!(lev_is_s,  leverage_effect(s_is[:, i]; max_lag=MAX_LAG_LEV).avg_neg);
         ak = aggregational_kurtosis(s_is[:, i]; horizons=HORIZONS_AG);
         push!(ak5_is_s,  ak[5]); push!(ak21_is_s,  ak[21]);
     end
-    for i in 1:size(s_oos, 2)
+    for i in axes(s_oos, 2)
         push!(lev_oos_s, leverage_effect(s_oos[:, i]; max_lag=MAX_LAG_LEV).avg_neg);
         ak = aggregational_kurtosis(s_oos[:, i]; horizons=HORIZONS_AG);
         push!(ak5_oos_s, ak[5]); push!(ak21_oos_s, ak[21]);

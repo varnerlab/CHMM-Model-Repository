@@ -180,12 +180,12 @@ lev_results = Dict{String,NamedTuple}();
 for m in MODEL_ORDER_FULL
     s_is, s_oos = archive[m].is, archive[m].oos;
     avg_is = Float64[]; asym_is = Float64[];
-    for i in 1:size(s_is, 2)
+    for i in axes(s_is, 2)
         r = leverage_effect(s_is[:, i]; max_lag=MAX_LAG_LEV);
         push!(avg_is, r.avg_neg); push!(asym_is, r.asymmetry);
     end
     avg_oos = Float64[]; asym_oos = Float64[];
-    for i in 1:size(s_oos, 2)
+    for i in axes(s_oos, 2)
         r = leverage_effect(s_oos[:, i]; max_lag=MAX_LAG_LEV);
         push!(avg_oos, r.avg_neg); push!(asym_oos, r.asymmetry);
     end
@@ -208,7 +208,7 @@ for m in MODEL_ORDER_FULL
     for (tag, arch) in (:is => s_is, :oos => s_oos)
         per_h = Dict{Int, Vector{Float64}}();
         for h in HORIZONS_AG; per_h[h] = Float64[]; end
-        for i in 1:size(arch, 2)
+        for i in axes(arch, 2)
             ak = aggregational_kurtosis(arch[:, i]; horizons=HORIZONS_AG);
             for h in HORIZONS_AG; push!(per_h[h], ak[h]); end
         end
@@ -235,10 +235,10 @@ obs_ak_oos_5 = agg_obs_oos[5]; obs_ak_oos_21 = agg_obs_oos[21];
 pv_results = Dict{String,NamedTuple}();
 for m in MODEL_ORDER_FULL
     s_is, s_oos = archive[m].is, archive[m].oos;
-    kurts_is  = [_kurt(s_is[:, i])  for i in 1:size(s_is, 2)];
-    kurts_oos = [_kurt(s_oos[:, i]) for i in 1:size(s_oos, 2)];
-    acf_mae_is  = [_acf_mae_abs(R_is,  s_is[:, i])  for i in 1:size(s_is, 2)];
-    acf_mae_oos = [_acf_mae_abs(R_oos, s_oos[:, i]) for i in 1:size(s_oos, 2)];
+    kurts_is  = [_kurt(s_is[:, i])  for i in axes(s_is, 2)];
+    kurts_oos = [_kurt(s_oos[:, i]) for i in axes(s_oos, 2)];
+    acf_mae_is  = [_acf_mae_abs(R_is,  s_is[:, i])  for i in axes(s_is, 2)];
+    acf_mae_oos = [_acf_mae_abs(R_oos, s_oos[:, i]) for i in axes(s_oos, 2)];
     lev_entry = lev_results[m];
     ak5_is  = agg_results[m][:is][5];
     ak21_is = agg_results[m][:is][21];

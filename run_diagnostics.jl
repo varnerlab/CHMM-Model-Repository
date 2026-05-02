@@ -646,7 +646,6 @@ function stationary_block_bootstrap(R::Vector{Float64}, T_out::Int; block_size::
     n = length(R);
     p_end = 1.0 / block_size;
     sim = Vector{Float64}(undef, T_out);
-    i = 1;
     cursor = rand(1:n);
     for t in 1:T_out
         sim[t] = R[cursor];
@@ -706,7 +705,7 @@ bin_idx = [_assign_bin(r, bin_edges) for r in R_is];
 
 # Frequency-counted transition matrix
 T_counts = zeros(DISCRETE_K, DISCRETE_K);
-for t in 2:length(bin_idx); T_counts[bin_idx[t-1], bin_idx[t]] += 1.0; end
+for t in 2:lastindex(bin_idx); T_counts[bin_idx[t-1], bin_idx[t]] += 1.0; end
 T_disc = copy(T_counts);
 for i in 1:DISCRETE_K
     rs = sum(T_disc[i, :]);

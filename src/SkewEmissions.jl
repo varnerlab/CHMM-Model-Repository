@@ -99,7 +99,7 @@ function fit_gamma_mle_skewt(obs::AbstractVector{Float64}, weights::AbstractVect
     _loglik(log_γ) = begin
         γ = exp(log_γ);
         s = 0.0;
-        @inbounds for t in 1:length(obs)
+        @inbounds for t in eachindex(obs)
             s += weights[t] * logpdf_skewt(obs[t], μ, σ, ν, γ);
         end
         s;
@@ -134,7 +134,7 @@ function fit_gamma_mle_skewl(obs::AbstractVector{Float64}, weights::AbstractVect
     _loglik(log_γ) = begin
         γ = exp(log_γ);
         s = 0.0;
-        @inbounds for t in 1:length(obs)
+        @inbounds for t in eachindex(obs)
             s += weights[t] * logpdf_skewl(obs[t], μ, b, γ);
         end
         s;

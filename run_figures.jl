@@ -36,10 +36,8 @@ println("SPY IS=$n_is OoS=$n_oos. Figs -> $PAPER_FIGS_DIR");
 # ----- Metric helper (eval_metrics returns ks_pvals + ks etc.) -----
 function eval_metrics(observed, sim_archive; L_val=L_LAGS)
     np = size(sim_archive, 2); n_o = length(observed);
-    μ_o = mean(observed); σ_o = std(observed);
-    kurt_o = sum(((observed .- μ_o) ./ σ_o).^4) / n_o - 3.0;
     L_use = min(L_val, n_o - 1);
-    acf_o = autocor(abs.(observed), 1:L_use);
+    @assert L_use >= 1;
     ks_pass = 0; ad_pass = 0; ks_pvals = Float64[];
     for i in 1:np
         sim = sim_archive[:, i];
@@ -82,7 +80,7 @@ const _MEAN_C = RGB(0.0, 0.620, 0.451);     # Okabe-Ito bluish green (mean over 
 const _STYLE = (titlefontsize=TFS, guidefontsize=TFS, tickfontsize=TFS-1,
                 legendfontsize=TFS-2);
 
-function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
+function kfigs_save_is_comparison(sim_is, _, tag, _, out_path)
     # |Gₜ| ACF: observed + simulated mean / 10-90 band
     acf_obs_abs = autocor(abs.(R_is), 1:L_LAGS);
     n_acf = min(200, N_PATHS);
@@ -138,7 +136,7 @@ function kfigs_save_is_comparison(sim_is, m_is, tag, K, out_path)
     savefig(p_d, out_path * "-d.pdf");
 end
 
-function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
+function kfigs_save_oos_validation(sim_oos, m_oos, tag, _, out_path)
     # Per-panel saves (no top titles; (a)/(b)/(c)/(d) come from LaTeX subcaptions).
     panel_size = (700, 500);
 
@@ -201,7 +199,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, K, out_path)
     savefig(p_d, out_path * "-d.pdf");
 end
 
-function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
+function kfigs_save_transition_heatmap(T_mat, _, _, out_path)
     T_log = log10.(T_mat .+ 1e-10);
     p = heatmap(T_log,
         xlabel="To State", ylabel="From State",
@@ -215,7 +213,7 @@ function kfigs_save_transition_heatmap(T_mat, tag, K, out_path)
     savefig(p, out_path * ".pdf");
 end
 
-function kfigs_save_trajectory(observed, simulated, window_label, tag, K, out_path)
+function kfigs_save_trajectory(observed, simulated, window_label, tag, _, out_path)
     # Single-panel trajectory plot of observed vs one simulated path over the full window.
     # window_label is "IS" or "OoS"; out_path is the suffix-free path stem.
     traj_len = length(observed);

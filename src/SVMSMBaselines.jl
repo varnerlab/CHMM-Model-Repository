@@ -152,7 +152,7 @@ function fit_msm(obs::AbstractVector{Float64}; kbar::Int = 8)
     # The log-volatility process has approximate ACF rho(tau) = sum_k w_k * gamma_k_tau
     # where gamma_k_tau = (1 - 2 gamma_k)^tau, gamma_k = 1 - (1 - gamma_1)^(b^(k-1)),
     # and w_k = 1/kbar (under symmetric multiplier loadings).
-    function _acf_model(m0::Float64, gamma_1::Float64, b::Float64, kbar::Int, lags::Int)
+    function _acf_model(gamma_1::Float64, b::Float64, kbar::Int, lags::Int)
         ms = zeros(lags);
         weights = fill(1.0 / kbar, kbar);
         for k in 1:kbar
@@ -171,7 +171,7 @@ function fit_msm(obs::AbstractVector{Float64}; kbar::Int = 8)
         if !(1.001 < m0 < 1.999);     return 1e10; end
         if !(1e-4  < gamma_1 < 0.999); return 1e10; end
         if !(1.0001 < b < 6.0);       return 1e10; end
-        rho = _acf_model(m0, gamma_1, b, kbar, L);
+        rho = _acf_model(gamma_1, b, kbar, L);
         # variance scaling factor folded in via sigma_bar
         return sum((acf_emp .- rho) .^ 2);
     end
@@ -224,7 +224,7 @@ Gaussians: f(r) = sum_{n=0}^{n_terms} Poisson(n; lambda*dt) * N(r; mu*dt + n*mu_
 Note: `obs` here is annualised; we treat dt=1/252 only when interpreting parameters.
 """
 function fit_jump_diffusion(obs::AbstractVector{Float64}; dt::Float64 = 1/252, n_terms::Int = 20)
-    n = length(obs);
+    @assert dt > 0;
     mu_hat = mean(obs);
     sigma_hat = std(obs);
 

@@ -47,6 +47,7 @@ path for each window.
 """
 function sample_windows_from_archive(sim_archive::AbstractMatrix, W::Int, n_windows::Int;
                                      stride::Int=1, rng=Random.GLOBAL_RNG)
+    @assert stride >= 1;
     T, np = size(sim_archive);
     if T < W; return Array{Float64,2}(undef, W, 0); end
     out = Array{Float64,2}(undef, W, n_windows);
@@ -78,7 +79,7 @@ function median_bandwidth(Z::AbstractMatrix; max_pairs::Int=5000,
         i = rand(rng, 1:n); j = rand(rng, 1:n);
         while j == i; j = rand(rng, 1:n); end
         d = 0.0;
-        for r in 1:size(Z, 1); d += (Z[r, i] - Z[r, j])^2; end
+        for r in axes(Z, 1); d += (Z[r, i] - Z[r, j])^2; end
         ds2[k] = d;
     end
     m = median(ds2);

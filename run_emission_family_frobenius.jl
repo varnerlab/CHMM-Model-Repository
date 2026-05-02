@@ -154,7 +154,7 @@ end
 
 println("\n[SPY] pairwise Frobenius distances between families:");
 spy_pairs = Vector{NamedTuple}();
-for i in 1:length(FAMILIES), j in (i+1):length(FAMILIES)
+for i in eachindex(FAMILIES), j in (i+1):lastindex(FAMILIES)
     fi, li = FAMILIES[i]; fj, lj = FAMILIES[j];
     d_μ = _frobenius(spy_fams[fi].μ, spy_fams[fj].μ);
     d_σ = _frobenius(spy_fams[fi].σ, spy_fams[fj].σ);
@@ -187,7 +187,7 @@ let ticker_idx = 0
             ticker_idx += 1;
             R_t = Vector{Float64}(all_R[:, ti]);
             fams = _fit_all_seeds(R_t, K_MAIN, SEED + 1000 * ticker_idx);
-            for i in 1:length(FAMILIES), j in (i+1):length(FAMILIES)
+            for i in eachindex(FAMILIES), j in (i+1):lastindex(FAMILIES)
                 fi, li = FAMILIES[i]; fj, lj = FAMILIES[j];
                 d_μ = _frobenius(fams[fi].μ, fams[fj].μ);
                 d_σ = _frobenius(fams[fi].σ, fams[fj].σ);
