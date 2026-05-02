@@ -78,7 +78,6 @@ stage by default; see the script's header comment for the inclusion toggle).
 | Runner | Output | Paper artefact |
 |---|---|---|
 | `run_diagnostics.jl` | `results/diagnostics/...` (catch-all) | Various appendix diagnostics |
-| `run_figures_ksweep.jl` | `figs/Fig-3-IS-Comparison-K{3,6,12,21}-*.pdf` | (formerly Appendix per-K figures; removed in arXiv-prep trim, kept for reproducibility) |
 
 ## Archived runners
 

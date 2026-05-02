@@ -35,6 +35,11 @@ unchanged and still present, only the runner is no longer in the active set.
 | `run_oos_regime_trajectory.jl` | Volatility-rank band aggregates; now a one-paragraph reference in the body per-state interpretability discussion |
 | `run_non_equity_validation.jl` | Earlier-revision non-equity stress test (GLD/SLV); superseded by `run_non_us_asset.jl` (body cross_asset_appendix `sec:non_us_asset_supp`) |
 | `run_subdecade_validation.jl` | 2014-2024 5-year sub-window validation; superseded by the cross-decade CRSP run (`run_cross_decade_validation.jl`) |
+| `run_sector_panel_n6.jl` | 60-ticker sector ANOVA at $n = 6$; arXiv-prep stub in `sec:sector_panel_n6` retains the headline numbers and points to the archived CSV |
+| `run_sector_panel_n6_postprocess.jl` | Companion postprocess for `run_sector_panel_n6.jl`; archived together |
+| `run_walkforward_cond_var_refit_cadence.jl` | Walk-forward refit-cadence sweep (monthly / weekly); arXiv-prep stub in `sec:walkforward_refit_cadence` retains the rejection-count summary |
+| `run_sector_panel_quarterly_refit_k6.jl` | $K = 6$ quarterly-refit cross-ticker row; the $K = 18$ row in `sec:cross_ticker_quarterly_refit` already carries the body claim |
+| `run_figures_ksweep.jl` | Per-$K$ visual sweep figures; the appendix figure section was collapsed to a one-line pointer in the arXiv-prep pass |
 
 To restore any archived runner: `git mv _attic_v10/runners/run_X.jl ./` and
 re-add to `run_full_rebuild.jl` if it should be in the default end-to-end flow.
