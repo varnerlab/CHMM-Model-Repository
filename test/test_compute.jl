@@ -13,6 +13,7 @@
             max_iter = 15
         ))
     end
+    # _make_test_model is called inside nested @testset blocks below
 
     @testset "Baum-Welch convergence" begin
         rng = Random.MersenneTwister(123)

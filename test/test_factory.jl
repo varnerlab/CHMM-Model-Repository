@@ -9,6 +9,7 @@
         )
         return shuffle(rng, obs)
     end
+    # _make_synthetic_observations is called inside nested @testset blocks below
 
     @testset "Build MyContinuousHiddenMarkovModel" begin
         obs = _make_synthetic_observations()
