@@ -41,5 +41,27 @@ unchanged and still present, only the runner is no longer in the active set.
 | `run_sector_panel_quarterly_refit_k6.jl` | $K = 6$ quarterly-refit cross-ticker row; the $K = 18$ row in `sec:cross_ticker_quarterly_refit` already carries the body claim |
 | `run_figures_ksweep.jl` | Per-$K$ visual sweep figures; the appendix figure section was collapsed to a one-line pointer in the arXiv-prep pass |
 
-To restore any archived runner: `git mv _attic_v10/runners/run_X.jl ./` and
-re-add to `run_full_rebuild.jl` if it should be in the default end-to-end flow.
+## arXiv-prep cleanup pass (2026-05-02)
+
+Second-pass sweep against the trimmed paper appendix. These runners produced
+artefacts that no surviving paper section cites, or were one-shot setup utilities
+no longer needed for reproduction.
+
+| Runner | Why archived |
+|---|---|
+| `run_cross_asset_sim_copula_k6.jl` | $K = 6$ Pipeline B variant; `sec:cross_asset_kstar6` was cut in the arXiv-prep appendix trim, and the $K = 3$ / $K = 18$ sandwich already brackets the body claim |
+| `run_mssv_baseline.jl` | Markov-switching stochastic-volatility baseline; `sec:mssv_baseline` is on the arXiv-prep cut list and the SV-AR(1) row in `run_sv_msm_jd_baselines.jl` already covers the SV-family comparison |
+| `build_new_train_oos.jl` | One-shot train / OoS data-split utility from the initial 2025 setup; the resulting `data/CHMM-SP500-Train-10yr.jld2` and `data/CHMM-SP500-OoS-Remainder.jld2` are committed, so reproduction does not need to re-run this script |
+
+## Archived `src/` modules
+
+Companion to `_attic_v10/runners/` for source modules that load cleanly but are
+not reachable from any active runner or test.
+
+| Module | Why archived |
+|---|---|
+| `src/SkewEmissions.jl` | Skew-$t$ / skew-Normal emission scaffolding for a future leverage-effect CHMM variant; the body "Out of scope" paragraph defers skew emissions to a companion paper, and no current runner or test references the module |
+
+To restore any archived file: `git mv _attic_v10/runners/run_X.jl ./` (or
+`_attic_v10/src/Module.jl src/`) and re-add it to `run_full_rebuild.jl` /
+`Include.jl` as appropriate.

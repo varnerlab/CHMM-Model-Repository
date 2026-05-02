@@ -50,5 +50,4 @@ include(joinpath(_PATH_TO_SRC, "MSGARCH.jl"));
 # needs it (see run_msgarch_reference.jl) so the rest of the harness
 # remains usable on machines without R.
 include(joinpath(_PATH_TO_SRC, "GARCHFamily.jl"));
-include(joinpath(_PATH_TO_SRC, "SkewEmissions.jl"));
 include(joinpath(_PATH_TO_SRC, "SVMSMBaselines.jl"));
