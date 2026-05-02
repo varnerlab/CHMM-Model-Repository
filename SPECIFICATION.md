@@ -4,15 +4,17 @@
 
 The discrete HMM approach in [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl) discretizes continuous returns into bins, fits transition matrices by frequency counting, and models emissions with Student-t distributions. While effective with Poisson jump augmentation, this introduces quantization error and limits fine-grained regime dynamics.
 
-This project extends the methodology to **continuous emissions** -- each hidden state emits from a Gaussian distribution with learned mean and variance -- trained via the **Baum-Welch algorithm**. The key finding: at small K, the continuous HMM alone reproduces all three canonical stylized facts without requiring jump mechanisms.
+This project extends the methodology to **continuous emissions** -- each hidden state emits from a per-state density (Gaussian, Student-$t$ with per-state $\nu_k$, Laplace, or GED with per-state shape $p_k$) -- trained via the **Baum-Welch / ECM algorithm** under a unified scaffold where the M-step is the only architectural difference across emission families. At moderate $K$ the continuous HMM reproduces the three symmetric Cont (2001) stylized facts (heavy tails, negligible linear ACF, slow $|G_t|$ ACF) without requiring jump mechanisms; CHMM-GED's per-state $\hat p_k$ partitions bimodally into a Gaussian-bulk / Laplace-tail structure that replicates across seeds and tickers.
 
-## Three-Model Comparison
+## Model Comparison
 
-| Model | Training | Jumps | Emissions |
-|-------|----------|-------|-----------|
-| Discrete HMM + Jumps | Frequency counting on binned returns | Poisson teleportation (ε, λ) | Categorical (bin indices) |
-| Continuous HMM (Baum-Welch) | EM algorithm on raw returns | None | Gaussian (μ_k, σ_k per state) |
-| GARCH(1,1) | Maximum likelihood estimation | N/A | Single regime, conditional Normal |
+| Model | Training | Emissions |
+|-------|----------|-----------|
+| Discrete HMM + Jumps | Frequency counting on binned returns + Poisson teleportation | Categorical (bin indices) |
+| Continuous HMM (Baum-Welch / ECM, four-family) | EM / ECM on raw returns; M-step branches on family | Gaussian / Student-$t$ ($\nu_k$) / Laplace / GED ($p_k$) per state |
+| ML hidden semi-Markov | Yu (2010) explicit-duration EM | Gaussian per state, truncated Pareto / discrete-Gamma sojourn |
+| GARCH family | Maximum likelihood estimation | Single regime, conditional Normal or Student-$t$ |
+| Markov-switching GARCH | In-house Nelder-Mead or reference Bayesian (`MSGARCH` R) | Per-regime conditional Normal |
 
 ## Architecture
 

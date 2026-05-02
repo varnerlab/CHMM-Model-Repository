@@ -1,17 +1,20 @@
 # CHMM-Model
 
-A Julia framework for modeling equity return dynamics as a **Continuous Hidden Markov Model (CHMM) digital twin**, with a three-family emission ablation (Gaussian, Student-t with per-state $\nu_k$, Laplace) and cross-asset copula composition. Companion code repository to the working paper in [`../CHMM-paper`](https://github.com/altashly1/CHMM-paper).
+A Julia framework for modeling equity return dynamics as a **Continuous Hidden Markov Model (CHMM) digital twin**, with a four-family emission ablation under a unified ECM scaffold (Gaussian, Student-t with per-state $\nu_k$, Laplace, Generalised Error Distribution with per-state $p_k$) and cross-asset copula composition. Companion code repository to the working paper in [`../CHMM-paper`](https://github.com/altashly1/CHMM-paper).
 
 The framework compares the CHMM against a broad panel of alternatives:
 
-1. **Continuous Hidden Markov Model** (Baum-Welch / ECM, three emission families) — the main contribution
-2. **Discrete HMM with Poisson jumps** — baseline from [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl)
-3. **GARCH(1,1)** — classical conditional-variance benchmark
-4. **GRU + Gaussian head** — deep-generative baseline
-5. **Bootstrap, stationary-block bootstrap, Gaussian i.i.d.** — non-parametric and parametric null generators
-6. **Single Index Model, Gaussian copula, Student-t copula** — cross-asset dependence generators
+1. **Continuous Hidden Markov Model** (Baum-Welch / ECM, four emission families CHMM-N / CHMM-t / CHMM-L / CHMM-GED) — the main contribution
+2. **ML hidden semi-Markov model** (explicit-duration EM with truncated Pareto and discrete-Gamma sojourns) — co-headline scaffold from [SM-CHMM-AR-Model](https://github.com/altashly1/SM-CHMM-AR-Model)
+3. **Discrete HMM with Poisson jumps** — baseline from [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl)
+4. **GARCH family** — GARCH(1,1) Gaussian, GARCH(1,1)-$t$, EGARCH, GJR-GARCH, HAR-RV
+5. **Markov-switching GARCH** at $K \in \{2, 3, 4, 6\}$ via in-house Nelder-Mead and via the reference Bayesian `MSGARCH` R package of Ardia et al. (2019)
+6. **Stochastic-volatility, multifractal, jump-diffusion** — SV-AR(1) (Taylor 1982), MSM (Calvet-Fisher 2004), Merton-JD (Merton 1976)
+7. **QuantGAN deep-generative baseline** — convolutional WGAN (re-implementation of Wiese et al. 2020)
+8. **Bootstrap, stationary-block bootstrap, Gaussian / Laplace i.i.d.** — non-parametric and parametric null generators
+9. **Single Index Model, Gaussian copula, Student-t copula, truncated C-vine** — cross-asset dependence generators
 
-At moderate $K$, the CHMM reproduces the three canonical stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without requiring an explicit jump mechanism, and the Student-t copula with $\nu^\ast \approx 6$ reproduces cross-asset tail dependence missed by SIM and Gaussian copulas.
+At moderate $K$, the CHMM reproduces the three symmetric Cont (2001) stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without an explicit jump mechanism. CHMM-GED's per-state $\hat p_k$ partitions bimodally into a Gaussian-bulk / Laplace-tail structure that replicates across seeds and tickers. The Student-$t$ copula with $\nu^\ast = 6$ reproduces cross-asset IS dependence; on OoS it is statistically indistinguishable from the Gaussian copula. A regime-conditional Value-at-Risk that propagates the one-step-ahead state forecast through the predictive mixture passes Christoffersen-cc cleanly across emission families.
 
 ## Authors
 
@@ -39,11 +42,11 @@ Alswaidan A, Jin C, Varner JD. *Continuous Hidden Markov Models as a Digital Twi
 
 Financial markets exhibit volatility clustering, heavy-tailed returns, and regime-dependent dynamics. This framework:
 
-- Trains a **continuous HMM** via Baum-Welch / ECM on observed returns with three emission families (Gaussian, Student-t with per-state $\nu_k$, Laplace)
-- Compares against **discrete HMM + Poisson jumps** (regime teleportation baseline from JumpHMM.jl)
-- Benchmarks against **GARCH(1,1)**, a **GRU + Gaussian head** deep-generative model, and parametric / non-parametric null generators (Gaussian i.i.d., bootstrap, stationary block bootstrap)
-- Composes marginals into **multi-asset samples** via Single Index Model, Gaussian copula, and Student-t copula
-- Validates with a seven-metric fidelity panel: KS, AD, kurtosis, ACF-MAE, Wasserstein-1, Hellinger, quantile-envelope coverage
+- Trains a **continuous HMM** via Baum-Welch / ECM on observed returns with four emission families (Gaussian; Student-$t$ with per-state $\nu_k$ and an optional $1/\nu_k$ shrinkage prior; Laplace; Generalised Error Distribution with per-state shape $p_k \in [0.5, 3.0]$ that nests Gaussian at $p = 2$ and Laplace at $p = 1$); the M-step is the only architectural difference across families
+- Compares against an **ML hidden semi-Markov model** at $K \in \{3, 6\}$ (truncated Pareto and discrete-Gamma sojourns) and a **discrete HMM + Poisson jumps** baseline from JumpHMM.jl
+- Benchmarks against the **GARCH family** (GARCH(1,1) Gaussian / Student-$t$, EGARCH, GJR-GARCH, HAR-RV), **Markov-switching GARCH** at $K \in \{2, 3, 4, 6\}$ in both an in-house frequentist fit and the reference Bayesian `MSGARCH` R package, **stochastic-volatility / MSM / Merton jump-diffusion** rows, a **QuantGAN** deep-generative re-implementation, and parametric / non-parametric null generators (Gaussian i.i.d., Laplace i.i.d., stationary block bootstrap)
+- Composes marginals into **multi-asset samples** via Single Index Model, Gaussian copula, Student-$t$ copula, and truncated C-vine
+- Validates with a seven-metric fidelity panel (KS, AD, kurtosis, $|G_t|$ ACF-MAE, Wasserstein-1, Hellinger, OoS coverage), a regime-conditional VaR back-test (Kupiec, Christoffersen-ind, Christoffersen-cc, Engle--Manganelli DQ), and a six-fold rolling-origin walk-forward
 
 ## Quick Start
 
