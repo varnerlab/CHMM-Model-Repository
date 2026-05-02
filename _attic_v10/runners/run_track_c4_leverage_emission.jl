@@ -18,8 +18,9 @@
 #   results/track_c4/Track-C4-summary.txt
 # ========================================================================================= #
 
-using Pkg; Pkg.activate(".");
-include("Include.jl");
+const _PROJECT_ROOT = abspath(joinpath(@__DIR__, "..", ".."));
+using Pkg; Pkg.activate(_PROJECT_ROOT);
+include(joinpath(_PROJECT_ROOT, "Include.jl"));
 
 using Random
 const SEED = 20260422;
@@ -185,9 +186,9 @@ base_archive = load(cache_path)["archive"];
 flat_n_is  = base_archive["CHMM-N"].is;
 flat_n_oos = base_archive["CHMM-N"].oos;
 
-flat_lev_is_samples  = [leverage_effect(flat_n_is[:, i];  max_lag=MAX_LAG_LEV).avg_neg for i in 1:size(flat_n_is, 2)];
-flat_lev_oos_samples = [leverage_effect(flat_n_oos[:, i]; max_lag=MAX_LAG_LEV).avg_neg for i in 1:size(flat_n_oos, 2)];
-flat_asym_is = [leverage_effect(flat_n_is[:, i]; max_lag=MAX_LAG_LEV).asymmetry for i in 1:size(flat_n_is, 2)];
+flat_lev_is_samples  = [leverage_effect(flat_n_is[:, i];  max_lag=MAX_LAG_LEV).avg_neg for i in axes(flat_n_is, 2)];
+flat_lev_oos_samples = [leverage_effect(flat_n_oos[:, i]; max_lag=MAX_LAG_LEV).avg_neg for i in axes(flat_n_oos, 2)];
+flat_asym_is = [leverage_effect(flat_n_is[:, i]; max_lag=MAX_LAG_LEV).asymmetry for i in axes(flat_n_is, 2)];
 
 flat_pv_is  = sim_pvalue(obs_lev_is.avg_neg, flat_lev_is_samples);
 flat_pv_oos = sim_pvalue(obs_lev_oos.avg_neg, flat_lev_oos_samples);

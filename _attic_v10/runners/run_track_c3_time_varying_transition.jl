@@ -19,8 +19,9 @@
 #   results/track_c3/Track-C3-summary.txt
 # ========================================================================================= #
 
-using Pkg; Pkg.activate(".");
-include("Include.jl");
+const _PROJECT_ROOT = abspath(joinpath(@__DIR__, "..", ".."));
+using Pkg; Pkg.activate(_PROJECT_ROOT);
+include(joinpath(_PROJECT_ROOT, "Include.jl"));
 
 using Random
 const SEED = 20260422;

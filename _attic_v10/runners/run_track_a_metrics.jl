@@ -21,8 +21,9 @@
 #   results/track_a/Track-A-summary.txt                    one-page digest
 # ========================================================================================= #
 
-using Pkg; Pkg.activate(".");
-include("Include.jl");
+const _PROJECT_ROOT = abspath(joinpath(@__DIR__, "..", ".."));
+using Pkg; Pkg.activate(_PROJECT_ROOT);
+include(joinpath(_PROJECT_ROOT, "Include.jl"));
 
 using Random
 const SEED = 20260422;
@@ -189,7 +190,7 @@ else
         bin_centers[k] = isempty(mk) ? 0.0 : mean(R_is[mk]);
     end
     T_counts = zeros(DISCRETE_K, DISCRETE_K);
-    for t in 2:length(bin_idx_vec); T_counts[bin_idx_vec[t-1], bin_idx_vec[t]] += 1.0; end
+    for t in firstindex(bin_idx_vec)+1:lastindex(bin_idx_vec); T_counts[bin_idx_vec[t-1], bin_idx_vec[t]] += 1.0; end
     T_disc = copy(T_counts);
     for i in 1:DISCRETE_K
         rs = sum(T_disc[i, :]);
@@ -331,12 +332,12 @@ lev_results = Dict{String,NamedTuple}();
 for m in MODEL_ORDER
     s_is, s_oos = archive[m].is, archive[m].oos;
     avg_is = Float64[]; asym_is = Float64[];
-    for i in 1:size(s_is, 2)
+    for i in axes(s_is, 2)
         r = leverage_effect(s_is[:, i]; max_lag=MAX_LAG_LEV);
         push!(avg_is, r.avg_neg); push!(asym_is, r.asymmetry);
     end
     avg_oos = Float64[]; asym_oos = Float64[];
-    for i in 1:size(s_oos, 2)
+    for i in axes(s_oos, 2)
         r = leverage_effect(s_oos[:, i]; max_lag=MAX_LAG_LEV);
         push!(avg_oos, r.avg_neg); push!(asym_oos, r.asymmetry);
     end
@@ -366,7 +367,7 @@ for m in MODEL_ORDER
     for (tag, arch) in (:is => s_is, :oos => s_oos)
         per_h = Dict{Int,Vector{Float64}}();
         for h in HORIZONS_AG; per_h[h] = Float64[]; end
-        for i in 1:size(arch, 2)
+        for i in axes(arch, 2)
             ak = aggregational_kurtosis(arch[:, i]; horizons=HORIZONS_AG);
             for h in HORIZONS_AG; push!(per_h[h], ak[h]); end
         end
@@ -402,11 +403,11 @@ obs_ak_oos_21 = agg_obs_oos[21];
 pv_results = Dict{String,NamedTuple}();
 for m in MODEL_ORDER
     s_is, s_oos = archive[m].is, archive[m].oos;
-    kurts_is = [_kurt(s_is[:, i]) for i in 1:size(s_is, 2)];
-    kurts_oos = [_kurt(s_oos[:, i]) for i in 1:size(s_oos, 2)];
+    kurts_is = [_kurt(s_is[:, i]) for i in axes(s_is, 2)];
+    kurts_oos = [_kurt(s_oos[:, i]) for i in axes(s_oos, 2)];
     # ACF-MAE not a per-path stat vs observed ACF: use per-path ACF-MAE distribution
-    acf_mae_is = [_acf_mae_abs(R_is, s_is[:, i]) for i in 1:size(s_is, 2)];
-    acf_mae_oos = [_acf_mae_abs(R_oos, s_oos[:, i]) for i in 1:size(s_oos, 2)];
+    acf_mae_is = [_acf_mae_abs(R_is, s_is[:, i]) for i in axes(s_is, 2)];
+    acf_mae_oos = [_acf_mae_abs(R_oos, s_oos[:, i]) for i in axes(s_oos, 2)];
     # Leverage
     lev_avg_is = lev_results[m];
     # Aggregational kurtosis per path
