@@ -64,7 +64,6 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_k_selection_kfold_pre2020.jl` | `results/k_selection_validation/...` | Appendix `sec:k_selection_kfold_pre2020` (single + four-fold CV at body $K^\star = 3$) |
 | `runners/robustness/run_k_selection_kfold_h12y_pre2020.jl` | `results/k_selection_validation/h12y/...` | Six-fold rolling-origin CV (referenced in body §4.2) |
 | `runners/robustness/run_k_selection_hac.jl` | `results/k_selection_hac/...` | Appendix `sec:k_selection_hac` (HAC-corrected K selection) |
-| `runners/robustness/run_state_distinctness.jl` | `results/diagnostics/state_distinctness/...` | Appendix `sec:state_distinctness` |
 
 ## Spectral + theoretical diagnostics (body §3.3 — Spectral Mechanism)
 
@@ -87,8 +86,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_sv_msm_jd_baselines.jl` | `results/sv_msm_jd/...` | Appendix `sec:sv_msm_jd_baselines` (SV-AR(1), MSM, Merton-JD) |
 | `runners/baselines/run_ged_diagnostics.jl` | `results/ged_diagnostics/...` | Appendix `sec:supp_p_partition` ($\hat p_k$ partition diagnostic) |
 | `runners/baselines/run_leverage_effect.jl` | `results/diagnostics/leverage_effect/...` | Appendix `sec:leverage_effect` |
-| `runners/baselines/run_ks_block_bootstrap_oos.jl` | `results/ks_block_bootstrap/...` | Appendix `sec:ks_block_bootstrap` (OoS-anchored block-bootstrap KS) |
-| `runners/baselines/run_crps_dm_bandwidth.jl` | `results/crps_dm/...` | Appendix `sec:dm_bandwidth` (DM bandwidth sensitivity) |
+| `runners/baselines/run_ks_block_bootstrap_oos.jl` | `results/ks_block_bootstrap/...` | Appendix `sec:ks_block_bootstrap` (OoS-anchored block-bootstrap KS, including body operating-point summary at $L = 20$) |
 | `runners/baselines/run_hsmm_ml_gamma.jl` | `results/hsmm_ml_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
 
 ## Diagnostics + miscellanea

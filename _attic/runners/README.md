@@ -53,6 +53,18 @@ no longer needed for reproduction.
 | `run_mssv_baseline.jl` | Markov-switching stochastic-volatility baseline; `sec:mssv_baseline` is on the arXiv-prep cut list and the SV-AR(1) row in `run_sv_msm_jd_baselines.jl` already covers the SV-family comparison |
 | `build_new_train_oos.jl` | One-shot train / OoS data-split utility from the initial 2025 setup; the resulting `data/CHMM-SP500-Train-10yr.jld2` and `data/CHMM-SP500-OoS-Remainder.jld2` are committed, so reproduction does not need to re-run this script |
 
+## 15-page main-body trim (2026-05-03)
+
+Third-pass sweep alongside the 21-pp $\to$ 15-pp main-body cut and the
+companion supplementary pruning. The corresponding paper appendix subsections
+were dropped, so the runners that produced their numbers are no longer cited
+by any surviving paper artefact.
+
+| Runner | Why archived |
+|---|---|
+| `run_state_distinctness.jl` | `sec:state_distinctness` appendix dropped; the body $K_{\text{eff}}$ claim was removed from the state-selection paragraph and the standalone single-linkage-clustering write-up is no longer cited |
+| `run_crps_dm_bandwidth.jl` | `sec:dm_bandwidth` appendix dropped; the body's "within-CHMM family equivalence is not bandwidth-fragile" claim is now carried inline by the headline CRPS DM result without the bandwidth-sweep write-up |
+
 ## Archived `src/` modules
 
 Companion to `_attic_v10/runners/` for source modules that load cleanly but are
