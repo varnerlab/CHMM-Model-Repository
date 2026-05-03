@@ -13,7 +13,7 @@
 # =========================================================================== #
 
 using Pkg; Pkg.activate(".");
-include("Include.jl");
+include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 
 using Random, Statistics, LinearAlgebra, Distributions, Printf, Plots, Dates;
 

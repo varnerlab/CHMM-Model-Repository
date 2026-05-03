@@ -4,7 +4,7 @@
 # \textwidth without label clipping after LaTeX shrink.
 
 using Pkg; Pkg.activate(".");
-include("Include.jl");
+include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 using Random
 const SEED = 20260420;
 

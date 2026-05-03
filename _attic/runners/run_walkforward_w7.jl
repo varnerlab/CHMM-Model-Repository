@@ -11,7 +11,7 @@
 # =========================================================================== #
 
 using Pkg; Pkg.activate(".");
-include("Include.jl");
+include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 
 using Random, Statistics, StatsBase, HypothesisTests, Distributions, Printf, Dates;
 
@@ -46,8 +46,8 @@ train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
 oos_dataset   = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
 df_train = train_dataset[TICKER];
 df_oos   = oos_dataset[TICKER];
-df_full  = vcat(df_train, df_oos; cols=:orderequal);
-sort!(df_full, :timestamp);
+df_full = [df_train; df_oos];
+df_full = df_full[sortperm(df_full.timestamp), :];
 println("[data] $TICKER full timeline: $(df_full[1, :timestamp]) -> $(df_full[end, :timestamp]) ($(nrow(df_full)) rows)");
 
 function _slice_log_returns(df::DataFrame, t_start::Date, t_end_excl::Date; Δt::Float64=DT)

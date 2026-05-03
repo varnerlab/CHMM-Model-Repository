@@ -164,7 +164,7 @@ for (sector, tickers) in SECTOR_PANEL
              ν_shrink_rate=SHRINK_RATE));
         sd_t = _stationary(chmm_t_pen, K_MAIN);
 
-        nus = [params(chmm_t_pen.emission[k].ρ)[1] for k in 1:K_MAIN];
+        nus = [chmm_t_pen.emission[k].ρ.ν for k in 1:K_MAIN];
 
         Random.seed!(SEED + 11 + 13 * n_fitted);
         sim_is  = _sim_paths(chmm_t_pen, sd_t, n_is,  N_PATHS);

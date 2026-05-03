@@ -16,7 +16,7 @@
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
-include("Include.jl");
+include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 
 const SEED = 20260422;
 Random.seed!(SEED);

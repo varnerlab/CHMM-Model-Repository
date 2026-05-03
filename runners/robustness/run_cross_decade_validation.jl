@@ -70,7 +70,7 @@ PERMNO duplication on a single date by keeping the first occurrence per date.
 function _ticker_series(df::DataFrame, ticker::String)
     sub = df[df.Ticker .== ticker, :];
     isempty(sub) && return Date[], Float64[];
-    sort!(sub, [:DlyCalDt, :PERMNO]);
+    sub = sort(sub, [:DlyCalDt, :PERMNO]);
     seen = Set{Date}();
     dates  = Date[];
     closes = Float64[];

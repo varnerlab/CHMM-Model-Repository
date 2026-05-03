@@ -52,7 +52,7 @@ for sym in keys(is_raw)
     if oos_df === nothing
         combined[sym] = is_df;
     else
-        combined[sym] = vcat(is_df, oos_df; cols=:orderequal);
+        combined[sym] = [is_df; oos_df];
     end
 end
 println("[merge] combined tickers: $(length(combined))   rows(AAPL) = $(nrow(combined[REF_TICKER]))");

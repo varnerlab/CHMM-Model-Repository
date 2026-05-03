@@ -118,7 +118,7 @@ for t in cross_tickers
          ν_shrink_rate=SHRINK_RATE));
     sd_t = _stationary(chmm_t_pen, K_MAIN);
 
-    nus = [params(chmm_t_pen.emission[k].ρ)[1] for k in 1:K_MAIN];
+    nus = [chmm_t_pen.emission[k].ρ.ν for k in 1:K_MAIN];
     println("  per-state ν_k: median $(round(median(nus), digits=2))  min $(round(minimum(nus), digits=2))  max $(round(maximum(nus), digits=2))");
 
     Random.seed!(SEED + 11);
