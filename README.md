@@ -24,13 +24,13 @@ At moderate $K$, the CHMM reproduces the three symmetric Cont (2001) stylized fa
 
 ## Academic Citation
 
-Alswaidan A, Jin C, Varner JD. *Continuous Hidden Markov Models as a Digital Twin for Equity Returns: Gaussian, Student-t, and Laplace Emissions Trained by EM, with Cross-Asset Copula Composition.* Working paper, Cornell University, 2026.
+Alswaidan A, Jin C, Varner JD. *Continuous Hidden Markov Models for Equity Returns: Spectral Rank, Heavy-Tail Emission Families, and Regime-Conditional Value-at-Risk.* Working paper, Cornell University, 2026.
 
 ```bibtex
 @article{alswaidan2026chmm,
-  title   = {Continuous Hidden Markov Models as a Digital Twin for Equity Returns:
-             {Gaussian}, {Student}-t, and {Laplace} Emissions Trained by {EM},
-             with Cross-Asset Copula Composition},
+  title   = {Continuous Hidden Markov Models for Equity Returns:
+             Spectral Rank, Heavy-Tail Emission Families,
+             and Regime-Conditional {Value-at-Risk}},
   author  = {Alswaidan, Abdulrahman and Jin, Cade and Varner, Jeffrey D.},
   year    = {2026},
   institution = {Cornell University},
