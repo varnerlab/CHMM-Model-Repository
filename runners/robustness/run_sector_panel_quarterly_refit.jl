@@ -18,7 +18,10 @@ include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 using Random, Statistics, HypothesisTests, StatsBase, Printf;
 
 const SEED        = 20260420;
-const K_MAIN      = 18;
+# Body operating point K* = 3 by default (per Item 2A of REVIEW_RESPONSE_PLAN.md).
+# Override at the shell to reproduce the K = 18 kurtosis-fidelity reference:
+#     SECTOR_PANEL_K=18 julia --project=. runners/robustness/run_sector_panel_quarterly_refit.jl
+const K_MAIN      = parse(Int, get(ENV, "SECTOR_PANEL_K", "3"));
 const N_PATHS     = 1000;
 const MAX_ITER    = 60;
 const DT          = 1/252;

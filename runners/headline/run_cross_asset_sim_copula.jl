@@ -24,7 +24,11 @@ Random.seed!(SEED);
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
 const N_PATHS = 200;
-const K = 18;
+# Body operating point K* = 3 by default. For the K = 18 kurtosis-fidelity
+# sensitivity reference (used in some appendix panels) override at the shell:
+#     CROSS_ASSET_K=18 julia --project=. runners/headline/run_cross_asset_sim_copula.jl
+# (Item 2A of REVIEW_RESPONSE_PLAN.md.)
+const K = parse(Int, get(ENV, "CROSS_ASSET_K", "3"));
 const MAX_ITER = 60;
 const ASSETS = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 const MARKET = "SPY";

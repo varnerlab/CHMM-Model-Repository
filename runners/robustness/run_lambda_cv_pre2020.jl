@@ -20,7 +20,12 @@ using Random, Statistics, HypothesisTests, Distributions, Printf
 using Dates
 
 const SEED      = 20260420;
-const K_MAIN    = 18;
+# Body operating point K* = 3 by default. The original headline runner used
+# K = 18; per Item 3 of REVIEW_RESPONSE_PLAN.md, the lambda must be re-tuned at
+# K = 3 to remove the "tuned at 18, re-used at 3" disclaimer in the discussion.
+# Override at the shell to reproduce the K = 18 sweep:
+#     LAMBDA_CV_K=18 julia --project=. runners/robustness/run_lambda_cv_pre2020.jl
+const K_MAIN    = parse(Int, get(ENV, "LAMBDA_CV_K", "3"));
 const MAX_ITER  = 60;
 const N_PATHS   = 500;          # validation only; cheaper than headline N_PATHS
 const DT        = 1/252;

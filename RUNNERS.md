@@ -78,6 +78,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 |---|---|---|
 | `runners/cross_asset/run_copula_profile_ci_halfunit.jl` | `results/copula_profile_ci/...` | Appendix `sec:copula_halfunit` (half-unit-grid Wilks CI) |
 | `runners/cross_asset/run_non_us_asset.jl` | `results/non_us_asset/...` | Appendix `sec:non_us_asset_supp` (GLD / SLV stress test) |
+| `runners/cross_asset/run_non_us_asset_quarterly_refit.jl` | `results/non_us_asset/Non_US_Asset_QuarterlyRefit.{txt,csv}` | Item 11 of REVIEW_RESPONSE_PLAN.md (GLD quarterly-refit follow-up). Configurable via `GLD_REFIT_K`, `GLD_REFIT_FAMILY` env vars. |
 
 ## Auxiliary baselines (Appendix B — extended baselines)
 
@@ -88,12 +89,15 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_leverage_effect.jl` | `results/diagnostics/leverage_effect/...` | Appendix `sec:leverage_effect` |
 | `runners/baselines/run_ks_block_bootstrap_oos.jl` | `results/ks_block_bootstrap/...` | Appendix `sec:ks_block_bootstrap` (OoS-anchored block-bootstrap KS, including body operating-point summary at $L = 20$) |
 | `runners/baselines/run_hsmm_ml_gamma.jl` | `results/hsmm_ml_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
+| `runners/baselines/run_filtered_bootstrap_var.jl` | `results/filtered_bootstrap_var/...` | Item 6a of REVIEW_RESPONSE_PLAN.md (Hull-White-style filtered historical-simulation VaR contender for body Section 5). |
+| `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
 
 ## Diagnostics + miscellanea
 
 | Runner | Output | Paper artefact |
 |---|---|---|
 | `runners/diagnostics/run_diagnostics.jl` | `results/diagnostics/...` (catch-all) | Various appendix diagnostics |
+| `runners/diagnostics/run_vendor_stitch_check.jl` | `results/diagnostics/vendor_stitch_check.{txt,csv}` | Item 9 of REVIEW_RESPONSE_PLAN.md (Polygon vs Alpaca stitch sanity check on the OoS overlap window). |
 
 ## Archived runners
 
