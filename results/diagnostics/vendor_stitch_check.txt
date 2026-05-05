@@ -1,0 +1,9 @@
+Item 9: Vendor-stitch sanity check (Polygon via Massive vs Alpaca / IEX)
+  Stitch date: 2025-11-19
+  Overlap window: 323 shared trading days
+  Verdict: PASS
+
+Diagnostics:
+  VWAP differential (Polygon - Alpaca)/Alpaca: mean=+0.000000 sd=0.000000 max-abs=0.000000
+  Return differential                       : mean=+0.000000 sd=0.000000 max-abs=0.000000
+  Two-sample KS on overlap returns: D=0.0000, p=1.0000

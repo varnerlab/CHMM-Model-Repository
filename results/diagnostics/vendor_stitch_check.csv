@@ -1,0 +1,11 @@
+metric,value
+overlap_days,323
+vwap_diff_mean,0.000000e+00
+vwap_diff_sd,0.000000e+00
+vwap_diff_maxabs,0.000000e+00
+ret_diff_mean,0.000000e+00
+ret_diff_sd,0.000000e+00
+ret_diff_maxabs,0.000000e+00
+ks_D,0.0000
+ks_pvalue,1.0000
+verdict,PASS

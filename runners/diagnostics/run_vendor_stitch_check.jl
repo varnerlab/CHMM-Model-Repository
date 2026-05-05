@@ -60,11 +60,11 @@ poly_df = polygon_oos[TICKER];
 alp_df  = alpaca_ext[TICKER];
 println("[setup] Polygon OoS rows: $(nrow(poly_df))")
 println("[setup] Alpaca ext rows : $(nrow(alp_df))")
-println("[setup] Polygon OoS date span: $(minimum(poly_df.date)) to $(maximum(poly_df.date))")
-println("[setup] Alpaca ext date span : $(minimum(alp_df.date)) to $(maximum(alp_df.date))")
+println("[setup] Polygon OoS date span: $(minimum(Date.(poly_df.timestamp))) to $(maximum(Date.(poly_df.timestamp)))")
+println("[setup] Alpaca ext date span : $(minimum(Date.(alp_df.timestamp))) to $(maximum(Date.(alp_df.timestamp)))")
 
 # -------- align on overlap --------
-overlap_dates = sort(intersect(Set(poly_df.date), Set(alp_df.date)));
+overlap_dates = sort(collect(intersect(Set(Date.(poly_df.timestamp)), Set(Date.(alp_df.timestamp)))));
 n_overlap = length(overlap_dates);
 println("\n[overlap] $n_overlap shared dates")
 
@@ -76,15 +76,15 @@ end
 
 # pick rows in date order
 function _pick_rows(df, dates_set)
-    sel = [d in dates_set for d in df.date];
+    sel = [d in dates_set for d in Date.(df.timestamp)];
     return df[sel, :];
 end
 overlap_set = Set(overlap_dates);
 poly_o = _pick_rows(poly_df, overlap_set);
 alp_o  = _pick_rows(alp_df,  overlap_set);
-sort!(poly_o, :date);
-sort!(alp_o,  :date);
-@assert poly_o.date == alp_o.date "Date alignment mismatch after sort"
+sort!(poly_o, :timestamp);
+sort!(alp_o,  :timestamp);
+@assert Date.(poly_o.timestamp) == Date.(alp_o.timestamp) "Date alignment mismatch after sort"
 
 # -------- diagnostics 1+2: per-day VWAP / return differentials --------
 const VWAP_COL = :volume_weighted_average_price;
@@ -137,11 +137,11 @@ end
 # Alpaca from 2025-11-19 onward.
 function _stitched_series()
     # Polygon part of OoS up through 2025-11-18
-    poly_idx = poly_df.date .<= STITCH_DATE - Day(1);
-    alp_idx  = alp_df.date  .>= STITCH_DATE;
-    p_dates  = poly_df.date[poly_idx];
+    poly_idx = Date.(poly_df.timestamp) .<= STITCH_DATE - Day(1);
+    alp_idx  = Date.(alp_df.timestamp)  .>= STITCH_DATE;
+    p_dates  = Date.(poly_df.timestamp)[poly_idx];
     p_vwap   = poly_df[poly_idx, VWAP_COL];
-    a_dates  = alp_df.date[alp_idx];
+    a_dates  = Date.(alp_df.timestamp)[alp_idx];
     a_vwap   = alp_df[alp_idx, VWAP_COL];
     dates = vcat(p_dates, a_dates);
     vwap  = vcat(p_vwap,  a_vwap);

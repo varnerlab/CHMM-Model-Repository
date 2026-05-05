@@ -1,0 +1,10 @@
+Item 11: GLD quarterly-refit Pipeline-A back-test
+  CHMM-N, K = 3, refit cadence = 63 days,
+  rolling train = 1260 days, 200 paths, seed = 20260422
+
+  OoS KS pass rate     : 2.50 %
+  OoS sim kurtosis     : 1.986  (observed 6.475)
+  OoS |G_t| ACF-MAE    : 0.0459
+
+Compare against Non_US_Asset.txt for the static-IS-fit row
+(static OoS KS typically 0%, motivating the periodic-refit recipe).

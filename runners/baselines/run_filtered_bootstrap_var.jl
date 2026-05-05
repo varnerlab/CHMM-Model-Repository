@@ -68,17 +68,22 @@ println(@sprintf("  IS z-resid: mean=%+.4f sd=%.4f kurt=%.2f",
     mean(z_is), std(z_is), kurtosis(z_is)))
 
 # -------- roll the GARCH recursion through OoS to get sigma_t --------
-sigma_oos = zeros(n_oos);
-sigma2 = garcht.σ2_hist[end];
-for t in 1:n_oos
-    sigma2 = max(garcht.ω + garcht.α * (R_oos[max(t-1, 1)] - garcht.μ)^2 + garcht.β * sigma2, 1e-12);
-    if t > 1
-        sigma2 = max(garcht.ω + garcht.α * (R_oos[t-1] - garcht.μ)^2 + garcht.β * sigma2, 1e-12);
+# sigma_oos[t] is the conditional variance forecast for OoS day t given
+# information through day t-1. We seed with the IS terminal variance and the
+# IS terminal return as the lag, then roll with R_oos lags one-step-ahead.
+function _roll_sigma(garcht_fit, R_is_v, R_oos_v)
+    n = length(R_oos_v);
+    out = zeros(n);
+    s2 = garcht_fit.σ2_hist[end];
+    r_lag = R_is_v[end];
+    for t in 1:n
+        s2 = max(garcht_fit.ω + garcht_fit.α * (r_lag - garcht_fit.μ)^2 + garcht_fit.β * s2, 1e-12);
+        out[t] = sqrt(s2);
+        r_lag = R_oos_v[t];
     end
-    sigma_oos[t] = sqrt(sigma2);
+    return out;
 end
-# Note: simpler one-step recursion; the above keeps sigma_oos[1] using the
-# IS terminal sigma2 and r_{IS, end} as the lag (consistent with Hull-White).
+sigma_oos = _roll_sigma(garcht, R_is, R_oos);
 
 # -------- empirical alpha-quantile of IS standardised residuals --------
 function emp_quantile(x::AbstractVector, alpha::Float64)

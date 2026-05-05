@@ -3,22 +3,22 @@ Held-out CV of 1/ν_k shrinkage λ on pre-2020 slice  (peer-review P1.3 / R2.W6)
 ================================================================================================
 Estimation slice : 2014-01-03 .. 2018-06-29  (n = 1130)
 Validation slice : 2018-07-02 .. 2019-12-31  (n = 378)
-K = 18, paths = 500, seed = 20260420, λ grid = [0.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0]
+K = 3, paths = 500, seed = 20260420, λ grid = [0.0, 5.0, 10.0, 20.0, 50.0, 100.0, 200.0]
 
 Validation criterion: per-observation held-out log-likelihood (primary) and KS pass rate.
 
 λ        val LL       val LL/obs     val KS%   sim K (est)  sim K (val) 
 ------------------------------------------------------------------------------------------------
-0.0      -801.09      -2.1193        92.0      3.88         3.97        
-5.0      -798.43      -2.1123        89.8      3.62         3.15        
-10.0     -788.11      -2.0850        91.0      3.37         3.24        
-20.0     -784.47      -2.0753        90.0      3.22         3.02        
-50.0     -785.13      -2.0771        91.6      3.07         2.76        
-100.0    -784.92      -2.0765        91.6      3.07         2.75        
-200.0    -784.87      -2.0764        91.2      3.09         2.73        
+0.0      -728.35      -1.9268        88.6      4.03         3.93        
+5.0      -727.60      -1.9249        89.0      3.68         3.51        
+10.0     -727.17      -1.9237        89.0      3.52         3.35        
+20.0     -726.42      -1.9217        89.8      3.37         3.26        
+50.0     -725.47      -1.9192        95.0      2.77         2.77        
+100.0    -725.48      -1.9193        93.2      2.86         2.83        
+200.0    -725.55      -1.9194        93.2      2.90         2.86        
 
-λ* by validation log-likelihood : 20.0  (val LL/obs = -2.0753)
-λ* by validation KS pass rate   : 0.0  (val KS = 92.0%)
+λ* by validation log-likelihood : 50.0  (val LL/obs = -1.9192)
+λ* by validation KS pass rate   : 50.0  (val KS = 95.0%)
 
 Reading: if λ* matches the body operating point λ = 20 within the grid spacing,
 the body penalty is held-out-clean. If the held-out optimum is materially different,

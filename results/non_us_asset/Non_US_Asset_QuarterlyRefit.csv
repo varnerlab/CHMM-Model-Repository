@@ -1,0 +1,5 @@
+metric,value
+oos_ks_pct,2.5000
+oos_sim_kurtosis,1.9863
+obs_oos_kurtosis,6.4748
+oos_acf_mae,0.045945

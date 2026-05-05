@@ -1,0 +1,8 @@
+Item 6a: Filtered (Hull-White) historical-simulation VaR back-test on SPY OoS
+  GARCH(1,1)-t conditional volatility + bootstrap of IS standardised residuals.
+  OoS T = 572 days. Critical chi^2_1(0.05) = 3.841, chi^2_2(0.05) = 5.991.
+==============================================================================================================
+alpha  z_alpha  breaches  br rate   med VaR   LR_uc     LR_ind    LR_cc     p_cc      p_DQ     
+--------------------------------------------------------------------------------------------------------------
+0.01   -3.0033  8         0.0140    -4.813    0.817     2.810     3.627     0.163     0.040    
+0.05   -1.8550  24        0.0420    -2.889    0.822     0.844     1.666     0.435     0.553    
