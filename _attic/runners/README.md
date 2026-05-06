@@ -51,7 +51,7 @@ no longer needed for reproduction.
 |---|---|
 | `run_cross_asset_sim_copula_k6.jl` | $K = 6$ Pipeline B variant; `sec:cross_asset_kstar6` was cut in the arXiv-prep appendix trim, and the $K = 3$ / $K = 18$ sandwich already brackets the body claim |
 | `run_mssv_baseline.jl` | Markov-switching stochastic-volatility baseline; `sec:mssv_baseline` is on the arXiv-prep cut list and the SV-AR(1) row in `run_sv_msm_jd_baselines.jl` already covers the SV-family comparison |
-| `build_new_train_oos.jl` | One-shot train / OoS data-split utility from the initial 2025 setup; the resulting `data/CHMM-SP500-Train-10yr.jld2` and `data/CHMM-SP500-OoS-Remainder.jld2` are committed, so reproduction does not need to re-run this script |
+| _(restored 2026-05-06)_ `build_new_train_oos.jl` was previously listed here; on 2026-05-06 it was moved back to the repo root because `PROFF_PREP.md` §13.4 documents it as part of the reproducer recipe (`julia --project=. build_new_train_oos.jl`). The pre-built JLD2 splits are still committed under `data/`, so re-running the script is optional. |
 
 ## 15-page main-body trim (2026-05-03)
 
