@@ -124,8 +124,9 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 .
 |-- Include.jl                            # Entry point (sets paths, loads src/)
 |-- run_full_rebuild.jl                   # End-to-end rebuild of every paper artefact
+|-- build_new_train_oos.jl                # (re)build IS / OoS JLD2 splits from raw OHLC bundles (optional; pre-built splits ship in data/)
 |-- runners/                              # All experiment scripts, grouped by paper section
-|   |-- headline/                         # Body §4 (Empirical Study) pipeline
+|   |-- headline/                         # Body §5 (Empirical Study) pipeline
 |   |   |-- run_all_analysis.jl              # SPY-only stylized facts + per-K internals
 |   |   |-- run_multi_emission_analysis.jl   # CHMM-N / -t / -L / -GED at K* block
 |   |   |-- run_baselines_and_cross_asset.jl # Pipeline A baselines + Pipeline B setup
@@ -138,11 +139,11 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |   |   |-- run_sector_panel.jl              # 30-ticker sector rollup
 |   |   |-- run_chmm_t_shared_nu.jl          # shared-nu sensitivity
 |   |   `-- run_figures.jl                   # Body Figures 1-4
-|   |-- var_backtest/                     # Body §5 (regime-conditional VaR, Christoffersen, DQ)
+|   |-- var_backtest/                     # body §5 (regime-conditional VaR, Christoffersen, DQ)
 |   |-- robustness/                       # walk-forward, cross-decade, K-selection sensitivity
-|   |-- spectral/                         # body §3.3 spectral / rank diagnostics
+|   |-- spectral/                         # body §4 Spectral Mechanism diagnostics
 |   |-- cross_asset/                      # half-unit copula CI, non-US stress test
-|   |-- baselines/                        # Appendix B: SV-AR(1), MSM, Merton-JD, HSMM-Gamma, ...
+|   |-- baselines/                        # Appendix: SV-AR(1), MSM, Merton-JD, HSMM-Gamma, filtered bootstrap, CAViaR, ...
 |   `-- diagnostics/                      # catch-all
 |-- src/
 |   |-- Types.jl                          # HMM / GARCH / copula type definitions

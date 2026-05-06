@@ -10,10 +10,10 @@ sections below:
 
 ```
 runners/
-  headline/         body Section 4 (Empirical Study) pipeline
-  var_backtest/     body Section 5 (VaR backtest) diagnostics
+  headline/         body Section 5 (Empirical Study) pipeline
+  var_backtest/     body Section 5 (VaR backtest subsection) diagnostics
   robustness/       walk-forward, cross-decade, K-selection sensitivity
-  spectral/         body Section 3.3 (spectral mechanism)
+  spectral/         body Section 4 (Spectral Mechanism)
   cross_asset/      cross-asset extras (copula CI, non-US stress test)
   baselines/        Appendix B extended baselines (SV / MSM / JD / HSMM, ...)
   diagnostics/      catch-all
@@ -26,11 +26,11 @@ see the script's header comment for the inclusion toggle.
 All commands below assume the working directory is the CHMM-Model repo root,
 e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 
-## Headline pipeline (body Section 4 — Empirical Study)
+## Headline pipeline (body Section 5 — Empirical Study)
 
 | Runner | Output | Paper artefact |
 |---|---|---|
-| `runners/headline/run_all_analysis.jl` | `results/SPY/{stylized_facts,K*}/...` | Body §4.1 (descriptive); §4.2 (state selection); per-K internals |
+| `runners/headline/run_all_analysis.jl` | `results/SPY/{stylized_facts,K*}/...` | Body §5.1 (descriptive); §5.2 (state selection); per-K internals |
 | `runners/headline/run_multi_emission_analysis.jl` | `results/SPY/multi_emission/...` | Body Table 2 (CHMM-N/-t/-L/-GED at $K^\star = 3$ block) |
 | `runners/headline/run_baselines_and_cross_asset.jl` | `results/SPY/Table-2-Baselines.txt`, `results/cross_asset/...` | Body Table 2 (i.i.d., GARCH, MS-GARCH in-house rows); body Table 4 (cross-asset Pipeline B) |
 | `runners/headline/run_msgarch_baselines.jl` | `results/msgarch_baselines/...` | Body Table 2 MS-GARCH $K \in \{2, 3, 6\}$ rows (Nelder-Mead) |
@@ -43,7 +43,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/headline/run_chmm_t_shared_nu.jl` | `results/chmm_t_shared_nu/...` | Body Table 2 footnoted shared-$\nu$ row + Appendix `sec:chmm_t_shared_nu` |
 | `runners/headline/run_figures.jl` | `figs/Fig-{1..5}-*.pdf` | Body Figures 1, 2, 3, 4 |
 
-## VaR / conditional-coverage diagnostics (body §5 — VaR Backtest)
+## VaR / conditional-coverage diagnostics (body §5 Empirical Study, VaR Backtest subsection)
 
 | Runner | Output | Paper artefact |
 |---|---|---|
@@ -62,10 +62,10 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_kurtosis_ci_placement.jl` | `results/kurtosis_ci_placement/...` | Appendix `sec:kurtosis_ci_placement` |
 | `runners/robustness/run_lambda_cv_pre2020.jl` | `results/diagnostics/lambda_cv_pre2020/...` | Appendix `sec:lambda_cv_pre2020` ($1/\nu_k$ penalty CV) |
 | `runners/robustness/run_k_selection_kfold_pre2020.jl` | `results/k_selection_validation/...` | Appendix `sec:k_selection_kfold_pre2020` (single + four-fold CV at body $K^\star = 3$) |
-| `runners/robustness/run_k_selection_kfold_h12y_pre2020.jl` | `results/k_selection_validation/h12y/...` | Six-fold rolling-origin CV (referenced in body §4.2) |
+| `runners/robustness/run_k_selection_kfold_h12y_pre2020.jl` | `results/k_selection_validation/h12y/...` | Six-fold rolling-origin CV (referenced in body §5.2) |
 | `runners/robustness/run_k_selection_hac.jl` | `results/k_selection_hac/...` | Appendix `sec:k_selection_hac` (HAC-corrected K selection) |
 
-## Spectral + theoretical diagnostics (body §3.3 — Spectral Mechanism)
+## Spectral + theoretical diagnostics (body §4 — Spectral Mechanism)
 
 | Runner | Output | Paper artefact |
 |---|---|---|
