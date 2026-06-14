@@ -406,7 +406,7 @@ end
     baum_welch_student_t(observations, number_of_states; max_iter=30, tol=1e-4,
                          ν_init=6.0, ν_bounds=(2.1, 50.0), ν_shrink_rate=0.0) -> Tuple
 
-ECM (Expectation-Conditional-Maximization) estimation for a continuous HMM
+ECM/ECME (Expectation-Conditional-Maximization) estimation for a continuous HMM
 with per-state Student-t emissions t_ν_k(μ_k, σ_k). The E-step augments the
 standard forward-backward with the latent precision
 u_{t,k} = (ν_k + 1) / (ν_k + ((o_t - μ_k)/σ_k)^2)
@@ -420,7 +420,8 @@ The penalised objective is
 
 which corresponds to an exponential prior on 1/ν (equivalently a Pareto-like
 shrinkage of ν toward the Gaussian limit ν → ∞). Setting ν_shrink_rate = 0
-recovers the standard Peel & McLachlan (2000) / Liu & Rubin (1995) ECM
+recovers the standard Peel & McLachlan (2000) / Liu & Rubin (1995) ECME
+(the ν block maximizes the observed-data Student-t likelihood directly)
 with no shrinkage. Setting ν_shrink_rate > 0 pulls heavy-tailed states back
 toward moderate tail weight and reduces the CHMM-t IS kurtosis overshoot.
 
@@ -592,9 +593,11 @@ end
 """
     _weighted_median(x, w) -> Float64
 
-Weighted median of observations `x` with weights `w ≥ 0`. Returns the value
-at which the cumulative weight first crosses half of the total. Ties are
-broken by linear interpolation between adjacent order statistics.
+Weighted median of observations `x` with weights `w ≥ 0`. Returns the first
+order statistic whose cumulative weight reaches half of the total, i.e. the
+minimiser of the weighted L1 objective `Σ w_i |x_i - μ|`. When the half-weight
+falls exactly between two adjacent order statistics any point in the closed
+interval is optimal; we return the upper endpoint.
 """
 function _weighted_median(x::AbstractVector{<:Real}, w::AbstractVector{<:Real})::Float64
     n = length(x);
@@ -606,11 +609,7 @@ function _weighted_median(x::AbstractVector{<:Real}, w::AbstractVector{<:Real}):
     for i in 1:n
         cum += w[idx[i]];
         if cum >= half
-            if i == 1; return Float64(x[idx[1]]); end
-            # linear interpolation between i-1 and i
-            prev_cum = cum - w[idx[i]];
-            frac = (half - prev_cum) / max(w[idx[i]], 1e-12);
-            return Float64(x[idx[i-1]]) + frac * Float64(x[idx[i]] - x[idx[i-1]]);
+            return Float64(x[idx[i]]);
         end
     end
     return Float64(x[idx[end]]);
