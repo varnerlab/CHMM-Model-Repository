@@ -18,8 +18,8 @@ CHMM-N (K=18) IS           mean=-0.0878  median=-0.0885  [Q5,Q95]=[-0.1382,-0.03
 CHMM-N (K=18) OoS          mean=-0.0855  median=-0.0867  [Q5,Q95]=[-0.1903,+0.0154]
 CHMM-t (K=18) IS           mean=-0.0683  median=-0.0671  [Q5,Q95]=[-0.1155,-0.0204]
 CHMM-t (K=18) OoS          mean=-0.0684  median=-0.0673  [Q5,Q95]=[-0.1657,+0.0187]
-CHMM-L (K=18) IS           mean=-0.0647  median=-0.0643  [Q5,Q95]=[-0.1077,-0.0221]
-CHMM-L (K=18) OoS          mean=-0.0636  median=-0.0643  [Q5,Q95]=[-0.1524,+0.0262]
+CHMM-L (K=18) IS           mean=-0.0648  median=-0.0650  [Q5,Q95]=[-0.1089,-0.0197]
+CHMM-L (K=18) OoS          mean=-0.0673  median=-0.0642  [Q5,Q95]=[-0.1588,+0.0215]
 CHMM-GED (K=18) IS         mean=-0.0714  median=-0.0721  [Q5,Q95]=[-0.1130,-0.0288]
 CHMM-GED (K=18) OoS        mean=-0.0744  median=-0.0760  [Q5,Q95]=[-0.1631,+0.0249]
 
