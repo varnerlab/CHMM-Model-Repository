@@ -129,13 +129,16 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |   |-- headline/                         # Body §5 (Empirical Study) pipeline
 |   |   |-- run_all_analysis.jl              # SPY-only stylized facts + per-K internals
 |   |   |-- run_multi_emission_analysis.jl   # CHMM-N / -t / -L / -GED at K* block
+|   |   |-- run_kstar3_headline.jl           # K* = 3 four-emission Table 2 CHMM rows
 |   |   |-- run_baselines_and_cross_asset.jl # Pipeline A baselines + Pipeline B setup
 |   |   |-- run_cross_asset_sim_copula.jl    # Pipeline B: SIM, Gaussian / Student-t copula
 |   |   |-- run_msgarch_baselines.jl         # MS-GARCH K in {2,3,6} rows (in-house NM)
+|   |   |-- run_msgarch_higher_k.jl          # MS-GARCH K in {4,6} rows (in-house NM)
 |   |   |-- run_msgarch_reference.jl         # MS-GARCH ref. Bayesian rows (CRAN MSGARCH)
 |   |   |-- run_smchmm_baseline.jl           # Semi-Markov CHMM at K*
 |   |   |-- run_quantgan_baseline.jl         # QuantGAN deep-generative row
 |   |   |-- run_cross_ticker_penalised.jl    # penalised CHMM-t cross-ticker headline
+|   |   |-- run_chmm_t_penalised_headline.jl # penalised CHMM-t (λ=20) SPY headline row
 |   |   |-- run_sector_panel.jl              # 30-ticker sector rollup
 |   |   |-- run_chmm_t_shared_nu.jl          # shared-nu sensitivity
 |   |   `-- run_figures.jl                   # Body Figures 1-4
@@ -145,13 +148,19 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |   |-- cross_asset/                      # half-unit copula CI, non-US stress test
 |   |-- baselines/                        # Appendix: SV-AR(1), MSM, Merton-JD, HSMM-Gamma, filtered bootstrap, CAViaR, ...
 |   `-- diagnostics/                      # catch-all
-|-- src/
-|   |-- Types.jl                          # HMM / GARCH / copula type definitions
+|-- src/                                  # loaded in this order by Include.jl
+|   |-- Types.jl                          # HMM / GARCH / copula / semi-Markov type definitions
 |   |-- Files.jl                          # JLD2 data loaders
 |   |-- Factory.jl                        # build() constructors
-|   |-- Compute.jl                        # Baum-Welch, ECM, GARCH MLE, simulation
-|   |-- CrossAsset.jl                     # SIM and Gaussian / Student-t copula generators
-|   `-- Visualize.jl                      # Plotting utilities
+|   |-- Compute.jl                        # Baum-Welch / ECM (N/t/L/GED), GARCH(1,1) MLE, simulation
+|   |-- CrossAsset.jl                     # SIM, Gaussian / Student-t copula, truncated C-vine generators
+|   |-- Visualize.jl                      # Plotting utilities
+|   |-- Metrics.jl                        # MMD / path-signature / classifier-AUC + VaR LR diagnostics
+|   |-- SemiMarkov.jl                     # ML hidden semi-Markov CHMM (ported from SM-CHMM-AR-Model)
+|   |-- MSGARCH.jl                        # In-house MS-GARCH (Hamilton filter + Nelder-Mead)
+|   |-- MSGARCHReference.jl               # Reference Bayesian MS-GARCH via RCall (opt-in; not auto-loaded)
+|   |-- GARCHFamily.jl                    # GARCH(1,1)-t, EGARCH, GJR-GARCH, HAR-RV
+|   `-- SVMSMBaselines.jl                 # SV-AR(1), MSM, Merton jump-diffusion baselines
 |-- r_msgarch/                            # R-side scaffolding (renv-pinned, setup.R + fit_msgarch.R)
 |-- data/                                 # JLD2 datasets (active IS / OoS bundles)
 |-- results/                              # Generated metrics tables (per-ticker, per-K)
