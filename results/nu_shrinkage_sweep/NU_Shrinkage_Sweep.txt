@@ -1,0 +1,24 @@
+============================================================================================================================================
+CHMM-t penalised ECM with exponential 1/ν shrinkage. Sweep over shrinkage rate.
+============================================================================================================================================
+
+Penalty   : Q_pen(ν) = Q(ν) - rate / ν, maximised by golden-section search.
+            Rate = 0 recovers the unpenalised ECM of Peel & McLachlan (2000).
+Target    : bring simulated IS excess kurtosis from 14.57 (unpenalised) toward observed 7.69 without degrading IS KS.
+Data      : SPY IS (2516 obs), OoS (572 obs). N_paths = 1000.
+Filter VaR: one-step-ahead forward-filter mixture α-quantile, as in Track C3b .
+
+rate    | ν_med  | ν_min  | ν_max  | sim_kurt | IS_KS% | br%01  | LRuc01  | LRind01 | br%05  | LRuc05  | LRind05
+--------------------------------------------------------------------------------------------------------------------------------------------
+0.0     | 50.0   | 2.1    | 50.0   | 14.3     | 95.7   | 0.2    | 5.99    | 0.0     | 1.4    | 21.59   | 8.74   
+5.0     | 50.0   | 3.3    | 50.0   | 11.19    | 95.8   | 0.2    | 5.99    | 0.0     | 1.4    | 21.59   | 8.74   
+20.0    | 50.0   | 4.89   | 50.0   | 8.43     | 94.7   | 0.2    | 5.99    | 0.0     | 1.4    | 21.59   | 8.74   
+50.0    | 50.0   | 6.46   | 50.0   | 5.41     | 96.3   | 0.2    | 5.99    | 0.0     | 1.4    | 21.59   | 8.74   
+100.0   | 50.0   | 9.9    | 50.0   | 3.96     | 95.6   | 0.2    | 5.99    | 0.0     | 1.4    | 21.59   | 8.74   
+200.0   | 50.0   | 50.0   | 50.0   | 3.67     | 95.7   | 0.2    | 5.99    | 0.0     | 0.7    | 34.56   | 5.73   
+============================================================================================================================================
+
+Reading: IS KS% is the fraction of simulated paths passing two-sample KS against observed SPY IS at α=0.05;
+         sim_kurt is the mean across paths of simulated excess kurtosis; target observed 7.69.
+         LR_uc / LR_ind are Kupiec / Christoffersen statistics on the filter-based one-step-ahead breach sequence.
+         χ²(1) 95% critical value is 3.84; lower is better for LR_uc and LR_ind.

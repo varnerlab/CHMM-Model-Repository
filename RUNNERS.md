@@ -41,6 +41,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/headline/run_cross_ticker_penalised.jl` | `results/chmm_t_penalised/...` | Body Table 3 (penalised CHMM-t cross-ticker headline) |
 | `runners/headline/run_sector_panel.jl` | `results/sector_panel/sector_panel_summary.{csv,txt}` | Body Table 3 (30-ticker rollup); Appendix sector panel |
 | `runners/headline/run_chmm_t_shared_nu.jl` | `results/chmm_t_shared_nu/...` | Body Table 2 footnoted shared-$\nu$ row + Appendix `sec:chmm_t_shared_nu` |
+| `runners/headline/run_chmm_t_penalised_headline.jl` | `results/chmm_t_penalised/Headline_CHMM_t_Pen.txt` | SPY $K = 18$ penalised CHMM-t headline (IS/OoS KS, kurtosis; shared-$\nu$ comparison block + Appendix penalised-t reference) |
+| `runners/headline/run_msgarch_higher_k.jl` | `results/msgarch_baselines/MSGARCH_higher_K.txt` | Body Table 2 / Appendix MS-GARCH higher-$K$ rows (extends `run_msgarch_baselines.jl`) |
 | `runners/headline/run_figures.jl` | `figs/Fig-{1..5}-*.pdf` | Body Figures 1, 2, 3, 4 |
 
 ## VaR / conditional-coverage diagnostics (body §5 Empirical Study, VaR Backtest subsection)
@@ -66,6 +68,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_k_selection_kfold_pre2020.jl` | `results/k_selection_validation/...` | Appendix `sec:k_selection_kfold_pre2020` (single + four-fold CV at body $K^\star = 3$) |
 | `runners/robustness/run_k_selection_kfold_h12y_pre2020.jl` | `results/k_selection_validation/h12y/...` | Six-fold rolling-origin CV (referenced in body §5.2) |
 | `runners/robustness/run_k_selection_hac.jl` | `results/k_selection_hac/...` | Appendix `sec:k_selection_hac` (HAC-corrected K selection) |
+| `runners/robustness/run_k_selection_validation_pre2020.jl` | `results/k_selection_validation/K_Selection_Validation_Pre2020.txt` (paper `k_selection_validation_pre2020.csv`) | Appendix pre-2020 single-split K-selection validation (companion to the kfold runner) |
+| `runners/robustness/run_nu_shrinkage_sweep.jl` | `results/nu_shrinkage_sweep/NU_Shrinkage_Sweep.txt` (paper `nu_shrinkage_sweep.csv`) | Appendix $1/\nu_k$ penalty $\lambda$ rate-sweep on the penalised CHMM-t |
 
 ## Spectral + theoretical diagnostics (body §4 — Spectral Mechanism)
 
@@ -81,6 +85,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/cross_asset/run_copula_profile_ci_halfunit.jl` | `results/copula_profile_ci/...` | Appendix `sec:copula_halfunit` (half-unit-grid Wilks CI) |
 | `runners/cross_asset/run_non_us_asset.jl` | `results/non_us_asset/...` | Appendix `sec:non_us_asset_supp` (GLD / SLV stress test) |
 | `runners/cross_asset/run_non_us_asset_quarterly_refit.jl` | `results/non_us_asset/Non_US_Asset_QuarterlyRefit.{txt,csv}` | Item 11 of REVIEW_RESPONSE_PLAN.md (GLD quarterly-refit follow-up). Configurable via `GLD_REFIT_K`, `GLD_REFIT_FAMILY` env vars. |
+| `runners/cross_asset/run_full_tcopula_mle.jl` | `results/copula_profile_ci/full_tcopula_mle.txt` (paper `full_tcopula_mle.csv`) | Body Table 4 one-shot joint $(\Sigma, \nu)$ MLE confirming the two-step $\nu^\star = 6$ |
+| `runners/cross_asset/run_cross_asset_rolling_copula.jl` | `results/cross_asset/Rolling_Copula_OoS.txt` (paper `rolling_copula_oos.csv`) | Body Table 4 quarterly-rolling-refit copula (OoS off-diagonal MAE $0.185$; failure count $0/6$) |
 
 ## Auxiliary baselines (Appendix B — extended baselines)
 
@@ -93,6 +99,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_hsmm_ml_gamma.jl` | `results/hsmm_ml_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
 | `runners/baselines/run_filtered_bootstrap_var.jl` | `results/filtered_bootstrap_var/...` | Item 6a of REVIEW_RESPONSE_PLAN.md (Hull-White-style filtered historical-simulation VaR contender for body Section 5). |
 | `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
+| `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH(1,1)-$t$ row + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH) |
+| `runners/baselines/run_ks_block_bootstrap.jl` | `results/ks_block_bootstrap/KS_Bootstrap_Recalibration.txt` (paper `ks_block_bootstrap.csv`) | Appendix `sec:ks_block_bootstrap` IS-anchored block-bootstrap KS (companion to the OoS-anchored `run_ks_block_bootstrap_oos.jl`) |
 
 ## Diagnostics + miscellanea
 
