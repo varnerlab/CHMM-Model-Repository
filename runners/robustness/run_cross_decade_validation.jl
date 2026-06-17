@@ -17,8 +17,8 @@
 # Fit CHMM-N (Gaussian) and penalised CHMM-t at lambda = 20 on the 1994-2004 IS slice;
 # simulate 1000 IS- and OoS-length paths; score IS / OoS KS, mean simulated kurtosis,
 # |G_t| ACF-MAE. Compare against the body's 2014-2024 figures from
-# results/kstar3_headline/metrics.csv (CHMM-N at K*=3: 89.7 / 80.5%, kurt 3.83 / 3.53,
-# ACF-MAE 0.0460 / 0.0545).
+# results/kstar3_headline/metrics.csv (CHMM-N at K*=3: 91.5 / 78.0%, kurt 3.83 / 3.62,
+# ACF-MAE 0.0462 / 0.0544).
 #
 # Outputs:
 #   results/cross_decade_validation/{summary.txt, metrics.csv}
@@ -240,8 +240,8 @@ open(summary_path, "w") do io
     end
     println(io);
     println(io, "Body comparison (2014-2024 IS / 2024-2026 OoS, results/kstar3_headline/metrics.csv):");
-    println(io, "  CHMM-N (K* = 3)                      89.7      80.5      3.83       3.53       0.0460     0.0545");
-    println(io, "  CHMM-t pen. (λ = 20, K* = 3)         90.6      83.2      14.91      8.50       0.0537     0.0502");
+    println(io, "  CHMM-N (K* = 3)                      91.5      78.0      3.83       3.62       0.0462     0.0544");
+    println(io, "  CHMM-t pen. (λ = 20, K* = 3)         91.9      81.4      18.87      10.61      0.0533     0.0498");
     println(io, "  CHMM-N (K = 18)                      94.1      81.8      5.04       4.44       0.0509     ~0.054");
     println(io);
     println(io, "Reading: the cross-decade panel reports CHMM behaviour on a structurally different");

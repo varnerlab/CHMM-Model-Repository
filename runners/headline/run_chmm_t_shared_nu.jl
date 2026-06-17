@@ -319,7 +319,7 @@ open(txt_path, "w") do io
     end
     println(io)
     println(io, "Comparison against per-state ν_k (body Table tab:model_comparison):")
-    println(io, "  K=3 per-state (penalised λ=20): IS KS 90.6%, IS kurt 14.91, OoS KS 83.2%, OoS kurt 8.50")
+    println(io, "  K=3 per-state (penalised λ=20): IS KS 91.9%, IS kurt 18.87, OoS KS 81.4%, OoS kurt 10.61")
     println(io, "  K=18 per-state (penalised λ=20): IS KS 95.0%, IS kurt 8.56, OoS KS 85.8%, OoS kurt 7.07")
     println(io, "  K=18 per-state (unpenalised):    IS KS 95.6%, IS kurt 14.35, OoS KS 85.7%, OoS kurt 10.71")
     println(io)
