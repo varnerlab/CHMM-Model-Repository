@@ -1,15 +1,16 @@
 ==============================================================================================================
-K* = 3 four-emission headline (R1 W1 contingency)
+K* = 3 four-emission headline (Table 2 tab:model_comparison CHMM rows)
 ==============================================================================================================
 
 Setup: SPY IS = 2516, OoS = 572, paths = 1000, seed = 20260420, K* = 3
+Penalised CHMM-t: 1/ν_k shrinkage at λ = 20.0 on the per-state ECM Q-function.
 Observed excess kurtosis: IS = 7.68, OoS = 5.29
 
-Model                            IS KS%  OoS KS% Kurt IS  Kurt OoS |G_t| ACF G_t ACF   CRPS OoS
+Model                               IS KS%  OoS KS%  Kurt IS  Kurt OoS  |G_t| ACF   G_t ACF CRPS OoS
 --------------------------------------------------------------------------------------------------------------
-CHMM-N                           89.7    80.5    3.83     3.53     0.0460    0.0240    1.0393 
-CHMM-t (penalised, lambda = 20)  90.6    83.2    14.91    8.50     0.0537    0.0235    1.0373 
-CHMM-L                           79.9    63.6    5.28     4.88     0.0532    0.0236    1.0403
-CHMM-GED                         90.5    77.4    5.48     5.12     0.0526    0.0236    1.0389 
+CHMM-N                                91.5     78.0     3.83      3.62     0.0462    0.0240   1.0393
+CHMM-t (penalised, lambda = 20)       91.9     81.4    18.87     10.61     0.0533    0.0236   1.0398
+CHMM-L                                80.5     63.6     5.24      5.20     0.0530    0.0235   1.0432
+CHMM-GED                              90.3     78.4     5.45      5.09     0.0531    0.0236   1.0398
 
-Source: results/kstar3_headline/metrics.csv
+Source: results/kstar3_headline/metrics.csv (run_kstar3_headline.jl)
