@@ -51,11 +51,13 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/var_backtest/run_christoffersen_power.jl` | `results/diagnostics/christoffersen_power/...` | Appendix `sec:christoffersen_power` (Monte Carlo power calibration) |
 | `runners/var_backtest/run_engle_manganelli_dq.jl` | `results/diagnostics/engle_manganelli_dq.txt` | Appendix `sec:engle_manganelli_dq` (DQ test backstop) |
 | `runners/var_backtest/run_quarterly_refit_conditional_var.jl` | `results/quarterly_refit_conditional_var/...` | Appendix `sec:quarterly_refit_cond_var` |
+| `runners/var_backtest/run_walkforward_conditional_var.jl` | `results/walkforward/walkforward_conditional_var.{csv,txt}` | Body Table~\ref{tab:walkforward_cond_var} (six-fold walk-forward regime-conditional VaR; Christoffersen-cc passes 19/24) |
 
 ## Walk-forward + cross-decade + cross-ticker robustness
 
 | Runner | Output | Paper artefact |
 |---|---|---|
+| `runners/robustness/run_walkforward_oos.jl` | `results/walkforward/walkforward_summary.{csv,txt}` | Body Table~\ref{tab:walkforward} (six-fold rolling-origin OoS; CHMM-N at $K \in \{3, 18\}$, median KS 62.1\% / 67.7\%) |
 | `runners/robustness/run_cross_decade_validation.jl` | `results/cross_decade_validation/...` | Appendix `sec:cross_decade_validation` (CRSP 1994-2006 IS / OoS) |
 | `runners/robustness/run_sector_panel_quarterly_refit.jl` | `results/sector_panel/sector_panel_quarterly_refit.{csv,txt}` | Appendix `sec:cross_ticker_quarterly_refit` |
 | `runners/robustness/run_kurtosis_bootstrap.jl` | `results/SPY/diagnostics/kurtosis_bootstrap.txt` | Appendix `sec:kurtosis_bootstrap_ci` |
