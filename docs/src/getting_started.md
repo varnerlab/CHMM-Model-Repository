@@ -46,7 +46,7 @@ R = log_growth_matrix(dataset, "SPY")
 R_multi = log_growth_matrix(dataset, ["SPY", "AAPL", "NVDA"])
 ```
 
-Returns are annualized by default (`Dt = 1/252`) with zero risk-free rate.
+Returns are annualized by default (`Δt = 1/252`) with zero risk-free rate.
 
 ## Step 4: Train a Continuous HMM
 

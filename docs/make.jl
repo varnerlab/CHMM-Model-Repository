@@ -5,7 +5,7 @@ push!(LOAD_PATH, joinpath(@__DIR__, ".."))
 include(joinpath(@__DIR__, "..", "Include.jl"))
 
 makedocs(
-    sitename = "ContinuousJumpHMM",
+    sitename = "ContinuousHMM",
     pages = [
         "Home" => "index.md",
         "Getting Started" => "getting_started.md",

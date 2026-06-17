@@ -15,7 +15,7 @@ where `dt = 1/252` (daily) and `r_f` is the risk-free rate (default 0).
 ```julia
 # Returns a Matrix (time x firms)
 R = log_growth_matrix(dataset, ["SPY", "AAPL", "NVDA"];
-    Dt = 1/252, risk_free_rate = 0.0,
+    Δt = 1/252, risk_free_rate = 0.0,
     keycol = :volume_weighted_average_price)
 ```
 
@@ -37,7 +37,7 @@ R = log_growth_matrix(spy_df; keycol = :close)
 
 ```julia
 # From a plain array of prices
-R = log_growth_matrix(price_vector; Dt = 1/252)
+R = log_growth_matrix(price_vector; Δt = 1/252)
 ```
 
 ## Volume Weighted Average Price (VWAP)

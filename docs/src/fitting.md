@@ -46,9 +46,64 @@ The algorithm terminates when:
 
 The full log-likelihood history is stored in `model.log_likelihood_history`.
 
+## Heavier-Tailed Emission Families
+
+The Gaussian CHMM has a sibling for each heavier-tailed emission family. All share the
+same `build` interface and functor; only the per-state emission distribution changes, and
+each is fitted by an ECM variant of Baum-Welch:
+
+```julia
+# Student-t emissions: per-state location, scale, and degrees-of-freedom ν_k
+build(MyStudentTHiddenMarkovModel, (observations=R, number_of_states=K, max_iter=60))
+
+# Laplace emissions: closed-form weighted-median / weighted-MAD M-step
+build(MyLaplaceHiddenMarkovModel, (observations=R, number_of_states=K, max_iter=60))
+
+# GED emissions: per-state shape p_k (p=2 → Gaussian, p=1 → Laplace)
+build(MyGEDHiddenMarkovModel, (observations=R, number_of_states=K, max_iter=60))
+```
+
+The `MyStudentTHiddenMarkovModel` build accepts optional keys `ν_init`, `ν_bounds`, and
+`ν_shrink_rate` (a shrinkage prior pulling ν_k toward the Gaussian limit); see the docstring
+in `Factory.jl`. The underlying trainers are `baum_welch_student_t`, `baum_welch_laplace`,
+and `baum_welch_ged`.
+
+## Semi-Markov CHMM
+
+For regimes with explicit sojourn-duration control (heavy-tailed dwell times on crisis
+states), the semi-Markov CHMM carries state-dependent AR(1) emissions plus a per-state
+sojourn distribution and is fitted with a dedicated function rather than `build`:
+
+```julia
+model = fit_sm_chmm(R, K, :gaussian)   # family ∈ (:gaussian, :student_t, :laplace)
+```
+
+## GARCH-Family and Other Baselines
+
+The comparison baselines are fitted through their own entry points:
+
+```julia
+# GARCH(1,1) -- classical single-regime benchmark
+garch = build(MyGARCHModel, (observations=R,))
+
+# Markov-Switching GARCH (Haas-Mittnik-Paolella)
+ms = fit_msgarch_k2(R)        # or fit_msgarch_k3(R)
+
+# Asymmetric / alternative GARCH variants (GARCHFamily.jl)
+fit_egarch11(R); fit_gjr11(R); fit_garcht11(R); fit_harrv(R)
+
+# Stochastic-volatility / multifractal / jump-diffusion (SVMSMBaselines.jl)
+fit_sv_ar1(R); fit_msm(R); fit_jump_diffusion(R)
+
+# GRU neural generator
+gru = build(MyGRUGenerator, (observations=R,))
+```
+
 ## Bayesian Distribution Fitting
 
-For per-regime distribution fitting beyond Gaussians:
+This is distinct from `MyStudentTHiddenMarkovModel` / `MyLaplaceHiddenMarkovModel` above:
+those train a full HMM by ECM, whereas this fits a single distribution to one regime's
+returns by MCMC. For per-regime distribution fitting beyond Gaussians:
 
 ```julia
 # Student's t-distribution

@@ -50,3 +50,37 @@ function returns_to_prices(returns; P0=100.0, dt=1/252)
     return prices
 end
 ```
+
+The annualized return convention (`G_t = (1/Δt)·ln(P_t/P_{t-1})`) is why the price
+reconstruction multiplies by `exp(returns[t] * dt)`.
+
+## Other Single-Asset Models
+
+The Student-t, Laplace, and GED CHMMs share the same functor + emission-sampling pattern
+as the Gaussian CHMM. The GARCH-family and semi-Markov baselines instead return a return
+series directly:
+
+```julia
+garch_returns   = simulate_garch(garch_model, n_steps)
+msgarch_returns = simulate_msgarch(ms_model, n_steps)
+sm_returns      = simulate_sm_chmm(sm_model, n_steps)
+egarch_returns  = simulate_egarch(egarch_fit, n_steps)   # also simulate_gjr/garcht/harrv
+sv_paths        = simulate_sv_ar1(sv_params, n_steps; n_paths=1000)
+```
+
+## Multi-Asset Simulation
+
+Cross-asset generators propagate univariate CHMM marginals to a full universe and return a
+`T × d × n_paths` array (time × firms × paths):
+
+```julia
+# Single-index (factor) model: drive the universe from simulated market paths
+sim = simulate(sim_model, market_paths)
+
+# Copula models: dependence via a correlation matrix (Student-t adds tail dependence)
+sim = simulate(gaussian_copula_model, T_sim, n_paths)
+sim = simulate(student_t_copula_model, T_sim, n_paths)
+sim = simulate(cvine_model, T_sim, n_paths)
+```
+
+See the dependence models in the [API Reference](@ref) and `CrossAsset.jl`.
