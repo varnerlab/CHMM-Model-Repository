@@ -62,6 +62,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_walkforward_oos.jl` | `results/walkforward/walkforward_summary.{csv,txt}` | Body Table~\ref{tab:walkforward} (six-fold rolling-origin OoS; CHMM-N at $K \in \{3, 18\}$, median KS 62.1\% / 67.7\%) |
 | `runners/robustness/run_cross_decade_validation.jl` | `results/cross_decade_validation/...` | Appendix `sec:cross_decade_validation` (CRSP 1994-2006 IS / OoS) |
 | `runners/robustness/run_sector_panel_quarterly_refit.jl` | `results/sector_panel/sector_panel_quarterly_refit.{csv,txt}` | Appendix `sec:cross_ticker_quarterly_refit` |
+| `runners/robustness/run_sector_panel_monthly_refit.jl` | `results/sector_panel/sector_panel_monthly_refit.{csv,txt}` | Body monthly-cadence reference ($K = 18$, OoS KS median 86.7\%, 5-of-30) + Appendix stationarity-scope panel. Heavy ($\sim 3\times$ quarterly compute) |
 | `runners/robustness/run_kurtosis_bootstrap.jl` | `results/SPY/diagnostics/kurtosis_bootstrap.txt` | Appendix `sec:kurtosis_bootstrap_ci` |
 | `runners/robustness/run_kurtosis_ci_placement.jl` | `results/kurtosis_ci_placement/...` | Appendix `sec:kurtosis_ci_placement` |
 | `runners/robustness/run_lambda_cv_pre2020.jl` | `results/diagnostics/lambda_cv_pre2020/...` | Appendix `sec:lambda_cv_pre2020` ($1/\nu_k$ penalty CV) |
@@ -77,6 +78,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 |---|---|---|
 | `runners/spectral/run_spectral_rank.jl` | `results/diagnostics/spectral_rank.txt` | Body Table 1 + Appendix `sec:spectral_rank` (SPY effective rank diagnostic) |
 | `runners/spectral/run_spectral_rank_cross_ticker.jl` | `results/diagnostics/spectral_rank_cross_ticker.txt` | Appendix `sec:spectral_rank_xticker` (cross-ticker dominant-mode share) |
+| `runners/spectral/run_t_singular_values.jl` | `results/diagnostics/t_singular_values.txt` | Supplementary transition-matrix singular-value diagnostic (per emission family) |
 
 ## Cross-asset extras
 
@@ -101,6 +103,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
 | `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH(1,1)-$t$ row + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH) |
 | `runners/baselines/run_ks_block_bootstrap.jl` | `results/ks_block_bootstrap/KS_Bootstrap_Recalibration.txt` (paper `ks_block_bootstrap.csv`) | Appendix `sec:ks_block_bootstrap` IS-anchored block-bootstrap KS (companion to the OoS-anchored `run_ks_block_bootstrap_oos.jl`) |
+| `runners/baselines/run_ks_block_body_kstar.jl` | `results/ks_block_bootstrap/KS_Bootstrap_Body_Kstar.txt` (paper `ks_block_body_kstar.csv`) | Body Table~\ref{tab:ks_block_body} (OoS $L = 20$ block-bootstrap KS at $K^\star = 3$ and $K = 6$) |
 
 ## Diagnostics + miscellanea
 
