@@ -32,10 +32,10 @@ const TICKER    = "SPY";
 const RISK_FREE = 0.0;
 const DT        = 1/252;
 const MAX_ITER  = 60;
-const K_GRID    = [3, 6, 9, 12, 15, 18, 21];
+const K_GRID    = [2, 3, 6, 9, 12, 15, 18, 21];
 
 const OUT_DIR              = joinpath(_ROOT, "results", "k_selection_validation");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = OUT_DIR;   # keep CSV inside results/ (dead ../CHMM-paper path)
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 
