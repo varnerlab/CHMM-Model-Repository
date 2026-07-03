@@ -45,6 +45,17 @@ rank | |λ_k|        | |w_k|        | |w_k λ_k|  | Re(w_k λ_k^5) | Re(w_k λ_k
    1 | 0.9534       | 0.29168      | 0.27809    | 0.22977      | 0.112311     | 0.0268344    | 0.9677    
    2 | 0.8656       | 0.01072      | 0.00928    | 0.00521      | 0.000598     | 0.0000079    | 1.0000    
 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+K = 2   σ²_|G| = 2.393288   ρ_|G|(1) = Σ w_k λ_k = 0.2519
+Effective rank (lag-1 ACF contribution): 
+  1 modes carry > 1% of Σ|w_k λ_k|;
+  1 modes carry ≥ 95% of cumulative |w_k λ_k|;
+  1 modes carry ≥ 99% of cumulative |w_k λ_k|.
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+rank | |λ_k|        | |w_k|        | |w_k λ_k|  | Re(w_k λ_k^5) | Re(w_k λ_k^20) | Re(w_k λ_k^50) | cum lag-1 
+--------------------------------------------------------------------------------------------------------------
+   1 | 0.9423       | 0.26731      | 0.25189    | 0.19861      | 0.081471     | 0.0137081    | 1.0000    
+
 Reading note. The body framing 'rank K-1 = 17 non-unit eigenvalues at K = 18'
 is an upper bound from the algebraic rank of T - 1 π̄^T. The empirical question
 is how many of those 17 modes carry non-trivial weight w_k. The 'modes for ≥ 95%

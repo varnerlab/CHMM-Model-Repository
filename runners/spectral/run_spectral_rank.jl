@@ -32,7 +32,7 @@ const OUT_DIR = joinpath(_ROOT, "results", "diagnostics");
 mkpath(OUT_DIR);
 
 println("="^80);
-println("  Effective spectral rank of ρ_|G| at K = 18 and K = 3  (peer-review B7)");
+println("  Effective spectral rank of ρ_|G| at K = 18, 3 and 2  (peer-review B7)");
 println("="^80);
 
 println("\n[setup] Loading SPY IS...");
@@ -152,6 +152,7 @@ end
 
 results_18 = _run_at_K(18);
 results_3  = _run_at_K(3);
+results_2  = _run_at_K(2);   # K=2: rank-1 lower bound (single non-unit eigenvalue, mono-exponential ACF)
 
 # ----------------------------------------------------------------------------------------- #
 function _print_panel(io, r)
@@ -185,6 +186,7 @@ open(out_path, "w") do io
     println(io, "Modes are ordered by |λ_k| descending. Complex eigenvalues come in conjugate pairs.");
     _print_panel(io, results_18);
     _print_panel(io, results_3);
+    _print_panel(io, results_2);
     println(io);
     println(io, "Reading note. The body framing 'rank K-1 = 17 non-unit eigenvalues at K = 18'");
     println(io, "is an upper bound from the algebraic rank of T - 1 π̄^T. The empirical question");
@@ -200,5 +202,8 @@ println("[K = 18] effective rank: $(results_18.n_above_1pct) modes > 1%, ",
 println("[K =  3] effective rank: $(results_3.n_above_1pct) modes > 1%, ",
         "$(results_3.n_for_95) modes ≥ 95% cum, ",
         "$(results_3.n_for_99) modes ≥ 99% cum");
+println("[K =  2] effective rank: $(results_2.n_above_1pct) modes > 1%, ",
+        "$(results_2.n_for_95) modes ≥ 95% cum, ",
+        "$(results_2.n_for_99) modes ≥ 99% cum   (rank-1 lower bound)");
 println();
 println("[done] $out_path");

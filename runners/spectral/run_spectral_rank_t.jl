@@ -2,7 +2,7 @@
 # run_spectral_rank_t.jl
 #
 # Effective spectral rank of the absolute-return ACF identity (theory.tex eq. acf_normalised),
-# on the HEADLINE shared-ν Student-t CHMM-t (ν≈5.81), at K = 3 and K = 18 on SPY IS. Companion
+# on the HEADLINE shared-ν Student-t CHMM-t (ν≈5.81), at K = 2, 3 and 18 on SPY IS. Companion
 # to run_spectral_rank.jl, which runs the same decomposition on the Gaussian CHMM-N. The
 # decomposition (_spectral_modes) is emission-agnostic and copied verbatim; only the fit and the
 # per-state m_k = E[|G| | k] / M_k = E[G² | k] sampling change (shared-ν Student-t emissions).
@@ -34,7 +34,7 @@ const OUT_DIR = joinpath(_ROOT, "results", "diagnostics");
 mkpath(OUT_DIR);
 
 println("="^80);
-println("  Effective spectral rank of ρ_|G| on shared-ν CHMM-t at K = 18 and K = 3");
+println("  Effective spectral rank of ρ_|G| on shared-ν CHMM-t at K = 18, 3 and 2");
 println("="^80);
 
 println("\n[setup] Loading SPY IS...");
@@ -284,6 +284,7 @@ end
 
 results_18 = _run_at_K(18);
 results_3  = _run_at_K(3);
+results_2  = _run_at_K(2);   # K=2: rank-1 lower bound (single non-unit eigenvalue, mono-exponential ACF)
 
 # ----------------------------------------------------------------------------------------- #
 function _print_panel(io, r)
@@ -317,6 +318,7 @@ open(out_path, "w") do io
     println(io, "Companion to spectral_rank.txt (Gaussian CHMM-N). Fit: ecm_shared_nu (single ν across states).");
     _print_panel(io, results_18);
     _print_panel(io, results_3);
+    _print_panel(io, results_2);
     println(io);
     println(io, "Reading note. Same identity and effective-rank definition as the CHMM-N run; only the");
     println(io, "emission family (shared-ν Student-t, ν≈5.81) differs. The dominant lag-1 share is the");
@@ -324,7 +326,7 @@ open(out_path, "w") do io
 end
 
 # stdout summary for quick capture
-for r in (results_3, results_18)
+for r in (results_2, results_3, results_18)
     dom = r.rows[1];
     @printf("[K=%2d] ν=%.3f  ρ_|G|(1)=%.4f  dominant |λ_1|=%.4f  dom lag-1 share=%.4f (%.1f%%)\n",
             r.K, r.nu, real(sum(row.t1 for row in r.rows)), dom.abs_lam, dom.cum_t1_share, 100*dom.cum_t1_share);
