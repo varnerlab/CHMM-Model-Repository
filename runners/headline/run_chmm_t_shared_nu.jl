@@ -279,12 +279,6 @@ for K in [3, 6, 18]
     println("[sim] $N_PATHS IS + OoS paths ...")
     sim_is  = _sim_shared_nu(fit, n_is,  N_PATHS)
     sim_oos = _sim_shared_nu(fit, n_oos, N_PATHS)
-    # Formal volatility-clustering test (Ljung-Box on |G| at lag 20), per-path retention.
-    _lb_is  = [LjungBoxTest(abs.(sim_is[:, i]),  20) for i in 1:N_PATHS]
-    _lb_oos = [LjungBoxTest(abs.(sim_oos[:, i]), 20) for i in 1:N_PATHS]
-    @printf("  [LB |G| lag20]  IS median Q %.1f (reject %.1f%%)  |  OoS median Q %.1f (reject %.1f%%)\n",
-            median([t.Q for t in _lb_is]),  100*count(t -> pvalue(t) < 0.05, _lb_is)  / N_PATHS,
-            median([t.Q for t in _lb_oos]), 100*count(t -> pvalue(t) < 0.05, _lb_oos) / N_PATHS)
     is_p = _eval_panel(R_is, sim_is)
     oos_p = _eval_panel(R_oos, sim_oos)
     push!(results, (K=K, ν_shared=fit.ν, is=is_p, oos=oos_p))
