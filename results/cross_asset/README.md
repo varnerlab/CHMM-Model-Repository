@@ -9,6 +9,7 @@ Cross-asset dependence results on top of the per-asset CHMM-N marginals.
 | `Table-T3-Cross-Asset-Dependence.txt` | Table T3: SIM, Gaussian copula, Student-t copula, truncated C-vine |
 | `Fig-Cross-Asset-Correlation.svg` | Mean simulated correlation matrices against the observed one |
 | `Fig-Cross-Asset-KS-Dist.svg` | Per-asset in-sample KS pass-rate sanity check |
+| `OOS-MEDIAN-KS-DISCREPANCY.md` | Note: the manuscript summary table's "Median OoS KS" column is stale; use the per-asset values in `Table-T3` |
 
 ## C2 first-pass outcome
 
