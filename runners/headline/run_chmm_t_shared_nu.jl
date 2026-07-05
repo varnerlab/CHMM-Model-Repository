@@ -28,6 +28,7 @@ using HypothesisTests
 using StatsBase
 using Printf
 using Distributions
+using JLD2
 
 const SEED      = 20260420;
 const N_PATHS   = 1000;
@@ -279,6 +280,10 @@ for K in [3, 6, 18]
     println("[sim] $N_PATHS IS + OoS paths ...")
     sim_is  = _sim_shared_nu(fit, n_is,  N_PATHS)
     sim_oos = _sim_shared_nu(fit, n_oos, N_PATHS)
+    if K == 3
+        mkpath(OUT_DIR)
+        JLD2.save(joinpath(OUT_DIR, "sims_K3.jld2"), "is", sim_is, "oos", sim_oos)
+    end
     is_p = _eval_panel(R_is, sim_is)
     oos_p = _eval_panel(R_oos, sim_oos)
     push!(results, (K=K, ν_shared=fit.ν, is=is_p, oos=oos_p))
