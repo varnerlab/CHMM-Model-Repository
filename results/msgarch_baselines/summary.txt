@@ -9,6 +9,6 @@ Fit params (HMP 2004 path-independent recursion):
   log-likelihood: -4964.78
 
 Headline metrics (lower is better for MMD / sig-MMD, closer to 0.50 for AUC):
-  GARCH       MMD IS 0.0  sig-MMD IS 0.0348  disc AUC IS 0.766  pv̄ IS 0.54  pv̄ OoS 0.468
+  GARCH       MMD IS 0.00049  sig-MMD IS 0.02714  disc AUC IS 0.764  pv̄ IS 0.534  pv̄ OoS 0.468
   MS-GARCH    MMD IS 0.00048  sig-MMD IS 0.03139  disc AUC IS 0.734  pv̄ IS 0.368  pv̄ OoS 0.487
-  CHMM-t      MMD IS 0.00019  sig-MMD IS 0.00595  disc AUC IS 0.607  pv̄ IS 0.324  pv̄ OoS 0.661
+  CHMM-t      MMD IS 0.00172  sig-MMD IS 0.00828  disc AUC IS 0.587  pv̄ IS 0.325  pv̄ OoS 0.657
