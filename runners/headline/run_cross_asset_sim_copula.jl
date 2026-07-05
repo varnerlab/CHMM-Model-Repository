@@ -247,6 +247,49 @@ println(read(outpath, String));
 
 
 # ========================================================================================= #
+# PANEL DUMP (optional): write the per-model correlation matrices + per-asset KS to CSV so
+# the M-exam deck can render a 6-panel copula figure. Plots-independent; enable with
+# DUMP_PANELS=1. Matrices mirror the figure block below (avg simulated corr over N_PATHS).
+# ========================================================================================= #
+if get(ENV, "DUMP_PANELS", "") == "1"
+    _pdir = joinpath(RESULTS_DIR, "cross_asset", "panels");
+    mkpath(_pdir);
+    _Σ_obs = cor(R_is);
+    _Σ_sim = zeros(d, d); _Σ_gauss = zeros(d, d); _Σ_t = zeros(d, d); _Σ_vine = zeros(d, d);
+    for p in 1:N_PATHS
+        _Σ_sim   .+= cor(sim_full_is[:, :, p]);
+        _Σ_gauss .+= cor(gauss_paths_is[:, :, p]);
+        _Σ_t     .+= cor(t_paths_is[:, :, p]);
+        _Σ_vine  .+= cor(vine_paths_is[:, :, p]);
+    end
+    _Σ_sim ./= N_PATHS; _Σ_gauss ./= N_PATHS; _Σ_t ./= N_PATHS; _Σ_vine ./= N_PATHS;
+    _writecsv = (fname, M) -> open(joinpath(_pdir, fname), "w") do io
+        for i in 1:size(M, 1)
+            println(io, join([string(M[i, j]) for j in 1:size(M, 2)], ","));
+        end
+    end;
+    _writecsv("obs_corr.csv", _Σ_obs);
+    _writecsv("sim_corr_sim.csv", _Σ_sim);
+    _writecsv("sim_corr_gauss.csv", _Σ_gauss);
+    _writecsv("sim_corr_t.csv", _Σ_t);
+    _writecsv("sim_corr_vine.csv", _Σ_vine);
+    for (fname, kss) in (("ks_by_model_is.csv", (ks_sim_is, ks_gauss_is, ks_t_is, ks_vine_is)),
+                         ("ks_by_model_oos.csv", (ks_sim_oos, ks_gauss_oos, ks_t_oos, ks_vine_oos)))
+        open(joinpath(_pdir, fname), "w") do io
+            println(io, "ticker,sim,gauss,t,vine");
+            for j in 1:d
+                println(io, join([string(available[j]), string(kss[1][j]), string(kss[2][j]),
+                                  string(kss[3][j]), string(kss[4][j])], ","));
+            end
+        end
+    end
+    open(joinpath(_pdir, "tickers.csv"), "w") do io
+        for t in available; println(io, t); end
+    end
+    println("Dumped cross-asset panels -> ", _pdir);
+end
+
+# ========================================================================================= #
 # FIGURES (save only if Plots is working; otherwise skip gracefully)
 # ========================================================================================= #
 figs_dir = joinpath(RESULTS_DIR, "cross_asset");
