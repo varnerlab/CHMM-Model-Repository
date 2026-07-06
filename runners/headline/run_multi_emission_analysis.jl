@@ -284,12 +284,11 @@ for family in EMISSION_FAMILIES
             println(io, "Coverage IS (%): $(m_is.cov) | OoS: $(m_oos.cov)")
         end
 
-        # Figures: only at K=18, and only the per-family K=18 inspection figures
-        # actually panelled in the paper (Convergence, Emission-PDFs, Residence-Times).
-        # IS/OoS comparison and trajectory K=18 figures come from run_figures.jl
-        # (split panels with no top titles); the per-family transition-matrix
-        # at K=18 also comes from run_figures.jl.
-        if K == 18
+        # Figures: at K=18 (paper) and K=3 (headline/deck), the per-family inspection
+        # figures actually panelled or shown (Convergence, Emission-PDFs, Residence-Times).
+        # IS/OoS comparison and trajectory figures come from run_figures.jl (split panels
+        # with no top titles); the per-family transition-matrix also comes from run_figures.jl.
+        if K in (3, 18)
             save_convergence(model, tag, K, out_dir);
             save_emission_pdfs(model, tag, K, out_dir);
             save_residence_times(T_mat, tag, K, out_dir);

@@ -10,7 +10,7 @@ const SEED = 20260420;
 Random.seed!(SEED);
 
 const TICKER = "SPY";
-const K = 18; const MAX_ITER = 60;
+const K = parse(Int, get(ENV, "CHMM_K", "18")); const MAX_ITER = 60;
 const N_PATHS = 1000; const L_LAGS = 252;
 const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
 mkpath(PAPER_FIGS_DIR);
@@ -201,10 +201,18 @@ end
 
 function kfigs_save_transition_heatmap(T_mat, _, _, out_path)
     T_log = log10.(T_mat .+ 1e-10);
+    n = size(T_mat, 1);
+    # Integer state ticks: default Plots ticks land on fractional values (2.5, 5.0, ...)
+    # which read as non-existent states. Label each state index explicitly; for large K
+    # thin the labels so they stay legible while remaining integers.
+    step = n <= 12 ? 1 : cld(n, 12);
+    tickpos = collect(1:step:n);
+    ticks = (tickpos, string.(tickpos));
     p = heatmap(T_log,
         xlabel="To State", ylabel="From State",
         xguidefontsize=TFS, yguidefontsize=TFS,
         tickfontsize=TFS-1,
+        xticks=ticks, yticks=ticks,
         color=:viridis, yflip=true, aspect_ratio=:equal,
         size=(520, 470),
         colorbar=true,
