@@ -1,0 +1,2 @@
+GARCHT_FULL IS ks=57.3 ad=36.6 kurt=15.11 kurt_obs=7.68 acf=0.048 acf_raw=0.0246 w1=0.223 hell=0.0952 cov=93.9
+GARCHT_FULL OOS ks=80.8 ad=65.3 kurt=5.75 kurt_obs=5.29 acf=0.0576 acf_raw=0.0437 w1=0.324 hell=0.1654 cov=100.0
