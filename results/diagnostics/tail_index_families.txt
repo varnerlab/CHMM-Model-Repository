@@ -1,0 +1,21 @@
+====================================================================================================
+Hill tail index (alpha) by CHMM variant at K*=3  vs  observed SPY
+====================================================================================================
+
+Estimator: upper-tail Hill on |G_t| (Paper I port), same estimator for every series.
+alpha_hat = 1/xi_hat; for a Pareto tail alpha_hat -> tail index. Seed 20260420, 1000 paths.
+Cont (2001): daily-equity tail index alpha in (2,5), often 3-4. Student-t emission: alpha = nu.
+Gaussian / Laplace / GED emissions: exponential-type tail, asymptotic alpha = infinity.
+
+Variant                    ExKurt | alpha (top 2%) | alpha (top 5%) | alpha (top 10%) | alpha 5% IS 95% band  
+                           IS/OoS | IS / OoS       | IS / OoS       | IS / OoS       | [lo, hi]              
+----------------------------------------------------------------------------------------------------
+Observed SPY             7.68/5.29 | 3.54 / 4.85  | 3.15 / 3.30  | 2.72 / 2.97  |      (observed)       
+CHMM-t (shared-nu)       4.68/4.46 | 4.32 / 4.30  | 3.67 / 3.67  | 3.03 / 3.02  | [3.11, 4.38]          
+CHMM-N                   3.83/3.62 | 4.64 / 4.68  | 3.41 / 3.54  | 2.76 / 2.83  | [2.90, 4.05]          
+CHMM-t (pen, lambda=20)  18.87/10.61 | 3.43 / 3.42  | 3.27 / 3.26  | 2.87 / 2.85  | [2.80, 3.90]          
+CHMM-L                   5.24/5.20 | 4.04 / 4.01  | 3.26 / 3.26  | 2.68 / 2.71  | [2.84, 3.86]          
+CHMM-GED                 5.45/5.09 | 3.83 / 3.88  | 3.24 / 3.24  | 2.73 / 2.74  | [2.78, 3.80]          
+
+Reading. In-band (2,5) and stable across fractions => genuine power-law heavy tail.
+High alpha and/or rising with depth => thin (exponential) tail: leptokurtic only.
