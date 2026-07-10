@@ -48,6 +48,18 @@ function hill_xi(x::AbstractVector{<:Real}; tail_frac::Float64 = 0.05)
 end
 _exkurt(x) = sum(((x .- mean(x)) ./ std(x)).^4) / length(x) - 3.0;
 
+# One-sided Hill: left tail (loss magnitudes) and right tail (gains), with the SAME
+# exceedance count k = tail_frac * n on each side so the two indices are comparable.
+# Separating them accounts for Cont's gain/loss asymmetry (the loss tail is usually
+# heavier, i.e. a lower alpha, than the gain tail).
+function _lr_xi(g::AbstractVector{<:Real}; tail_frac::Float64 = 0.05)
+    n = length(g); k = max(2, floor(Int, tail_frac * n))
+    Lv = sort(.-(filter(<(0.0), g)); rev = true)   # loss magnitudes, largest first
+    Rv = sort(filter(>(0.0), g);     rev = true)    # gains, largest first
+    _xi(v) = (kk = min(k, length(v)); s = 0.0; for i in 1:(kk-1); s += log(v[i]/v[kk]); end; s/(kk-1))
+    return (_xi(Lv), _xi(Rv))
+end
+
 # --- Fit / simulate helpers (verbatim from run_kstar3_headline.jl) ------------
 function _train_headline(family::Symbol, obs::Vector{Float64}, K::Int, max_iter::Int)
     if family == :gaussian
@@ -92,6 +104,16 @@ function _sim_alpha(sim::AbstractMatrix; tail_frac = 0.05)
 end
 function _sim_kurt(sim::AbstractMatrix)
     return mean(_exkurt(@view sim[:, p]) for p in 1:size(sim, 2))
+end
+
+# Per-path left/right Hill: average xi over paths, then invert to alpha.
+function _sim_lr(sim::AbstractMatrix; tail_frac = 0.05)
+    xls = Float64[]; xrs = Float64[]
+    for p in 1:size(sim, 2)
+        xl, xr = _lr_xi(sim[:, p]; tail_frac = tail_frac)
+        push!(xls, xl); push!(xrs, xr)
+    end
+    return (aL = 1/mean(xls), aR = 1/mean(xrs))
 end
 
 # --- Load SPY IS / OoS -------------------------------------------------------
@@ -177,8 +199,30 @@ function _emit(io)
                 a2[1], a2[2], a5[1], a5[2], a10[1], a10[2], band)
     end
     println(io)
+    println(io, "-"^100)
+    println(io, "Gain/loss asymmetry (Cont SF): Hill alpha for the LEFT tail (losses) vs RIGHT tail (gains),")
+    println(io, "top 5%, same exceedance count each side. Lower alpha = heavier tail. Observed loss tail is")
+    println(io, "heavier than the gain tail; symmetric emissions can only get asymmetry from the regime means.")
+    println(io)
+    @printf(io, "%-24s | %-18s | %-18s | %-10s\n",
+            "Variant", "LEFT alpha (loss)", "RIGHT alpha (gain)", "L - R (IS)")
+    @printf(io, "%-24s | %-18s | %-18s | %-10s\n", "", "IS / OoS", "IS / OoS", "asymmetry")
+    println(io, "-"^100)
+    for r in rows
+        if r.obs
+            lL_is, rR_is = _lr_xi(R_is);  lL_oos, rR_oos = _lr_xi(R_oos)
+            aLi, aRi, aLo, aRo = 1/lL_is, 1/rR_is, 1/lL_oos, 1/rR_oos
+        else
+            li = _sim_lr(r.is); lo = _sim_lr(r.oos)
+            aLi, aRi, aLo, aRo = li.aL, li.aR, lo.aL, lo.aR
+        end
+        @printf(io, "%-24s | %4.2f / %-4.2f       | %4.2f / %-4.2f       | %+5.2f\n",
+                r.label, aLi, aLo, aRi, aRo, aLi - aRi)
+    end
+    println(io)
     println(io, "Reading. In-band (2,5) and stable across fractions => genuine power-law heavy tail.")
     println(io, "High alpha and/or rising with depth => thin (exponential) tail: leptokurtic only.")
+    println(io, "L - R < 0 => loss tail heavier than gain tail (the observed asymmetry); ~0 => symmetric.")
 end
 
 _emit(stdout)

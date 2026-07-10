@@ -17,5 +17,21 @@ CHMM-t (pen, lambda=20)  18.87/10.61 | 3.43 / 3.42  | 3.27 / 3.26  | 2.87 / 2.85
 CHMM-L                   5.24/5.20 | 4.04 / 4.01  | 3.26 / 3.26  | 2.68 / 2.71  | [2.84, 3.86]          
 CHMM-GED                 5.45/5.09 | 3.83 / 3.88  | 3.24 / 3.24  | 2.73 / 2.74  | [2.78, 3.80]          
 
+----------------------------------------------------------------------------------------------------
+Gain/loss asymmetry (Cont SF): Hill alpha for the LEFT tail (losses) vs RIGHT tail (gains),
+top 5%, same exceedance count each side. Lower alpha = heavier tail. Observed loss tail is
+heavier than the gain tail; symmetric emissions can only get asymmetry from the regime means.
+
+Variant                  | LEFT alpha (loss)  | RIGHT alpha (gain) | L - R (IS)
+                         | IS / OoS           | IS / OoS           | asymmetry 
+----------------------------------------------------------------------------------------------------
+Observed SPY             | 2.50 / 2.25       | 3.05 / 3.29       | -0.55
+CHMM-t (shared-nu)       | 2.85 / 2.86       | 3.31 / 3.31       | -0.46
+CHMM-N                   | 2.64 / 2.74       | 2.93 / 3.02       | -0.29
+CHMM-t (pen, lambda=20)  | 2.58 / 2.56       | 3.31 / 3.30       | -0.73
+CHMM-L                   | 2.51 / 2.52       | 2.95 / 2.98       | -0.44
+CHMM-GED                 | 2.40 / 2.40       | 3.34 / 3.38       | -0.93
+
 Reading. In-band (2,5) and stable across fractions => genuine power-law heavy tail.
 High alpha and/or rising with depth => thin (exponential) tail: leptokurtic only.
+L - R < 0 => loss tail heavier than gain tail (the observed asymmetry); ~0 => symmetric.
