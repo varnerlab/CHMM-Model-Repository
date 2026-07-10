@@ -1,0 +1,30 @@
+================================================================================================
+Hill tail-index estimate: observed SPY vs shared-nu CHMM-t (K*=3)
+================================================================================================
+
+Estimator: upper-tail Hill on |G_t| (Paper I port). xi_hat ~ 1/alpha for a Pareto tail.
+Observed excess kurtosis: IS = 7.68, OoS = 5.29.
+Shared-nu CHMM-t K*=3: nu = 5.8076 (so the emission tail index is alpha = nu ~ 5.81).
+Cont (2001) empirical band for daily equity returns: alpha in (2, 5), often 3-4.
+
+tail   | OBSERVED  xi (alpha)       | CHMM-t sim  xi (alpha)    
+frac   | IS           OoS          | IS           OoS         
+----------------------------------------------------------------------
+0.02   | 0.282 (3.54)  0.206 (4.85) | 0.232 (4.32)  0.232 (4.30)
+0.05   | 0.317 (3.15)  0.303 (3.30) | 0.273 (3.67)  0.273 (3.67)
+0.10   | 0.368 (2.72)  0.337 (2.97) | 0.330 (3.03)  0.331 (3.02)
+
+Observed magnitude Hill at 5%, block-bootstrap (L=10, B=2000) 95% CI on xi:
+  IS : xi = 0.312  95% CI [0.235, 0.408]  -> alpha ~ 3.21  [2.45, 4.25]
+  OoS: xi = 0.293  95% CI [0.186, 0.400]  -> alpha ~ 3.42  [2.50, 5.37]
+
+Simulated magnitude Hill at 5%, across-path 95% band on xi:
+  IS : xi = 0.273  [0.228, 0.321]  -> alpha ~ 3.67
+  OoS: xi = 0.273  [0.192, 0.374]  -> alpha ~ 3.67
+
+Left tail only (losses) Hill at 5%: observed IS alpha ~ 3.34, OoS alpha ~ 3.00
+
+Reading. The observed tail index sits in Cont's (2,5) band; the shared-nu CHMM-t
+produces a genuine finite power-law tail (alpha near nu = 5.8), slightly THINNER in
+the extreme tail than observed. Excess kurtosis (6/(nu-4)) exaggerates this gap
+because it is a near-singular 4th-moment functional; the tail index is the stable read.

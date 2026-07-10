@@ -1,0 +1,15 @@
+series,window,tail_frac,xi,alpha
+observed,IS,0.02,0.2822,3.5441
+observed,OoS,0.02,0.2060,4.8547
+observed,IS,0.05,0.3172,3.1521
+observed,OoS,0.05,0.3030,3.3003
+observed,IS,0.10,0.3681,2.7168
+observed,OoS,0.10,0.3367,2.9702
+chmm_t_sim,IS,0.02,0.2316,4.3180
+chmm_t_sim,OoS,0.02,0.2324,4.3033
+chmm_t_sim,IS,0.05,0.2727,3.6665
+chmm_t_sim,OoS,0.05,0.2726,3.6686
+chmm_t_sim,IS,0.10,0.3303,3.0272
+chmm_t_sim,OoS,0.10,0.3315,3.0170
+observed_left,IS,0.05,0.2992,3.3428
+observed_left,OoS,0.05,0.3335,2.9982
