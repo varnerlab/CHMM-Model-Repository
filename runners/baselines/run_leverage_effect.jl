@@ -11,7 +11,7 @@
 # Outputs:
 #   results/diagnostics/leverage_effect/leverage_effect.txt
 #   results/diagnostics/leverage_effect/leverage_effect.csv
-#   ../CHMM-paper/results/robustness/leverage_effect.csv
+#   ../CHMM-Paper-Repository/results/robustness/leverage_effect.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -29,7 +29,7 @@ const MAX_ITER  = 60;
 const N_PATHS   = 500;
 
 const OUT_DIR              = joinpath(_ROOT, "results", "diagnostics", "leverage_effect");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

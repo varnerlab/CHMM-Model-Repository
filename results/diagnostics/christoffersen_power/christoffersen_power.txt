@@ -1,6 +1,6 @@
 Christoffersen-cc / -ind / Kupiec MC power calibration
 Peer-review item 4 (R1 Q4 / R2 W2-RE1 / R3 Q5).
-T_OoS = 572, replicates B = 5000 per (alpha, rho) cell, seed = 20260420.
+T_OoS = 573, replicates B = 5000 per (alpha, rho) cell, seed = 20260420.
 Critical values: chi^2_1(0.05) = 3.841,  chi^2_2(0.05) = 5.991.
 
 Construction: breach indicator I_t simulated from a two-state Markov chain
@@ -10,18 +10,18 @@ rho > 0 means breaches cluster (positive serial correlation in I_t).
 Empirical rejection rate at nominal alpha = 0.05:
 alpha    rho     mean_breaches   rej_UC%   rej_IND%   rej_CC%
 ----------------------------------------------------------------------
- 0.01   0.00            5.7      4.92       1.64      3.20
- 0.01   0.05            5.8      6.26      15.88     11.36
- 0.01   0.10            5.8      7.46      28.52     22.06
- 0.01   0.20            5.7      9.38      51.34     42.62
- 0.01   0.30            5.8     13.86      67.58     62.80
- 0.01   0.50            5.7     21.40      75.86     81.48
- 0.05   0.00           28.6      4.88       3.82      4.08
- 0.05   0.05           28.6      5.28      18.78     15.26
- 0.05   0.10           28.6      6.08      46.20     38.96
- 0.05   0.20           28.5      9.36      86.88     83.94
- 0.05   0.30           28.7     13.62      97.36     97.90
- 0.05   0.50           28.7     24.32      99.70    100.00
+ 0.01   0.00            5.7      5.38       1.76      3.44
+ 0.01   0.05            5.8      6.36      15.32     11.42
+ 0.01   0.10            5.8      7.28      27.94     21.06
+ 0.01   0.20            5.7     10.36      51.66     42.58
+ 0.01   0.30            5.8     14.40      67.16     63.10
+ 0.01   0.50            5.7     22.32      75.64     82.12
+ 0.05   0.00           28.6      5.94       4.68      4.02
+ 0.05   0.05           28.7      6.52      18.54     15.04
+ 0.05   0.10           28.7      8.14      46.50     39.38
+ 0.05   0.20           28.5     11.64      87.22     83.80
+ 0.05   0.30           28.8     15.82      97.52     97.86
+ 0.05   0.50           28.8     27.28      99.66    100.00
 
 Reading:
   rho = 0 row: empirical Type-I error under iid null.

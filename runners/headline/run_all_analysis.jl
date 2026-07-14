@@ -562,7 +562,7 @@ println("  - Table-T1-State-Resolution-Sensitivity.txt")
 # ========================================================================================= #
 # Copy paper-relevant figures into the paper's figs directory.
 # ========================================================================================= #
-const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "figs"));
 if isdir(PAPER_FIGS)
     println("\nCopying figures to paper figs: $PAPER_FIGS")
     # Fig 1: stylized facts (4 split panels, ticker-level)

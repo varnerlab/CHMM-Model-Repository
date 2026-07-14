@@ -22,7 +22,7 @@
 #
 # Outputs:
 #   results/ks_block_bootstrap/KS_Bootstrap_Recalibration.txt
-#   ../CHMM-paper/results/robustness/ks_block_bootstrap.csv
+#   ../CHMM-Paper-Repository/results/robustness/ks_block_bootstrap.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -44,7 +44,7 @@ const B_BOOT    = 1000;
 const BLOCK_LENGTHS = [5, 10, 20];
 
 const OUT_DIR       = joinpath(_ROOT, "results", "ks_block_bootstrap");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

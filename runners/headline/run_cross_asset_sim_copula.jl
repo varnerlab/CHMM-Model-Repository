@@ -365,7 +365,7 @@ println("\nCross-asset run complete. Output directory: $figs_dir");
 # ========================================================================================= #
 # Copy paper-relevant figures into the paper's figs directory.
 # ========================================================================================= #
-const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "..", "..", "CHMM-paper", "figs"));
+const PAPER_FIGS = abspath(joinpath(@__DIR__, "..", "..", "..", "CHMM-Paper-Repository", "figs"));
 if isdir(PAPER_FIGS)
     for letter in ("a", "b", "c", "d", "e"), ext in ("pdf",)
         src = joinpath(figs_dir, "Fig-Cross-Asset-Correlation-$letter.$ext");

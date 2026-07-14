@@ -16,7 +16,7 @@
 #
 # Outputs:
 #   results/k_selection_validation/K_Selection_Validation_Pre2020.txt
-#   ../CHMM-paper/results/robustness/k_selection_validation_pre2020.csv
+#   ../CHMM-Paper-Repository/results/robustness/k_selection_validation_pre2020.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -51,7 +51,7 @@ println("\n[data] Loading and slicing SPY into pre-2020 estimation + validation.
 train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
 spy_is = train_dataset["SPY"];
 dates_is = Date.(spy_is.timestamp);
-closes_is = Vector{Float64}(spy_is.close);
+closes_is = Vector{Float64}(spy_is.volume_weighted_average_price);
 order = sortperm(dates_is);
 dates_is  = dates_is[order];
 closes_is = closes_is[order];
@@ -65,9 +65,15 @@ function _log_growth_series(closes::Vector{Float64}; Δt::Float64=DT, rf::Float6
     return r;
 end
 
-function _slice_between(dates::Vector{Date}, closes::Vector{Float64}, t0::Date, t1::Date)
+function _slice_between(dates::Vector{Date}, closes::Vector{Float64}, t0::Date, t1::Date;
+                        include_prev::Bool=false)
     idx0 = findfirst(d -> d >= t0, dates);
     idx1 = findlast(d -> d <= t1, dates);
+    # include_prev extends the slice one price backward so the first return of the
+    # window (previous session into t0) is formed; used for validation slices.
+    if include_prev && idx0 > 1
+        idx0 -= 1;
+    end
     return _log_growth_series(closes[idx0:idx1]);
 end
 
@@ -75,7 +81,7 @@ end
 # Validation: 2018-07-02 through 2019-12-31 (~1.5 years, pre-COVID, pre-rate-hike;
 #                                            includes Q4 2018 drawdown + 2019 recovery)
 R_est = _slice_between(dates_is, closes_is, Date(2014,1,3),  Date(2018,6,29));
-R_val = _slice_between(dates_is, closes_is, Date(2018,7,2),  Date(2019,12,31));
+R_val = _slice_between(dates_is, closes_is, Date(2018,7,2),  Date(2019,12,31); include_prev=true);
 n_est = length(R_est); n_val = length(R_val);
 println("  estimation $n_est days  (2014-01-03 → 2018-06-29)");
 println("  validation $n_val days  (2018-07-02 → 2019-12-31, includes Q4 2018 drawdown + 2019 recovery)");

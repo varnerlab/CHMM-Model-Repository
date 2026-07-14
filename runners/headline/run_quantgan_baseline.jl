@@ -19,7 +19,7 @@
 #   results/quantgan_baseline/var_lr_tests.txt      (legacy VaR LR reference)
 #   results/quantgan_baseline/sim_pvalues.txt       (legacy joint p-value reference)
 #   results/quantgan_baseline/summary.txt           (top-line training + metrics summary)
-#   ../CHMM-paper/results/robustness/quantgan_panel.csv  (machine-readable row consumed by paper)
+#   ../CHMM-Paper-Repository/results/robustness/quantgan_panel.csv  (machine-readable row consumed by paper)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -53,7 +53,7 @@ const HORIZONS_AG  = [1, 5, 10, 21];
 
 const SIM_ARCHIVE_PATH = joinpath(_ROOT, "results", "baselines_archive", "sim_archive_cache.jld2");
 const QUANTGAN_DIR = joinpath(_ROOT, "results", "quantgan_baseline");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(QUANTGAN_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

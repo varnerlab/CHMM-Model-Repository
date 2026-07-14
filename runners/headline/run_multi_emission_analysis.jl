@@ -28,7 +28,7 @@ const SEED = 20260420;       # paper-canonical global seed (Section: Evaluation 
 const RESULTS_DIR = joinpath(_ROOT, "results");
 
 # Also copy selected K=18 figures to the paper's figs folder for LaTeX inclusion.
-const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
+const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-Paper-Repository", "figs");
 
 println("="^70)
 println("  Multi-Emission Analysis Pipeline")

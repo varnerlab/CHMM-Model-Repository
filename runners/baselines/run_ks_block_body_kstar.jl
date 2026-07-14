@@ -13,7 +13,7 @@
 #
 # Outputs:
 #   results/ks_block_bootstrap/KS_Bootstrap_Body_Kstar.txt
-#   ../CHMM-paper/results/robustness/ks_block_body_kstar.csv
+#   ../CHMM-Paper-Repository/results/robustness/ks_block_body_kstar.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -34,7 +34,7 @@ const LAMBDA         = 20.0;       # CHMM-t penalty rate at body operating point
 const K_LIST         = [3, 6];
 
 const OUT_DIR              = joinpath(_ROOT, "results", "ks_block_bootstrap");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

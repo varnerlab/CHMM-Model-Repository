@@ -794,7 +794,7 @@ println("="^70);
 # ========================================================================================= #
 # Copy paper-relevant figures into the paper's figs directory.
 # ========================================================================================= #
-const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "figs"));
 if isdir(PAPER_FIGS)
     println("\nCopying figures to paper figs: $PAPER_FIGS")
     # VaR/ES backtest panel (renames VaR_ES_Backtest.{pdf,svg} -> Fig-VaR-ES.{pdf,svg})

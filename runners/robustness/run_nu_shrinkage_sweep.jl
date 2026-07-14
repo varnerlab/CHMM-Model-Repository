@@ -13,7 +13,7 @@
 #
 # Outputs:
 #   results/nu_shrinkage_sweep/NU_Shrinkage_Sweep.txt
-#   ../CHMM-paper/results/robustness/nu_shrinkage_sweep.csv
+#   ../CHMM-Paper-Repository/results/robustness/nu_shrinkage_sweep.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -35,7 +35,7 @@ const N_PATHS   = 1000;
 const SHRINK_GRID = [0.0, 5.0, 20.0, 50.0, 100.0, 200.0];
 
 const OUT_DIR      = joinpath(_ROOT, "results", "nu_shrinkage_sweep");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

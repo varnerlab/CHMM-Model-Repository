@@ -46,6 +46,14 @@ idx_spy = findfirst(==("SPY"), all_tickers);
 R_is = Vector{Float64}(all_R[:, idx_spy]);
 oos_dataset = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
 R_oos = Vector{Float64}(log_growth_matrix(oos_dataset, "SPY"; Δt=DT, risk_free_rate=RISK_FREE));
+
+# Boundary fix (2026-07 audit): the IS and OoS price sets were differenced separately,
+# omitting the last-IS-session -> first-held-out-session return (2024-01-03 -> 2024-01-04).
+# Prepend it so the first OoS forecast target is the return into 2024-01-04.
+R_oos = vcat((1/DT) * log(oos_dataset["SPY"][1, :volume_weighted_average_price] /
+                          train_dataset["SPY"][end, :volume_weighted_average_price]) - RISK_FREE,
+             R_oos);
+
 n_is = length(R_is); n_oos = length(R_oos);
 println("[setup] IS = $n_is, OoS = $n_oos")
 

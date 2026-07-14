@@ -19,7 +19,7 @@
 #
 # Outputs:
 #   results/copula_profile_ci/full_tcopula_mle.txt
-#   ../CHMM-paper/results/robustness/full_tcopula_mle.csv
+#   ../CHMM-Paper-Repository/results/robustness/full_tcopula_mle.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -36,7 +36,7 @@ const TOL       = 1e-3;
 const MAX_ITER  = 30;
 
 const OUT_DIR              = joinpath(_ROOT, "results", "copula_profile_ci");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

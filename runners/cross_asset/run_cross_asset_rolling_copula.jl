@@ -19,7 +19,7 @@
 #
 # Outputs:
 #   results/cross_asset/Rolling_Copula_OoS.txt
-#   ../CHMM-paper/results/robustness/rolling_copula_oos.csv
+#   ../CHMM-Paper-Repository/results/robustness/rolling_copula_oos.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -41,7 +41,7 @@ const WINDOW    = 252;        # rolling-window length (1 trading year)
 const STEP      = 63;         # quarterly refit cadence (1 trading quarter)
 
 const OUT_DIR             = joinpath(_ROOT, "results", "cross_asset");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

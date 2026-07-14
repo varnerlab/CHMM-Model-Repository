@@ -3,10 +3,10 @@
 #
 # Peer-review item 4 (R1 Q4 / R2 W2-RE1 / R3 Q5):
 # Monte Carlo power calibration of the Christoffersen-cc joint conditional-coverage
-# test at T_OoS = 572 across a range of breach-clustering levels.
+# test at T_OoS = 573 across a range of breach-clustering levels.
 #
 # Construction:
-#   simulate breach indicator sequence I_t in {0,1} of length T = 572 from a
+#   simulate breach indicator sequence I_t in {0,1} of length T = 573 from a
 #   two-state Markov chain {breach, no-breach} with marginal breach probability
 #   alpha (1% or 5%) and second eigenvalue rho. rho = 0 is the iid null;
 #   rho > 0 means breaches cluster (positive serial correlation in I_t).
@@ -25,7 +25,7 @@ const SEED   = 20260420;
 const OUTDIR = joinpath(@__DIR__, "..", "..", "results", "diagnostics", "christoffersen_power");
 mkpath(OUTDIR);
 
-const T_OOS  = 572;          # OoS length used in the paper
+const T_OOS  = 573;          # OoS VaR forecast count used in the paper (incl. boundary return)
 const B      = 5_000;        # MC replicates per (alpha, rho) cell
 const ALPHAS = [0.01, 0.05];
 const RHOS   = [0.0, 0.05, 0.10, 0.20, 0.30, 0.50];

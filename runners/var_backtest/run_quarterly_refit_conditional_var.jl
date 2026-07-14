@@ -36,6 +36,14 @@ train_dataset = MyPortfolioDataSet()["dataset"];
 oos_dataset   = MyOutOfSamplePortfolioDataSet()["dataset"];
 R_is  = log_growth_matrix(train_dataset, "SPY"; Δt=DT, risk_free_rate=RISK_FREE);
 R_oos = log_growth_matrix(oos_dataset,   "SPY"; Δt=DT, risk_free_rate=RISK_FREE);
+
+# Boundary fix (2026-07 audit): the IS and OoS price sets were differenced separately,
+# omitting the last-IS-session -> first-held-out-session return (2024-01-03 -> 2024-01-04).
+# Prepend it so the first OoS forecast target is the return into 2024-01-04.
+R_oos = vcat((1/DT) * log(oos_dataset["SPY"][1, :volume_weighted_average_price] /
+                          train_dataset["SPY"][end, :volume_weighted_average_price]) - RISK_FREE,
+             R_oos);
+
 n_is  = length(R_is);
 n_oos = length(R_oos);
 @printf("[data] T_IS = %d   T_OoS = %d\n", n_is, n_oos);

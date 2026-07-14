@@ -22,7 +22,7 @@
 #
 # Outputs:
 #   results/cross_decade_validation/{summary.txt, metrics.csv}
-#   ../CHMM-paper/results/robustness/cross_decade_validation.csv
+#   ../CHMM-Paper-Repository/results/robustness/cross_decade_validation.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -44,7 +44,7 @@ const OOS_END = Date(2006, 4, 28);
 
 const CRSP_PATH = joinpath(_ROOT, "data", "external", "crsp_1994_2006.csv");
 const OUT_DIR              = joinpath(_ROOT, "results", "cross_decade_validation");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

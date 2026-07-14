@@ -34,7 +34,7 @@ const TICKERS = ["SPY", "NVDA", "JNJ", "JPM", "AAPL", "QQQ"];
 const RESULTS_DIR = joinpath(_ROOT, "results", "SPY", "ged_diagnostics");
 mkpath(RESULTS_DIR);
 
-const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-paper", "figs"));
+const PAPER_FIGS = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "figs"));
 
 println("="^70)
 println("  CHMM-GED Per-State Shape Diagnostics  |  K = $K  |  seed = $SEED")

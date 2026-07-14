@@ -29,23 +29,23 @@ using Printf
 const OUTDIR = joinpath(@__DIR__, "..", "..", "results", "k_selection_hac")
 isdir(OUTDIR) || mkpath(OUTDIR)
 
-# Per-fold val_ll/obs from the cached k-fold runs ----------------------------
+# Per-fold val_ll/obs from the cached k-fold runs (VWAP re-run, 2026-07-14) ----------------------------
 # 4-fold full-year cadence (Appendix sec:k_selection_kfold_pre2020)
 val_ll_4fold = Dict(
-     3 => [-2.0133, -1.5552, -2.2504, -2.0011],
-     6 => [-2.0673, -1.5376, -2.2811, -1.9738],
-     9 => [-2.1193, -1.6089, -2.3104, -1.9929],
-    12 => [-2.1815, -1.7323, -2.3192, -2.0552],
-    18 => [-2.5881, -1.8880, -2.4229, -2.1540],
+     3 => [-1.8535, -1.3792, -2.0483, -1.8912],
+     6 => [-1.9642, -1.3414, -2.0306, -1.8626],
+     9 => [-2.0266, -1.4777, -2.0431, -1.8726],
+    12 => [-2.1151, -1.5387, -2.1031, -1.9137],
+    18 => [-2.2862, -1.8010, -2.1716, -1.9867],
 )
 
 # 6-fold half-year cadence (Appendix sec:k_selection_kfold_pre2020 robustness)
 val_ll_6fold = Dict(
-     3 => [-1.5987, -1.4327, -2.2865, -2.2138, -2.0651, -1.9356],
-     6 => [-1.5747, -1.4507, -2.2791, -2.2515, -2.0520, -1.8882],
-     9 => [-1.6569, -1.5221, -2.3085, -2.2802, -2.0628, -1.9102],
-    12 => [-1.7580, -1.5476, -2.3222, -2.3360, -2.1243, -1.9770],
-    18 => [-1.9208, -1.7563, -2.4370, -2.3416, -2.2315, -2.0811],
+     3 => [-1.3974, -1.3238, -2.1121, -1.9998, -1.9484, -1.8203],
+     6 => [-1.3888, -1.2639, -2.0828, -1.9773, -1.9268, -1.7992],
+     9 => [-1.5171, -1.3566, -2.0942, -2.0040, -1.9552, -1.7869],
+    12 => [-1.5474, -1.4629, -2.1427, -2.0319, -1.9654, -1.8418],
+    18 => [-1.8430, -1.7047, -2.1905, -2.1328, -2.0741, -1.8414],
 )
 
 """
@@ -138,15 +138,19 @@ open(txt_path, "w") do io
                 r.indep_se, r.hac_se, r.z_indep, r.z_hac)
     end
     println(io)
-    println(io, "Reading.")
-    println(io, "  K=6 vs K=3 mean held-out log-lik gap remains insignificant under HAC at both cadences")
-    println(io, "  (|z_HAC| < 1.96), consistent with the body conclusion that the held-out criterion")
-    println(io, "  cannot distinguish K=6 from K=3 at conventional levels. The HAC correction does shift")
-    println(io, "  the magnitude of |z| relative to the independent-fold pooled-SE statistic, which the")
-    println(io, "  body should report explicitly: independent-fold |z| = 0.07 (4-fold) / 0.04 (6-fold)")
-    println(io, "  vs HAC |z| (above). For K=18 vs K=6 the independent-fold |z| of 1.92 / 1.70 is also")
-    println(io, "  re-evaluated under HAC; if HAC pushes |z_HAC| above 1.96, the K=18 sensitivity")
-    println(io, "  reference can be re-described accordingly.")
+    println(io, "Reading (computed from the rows above).")
+    for cadence_rows in (rows_4, rows_6)
+        r63 = first(filter(r -> r.comparison == "K=6 vs K=3", cadence_rows))
+        sig = abs(r63.z_hac) >= 1.96 ? "exceeds" : "stays below"
+        dir = r63.dbar > 0 ? "K=6 above K=3" : "K=3 above K=6"
+        @printf(io, "  %s, K=6 vs K=3: dbar=%+.4f (%s), z_HAC=%+.2f %s 1.96 in magnitude.\n",
+                r63.cadence, r63.dbar, dir, r63.z_hac, sig)
+    end
+    println(io, "  The sign of the K=6 vs K=3 gap differs between the two fold cadences, and with")
+    println(io, "  only n = 4 or n = 6 fold differences both the normal and HAC approximations are")
+    println(io, "  too small-sample to support formal significance claims; treat every z above as a")
+    println(io, "  descriptive check. K=18 rows quantify the magnitude of the large-K deterioration")
+    println(io, "  under the same caveat.")
 end
 println("wrote ", txt_path)
 

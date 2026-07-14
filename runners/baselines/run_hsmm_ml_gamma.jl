@@ -44,7 +44,7 @@ const ALPHA_KS    = 0.05;
 const KS          = [3, 18];   # K values to fit
 
 const OUT_DIR     = joinpath(_ROOT, "results", "hsmm_ml_gamma");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

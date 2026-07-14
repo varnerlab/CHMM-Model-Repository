@@ -1,0 +1,22 @@
+==========================================================================================
+Gaussian-copula boundary LR test on the six-asset IS universe (2026-07 audit, P0)
+==========================================================================================
+
+H0: Gaussian copula (nu -> infinity boundary), Sigma from Kendall tau.
+H1: Student-t copula, nu maximised over the extended grid
+    [3, 12] half-unit + {13..20, 25, 30, 40, 60, 100, 200}.
+Null distribution: 500 parametric simulations from the fitted Gaussian copula,
+Sigma re-estimated per replicate via Kendall tau (matching the data estimator).
+
+  nu_hat (observed)      : 6.5
+  logL_t at nu_hat       : 6158.0006
+  logL_gauss             : 5809.4176
+  LR_obs = 2*(Lt - Lg)   : 697.1660
+  null LR q50/q90/q95/q99: -1.1401 / 1.6766 / 2.7902 / 4.3450
+  null nu_hat at grid top: 92.8% of replicates
+  Monte-Carlo p-value    : 0.0020   (B = 500)
+
+Reading (computed): the observed LR exceeds the simulated Gaussian-null
+distribution at the 5% level, so the Student-t copula improvement over the
+Gaussian copula on this window is larger than Gaussian sampling variability
+under the matched Kendall-tau estimation pipeline.

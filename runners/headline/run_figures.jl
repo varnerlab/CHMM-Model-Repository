@@ -12,7 +12,7 @@ Random.seed!(SEED);
 const TICKER = "SPY";
 const K = parse(Int, get(ENV, "CHMM_K", "18")); const MAX_ITER = 60;
 const N_PATHS = 1000; const L_LAGS = 252;
-const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-paper", "figs");
+const PAPER_FIGS_DIR = joinpath(dirname(_ROOT), "CHMM-Paper-Repository", "figs");
 mkpath(PAPER_FIGS_DIR);
 
 # Load SPY data

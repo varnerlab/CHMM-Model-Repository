@@ -8,19 +8,18 @@ Source: cached per-fold val_ll/obs in K_Selection_Kfold[_H12y]_Pre2020.txt.
 
   cadence              comparison           dbar    n    h    indep_SE      HAC_SE   z_indep     z_HAC
   ---------------------------------------------------------------------------------------------------------
-  4-fold full-year     K=6 vs K=3        -0.0099    4    1      0.0194      0.0111   -0.5128   -0.8991
-  4-fold full-year     K=18 vs K=6       -0.2983    4    1      0.0869      0.0839   -3.4319   -3.5561
-  4-fold full-year     K=18 vs K=3       -0.3082    4    1      0.0976      0.0930   -3.1596   -3.3130
-  6-fold half-year     K=6 vs K=3        +0.0060    6    1      0.0124      0.0106   +0.4885   +0.5699
-  6-fold half-year     K=18 vs K=6       -0.2120    6    1      0.0391      0.0424   -5.4173   -5.0043
-  6-fold half-year     K=18 vs K=3       -0.2060    6    1      0.0373      0.0404   -5.5227   -5.1015
+  4-fold full-year     K=6 vs K=3        -0.0067    4    1      0.0349      0.0273   -0.1904   -0.2433
+  4-fold full-year     K=18 vs K=6       -0.2617    4    1      0.0797      0.0711   -3.2816   -3.6786
+  4-fold full-year     K=18 vs K=3       -0.2683    4    1      0.0920      0.0900   -2.9179   -2.9824
+  6-fold half-year     K=6 vs K=3        +0.0272    6    1      0.0071      0.0053   +3.8288   +5.0983
+  6-fold half-year     K=18 vs K=6       -0.2246    6    1      0.0724      0.0762   -3.1035   -2.9477
+  6-fold half-year     K=18 vs K=3       -0.1975    6    1      0.0707      0.0742   -2.7942   -2.6595
 
-Reading.
-  K=6 vs K=3 mean held-out log-lik gap remains insignificant under HAC at both cadences
-  (|z_HAC| < 1.96), consistent with the body conclusion that the held-out criterion
-  cannot distinguish K=6 from K=3 at conventional levels. The HAC correction does shift
-  the magnitude of |z| relative to the independent-fold pooled-SE statistic, which the
-  body should report explicitly: independent-fold |z| = 0.07 (4-fold) / 0.04 (6-fold)
-  vs HAC |z| (above). For K=18 vs K=6 the independent-fold |z| of 1.92 / 1.70 is also
-  re-evaluated under HAC; if HAC pushes |z_HAC| above 1.96, the K=18 sensitivity
-  reference can be re-described accordingly.
+Reading (computed from the rows above).
+  4-fold full-year, K=6 vs K=3: dbar=-0.0067 (K=3 above K=6), z_HAC=-0.24 stays below 1.96 in magnitude.
+  6-fold half-year, K=6 vs K=3: dbar=+0.0272 (K=6 above K=3), z_HAC=+5.10 exceeds 1.96 in magnitude.
+  The sign of the K=6 vs K=3 gap differs between the two fold cadences, and with
+  only n = 4 or n = 6 fold differences both the normal and HAC approximations are
+  too small-sample to support formal significance claims; treat every z above as a
+  descriptive check. K=18 rows quantify the magnitude of the large-K deterioration
+  under the same caveat.

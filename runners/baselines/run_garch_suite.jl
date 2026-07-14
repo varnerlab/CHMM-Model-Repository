@@ -22,7 +22,7 @@
 #
 # Outputs:
 #   results/garch_suite/GARCH_Suite.txt
-#   ../CHMM-paper/results/robustness/garch_suite.csv
+#   ../CHMM-Paper-Repository/results/robustness/garch_suite.csv
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -40,7 +40,7 @@ const DT        = 1/252;
 const N_PATHS   = 1000;
 
 const OUT_DIR       = joinpath(_ROOT, "results", "garch_suite");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-paper", "results", "robustness"));
+const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
 

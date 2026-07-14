@@ -1,0 +1,11 @@
+stat,value
+nu_hat,6.50
+logL_t,6158.0006
+logL_gauss,5809.4176
+LR_obs,697.1660
+null_q50,-1.1401
+null_q90,1.6766
+null_q95,2.7902
+null_q99,4.3450
+p_value,0.0020
+B,500
