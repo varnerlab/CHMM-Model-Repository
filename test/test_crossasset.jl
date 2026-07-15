@@ -61,6 +61,18 @@
         end
     end
 
+    @testset "t-copula profile log-likelihood is finite" begin
+        # Guards the logabsgamma-based constant in _tcopula_profile_loglik
+        # (replacement for the deprecated lgamma; 2026-07-15 review).
+        rng = Random.MersenneTwister(7)
+        U = clamp.(rand(rng, 100, 3), 1e-6, 1.0 - 1e-6)
+        Σ = [1.0 0.3 0.2; 0.3 1.0 0.4; 0.2 0.4 1.0]
+        for ν in (2.5, 6.0, 30.0)
+            ll = _tcopula_profile_loglik(U, Σ, ν)
+            @test isfinite(ll)
+        end
+    end
+
     @testset "seed_uncertainty artifact row reproduces (nonoverlap, seed 20260501)" begin
         # Runner-level smoke test: refit the non-overlapping basket exactly as
         # runners/cross_asset/run_seed_uncertainty.jl does (the fits are

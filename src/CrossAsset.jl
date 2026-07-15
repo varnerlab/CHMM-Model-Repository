@@ -202,7 +202,9 @@ function _tcopula_profile_loglik(U::Matrix{Float64}, Σ::Matrix{Float64}, ν::Fl
     Σchol = cholesky(Symmetric(Σ));
     logdetΣ = 2.0 * sum(log.(diag(Σchol.U)));
 
-    c = lgamma((ν + d) / 2) + (d - 1) * lgamma(ν / 2) - d * lgamma((ν + 1) / 2);
+    # logabsgamma(x)[1] == log Γ(x) for the strictly positive arguments here
+    # (supported replacement for the deprecated lgamma).
+    c = logabsgamma((ν + d) / 2)[1] + (d - 1) * logabsgamma(ν / 2)[1] - d * logabsgamma((ν + 1) / 2)[1];
     c -= 0.5 * logdetΣ;
 
     ll = T * c;

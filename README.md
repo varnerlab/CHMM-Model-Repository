@@ -124,7 +124,7 @@ R is unavailable, so `Pkg.test()` works without R.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-The suite (113 tests) loads the framework through `Include.jl`, exactly as
+The suite (116 tests) loads the framework through `Include.jl`, exactly as
 the runners do, and includes regression coverage for the strict-CRN copula
 simulation path: invariant checks on a synthetic fixture (bitwise
 reproducibility, shared marginal draws across the Gaussian and Student-t

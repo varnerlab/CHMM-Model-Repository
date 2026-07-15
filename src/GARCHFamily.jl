@@ -226,7 +226,7 @@ function _garcht11_nll(p::Vector{Float64}, obs::Vector{Float64})::Float64
     σ2 = ω / max(1.0 - α - β, 1e-6);
     ll = 0.0;
     # Student-t log density with scale σ*sqrt((ν-2)/ν) so that Var(ε) = σ²
-    c = lgamma((ν + 1) / 2) - lgamma(ν / 2) - 0.5 * log(π * (ν - 2));
+    c = logabsgamma((ν + 1) / 2)[1] - logabsgamma(ν / 2)[1] - 0.5 * log(π * (ν - 2));
     for t in 1:N
         r = obs[t] - μ;
         σ = sqrt(max(σ2, 1e-12));
