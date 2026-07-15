@@ -114,8 +114,9 @@ julia --project=. runners/headline/run_msgarch_reference.jl
 ```
 
 See [`r_msgarch/README.md`](r_msgarch/README.md) for the full version-pinning
-contract. The Julia test suite skips the MS-GARCH reference test if R is
-unavailable, so `Pkg.test()` works without R.
+contract. The Julia-side MS-GARCH reference test is opt-in
+(`CHMM_TEST_MSGARCH=1`, see the Testing section below) and skips cleanly when
+R is unavailable, so `Pkg.test()` works without R.
 
 ## Testing
 
@@ -123,13 +124,28 @@ unavailable, so `Pkg.test()` works without R.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
-The suite (89 tests) loads the framework through `Include.jl`, exactly as the
-runners do. `test/runtests.jl` sets `ENV["GKSwstype"] = "100"` so the
+The suite (113 tests) loads the framework through `Include.jl`, exactly as
+the runners do, and includes regression coverage for the strict-CRN copula
+simulation path: invariant checks on a synthetic fixture (bitwise
+reproducibility, shared marginal draws across the Gaussian and Student-t
+copulas, mixing-stream rank isolation) plus a smoke test that refits the
+non-overlapping basket and reproduces a stored `seed_uncertainty.csv` row
+exactly. `test/runtests.jl` sets `ENV["GKSwstype"] = "100"` so the
 visualisation tests render through the headless GR workstation; the suite
 therefore runs to completion on machines without a display (CI, SSH sessions).
 Expect roughly two minutes of test time on an M-series laptop, plus dependency
 precompilation on the first invocation, which can take several additional
 minutes in a fresh depot; allow for that before concluding the suite has hung.
+
+The reference MS-GARCH smoke test is opt-in because its R-side MCMC can add
+several minutes:
+
+```bash
+CHMM_TEST_MSGARCH=1 julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+It requires R >= 4.2 plus the `r_msgarch/setup.R` renv setup, and skips with
+a printed reason if either is missing.
 
 ## Data
 

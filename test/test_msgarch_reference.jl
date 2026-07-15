@@ -1,11 +1,12 @@
 # ========================================================================== #
 # test_msgarch_reference.jl
 #
-# Smoke tests for the RCall-based reference MS-GARCH baseline. The test
-# skips cleanly (with a printed reason, not a failure) when R is not
-# installed or the MSGARCH R package has not been set up yet via
-# r_msgarch/setup.R; this keeps the test suite green on machines that do
-# not have R available.
+# Smoke tests for the RCall-based reference MS-GARCH baseline. The test is
+# OPT-IN: it runs only when CHMM_TEST_MSGARCH=1 is set, because the R-side
+# MCMC smoke test can add several minutes to an otherwise ~2-minute suite
+# (2026-07 final-rerun review, finding 2). Without the flag, and on machines
+# where R or the MSGARCH R package is missing, it skips cleanly (with a
+# printed reason, not a failure).
 #
 # When R + MSGARCH are present, the test runs an end-to-end:
 #   fit -> simulate -> check shape and basic moment sanity
@@ -32,6 +33,11 @@ function _r_available()
 end
 
 @testset "MSGARCHReference" begin
+    if get(ENV, "CHMM_TEST_MSGARCH", "0") != "1"
+        @info "MSGARCH reference tests are opt-in (R-side MCMC can add " *
+              "several minutes); set CHMM_TEST_MSGARCH=1 to run them.";
+        return;
+    end
     if !_r_available()
         @info "R is not on PATH; skipping MSGARCH reference tests. " *
               "Install R >= 4.2 and run r_msgarch/setup.R to enable.";
