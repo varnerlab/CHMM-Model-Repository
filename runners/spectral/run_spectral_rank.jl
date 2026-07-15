@@ -83,6 +83,8 @@ function _spectral_modes(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVec
     λ = F.values;
     V = F.vectors;          # columns: right eigenvectors
     W = inv(V);             # rows:    left eigenvectors, with w_j' v_k = δ_jk
+    κ_V = cond(V);          # eigenvector-matrix conditioning (sixth-audit item 10):
+                            # large κ_V would flag numerically fragile modal weights w_k
 
     σ²_G = π̄' * M - (π̄' * m)^2;
 
@@ -107,7 +109,7 @@ function _spectral_modes(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVec
         ));
     end
     sort!(rows, by = r -> -r.abs_lam);
-    return σ²_G, rows;
+    return σ²_G, rows, κ_V;
 end
 
 # ----------------------------------------------------------------------------------------- #
@@ -117,7 +119,7 @@ function _run_at_K(K::Int)
     m_n = build(MyContinuousHiddenMarkovModel,
                 (observations=R_is, number_of_states=K, max_iter=MAX_ITER));
     T, π̄, m, M = _T_pibar_m(m_n, K; seed=SEED);
-    σ²_G, rows = _spectral_modes(T, π̄, m, M);
+    σ²_G, rows, κ_V = _spectral_modes(T, π̄, m, M);
 
     # Per-mode contribution to ρ(τ) at canonical lags. The right metric for
     # "effective rank of the ACF" is |w_k λ_k^τ|, not |w_k| alone, because a
@@ -146,7 +148,7 @@ function _run_at_K(K::Int)
     n_for_99_t1 = findfirst(r -> r.cum_t1_share >= 0.99, final_rows);
     n_above_1pct_t1 = count(r -> abs(r.t1) / abs_t1_sum > 0.01, final_rows);
 
-    return (K=K, sigma2_G=σ²_G, abs_t1_sum=abs_t1_sum, rows=final_rows,
+    return (K=K, sigma2_G=σ²_G, abs_t1_sum=abs_t1_sum, rows=final_rows, cond_V=κ_V,
             n_above_1pct=n_above_1pct_t1, n_for_95=n_for_95_t1, n_for_99=n_for_99_t1);
 end
 
@@ -158,7 +160,7 @@ results_2  = _run_at_K(2);   # K=2: rank-1 lower bound (single non-unit eigenval
 function _print_panel(io, r)
     println(io);
     println(io, "─"^110);
-    println(io, "K = $(r.K)   σ²_|G| = $(round(r.sigma2_G, digits=6))   ρ_|G|(1) = Σ w_k λ_k = $(round(real(sum(row.t1 for row in r.rows)), digits=4))");
+    println(io, "K = $(r.K)   σ²_|G| = $(round(r.sigma2_G, digits=6))   ρ_|G|(1) = Σ w_k λ_k = $(round(real(sum(row.t1 for row in r.rows)), digits=4))   cond(V) = $(round(r.cond_V, digits=1))");
     println(io, "Effective rank (lag-1 ACF contribution): ");
     println(io, "  $(r.n_above_1pct) modes carry > 1% of Σ|w_k λ_k|;");
     println(io, "  $(r.n_for_95) modes carry ≥ 95% of cumulative |w_k λ_k|;");
