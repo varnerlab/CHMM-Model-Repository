@@ -82,12 +82,21 @@ chmm_returns = [rand(chmm.emission[s]) for s in states]
 garch_returns = simulate_garch(garch, 252)
 ```
 
-To regenerate every table and figure in the companion paper in one pass:
+To regenerate the headline tables and figures (the eight-stage headline
+pipeline: stylized facts, emission-family sweep, baselines, cross-asset
+copulas, diagnostics, MS-GARCH, SM-CHMM, and figures):
 
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 julia --project=. run_full_rebuild.jl
 ```
+
+The driver exits non-zero and lists the failed stages if any stage errors.
+It is a headline rebuild, not a complete one: QuantGAN (slow, run standalone),
+the reference Bayesian MSGARCH row (R/renv), and the standalone VaR back-test,
+walk-forward, state-selection, spectral, cross-asset-uncertainty, and
+robustness runners are invoked individually. [`RUNNERS.md`](RUNNERS.md) maps
+every paper artefact to the runner that produces it.
 
 ### Optional: reference MS-GARCH baseline (R + RCall)
 

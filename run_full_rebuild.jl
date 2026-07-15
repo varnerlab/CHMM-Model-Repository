@@ -1,11 +1,15 @@
 # ========================================================================================= #
 # run_full_rebuild.jl
 #
-# Master driver that re-runs every analysis pipeline end-to-end. Produces every
-# figure, metrics file, and table referenced by the arXiv preprint.
-#
-# Stages (each is an independent top-level include; failure in one does not abort
-# the others, but a warning is printed):
+# HEADLINE rebuild driver: re-runs the eight headline analysis stages listed
+# below in one pass. It does NOT regenerate every artefact in the paper --
+# QuantGAN (excluded below), the reference Bayesian MSGARCH row (R/renv,
+# standalone), and the standalone VaR back-test, walk-forward, state-selection,
+# spectral, cross-asset-uncertainty, and robustness runners are invoked
+# individually; see RUNNERS.md for the complete artefact-by-artefact map.
+# Exits with status 1 if any stage fails (each stage is an independent
+# top-level include; failure in one does not abort the others, but it is
+# recorded and reported in the final summary):
 #   1.  run_all_analysis.jl                  (stylized facts + per-K internals, SPY)
 #   2.  run_multi_emission_analysis.jl       (K x family sensitivity)
 #   3.  run_baselines_and_cross_asset.jl     (headline Pipeline A panel + per-ticker)
@@ -72,11 +76,20 @@ for (i, script) in enumerate(SCRIPTS)
     println("\n  [stage $i] finished in $(round(dt, digits=1))s  status=$(stage_status[script])");
 end
 
+failed = [s for s in SCRIPTS if stage_status[s] != :ok];
 println("\n" * "="^72);
-println("  FULL REBUILD COMPLETE");
+if isempty(failed)
+    println("  HEADLINE REBUILD COMPLETE ($(length(SCRIPTS))/$(length(SCRIPTS)) stages ok)");
+else
+    println("  HEADLINE REBUILD COMPLETED WITH $(length(failed)) FAILED STAGE(S):");
+    for s in failed
+        println("    FAILED: $s");
+    end
+end
 println("  End:   ", Dates.format(now(), "yyyy-mm-dd HH:MM:SS"));
 println("  Per-stage timings (s):");
 for s in SCRIPTS
     println("    $(rpad(s, 38)) $(round(stage_times[s], digits=1)) s   $(stage_status[s])");
 end
 println("="^72);
+isempty(failed) || exit(1);

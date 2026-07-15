@@ -406,8 +406,9 @@ end
     baum_welch_student_t(observations, number_of_states; max_iter=30, tol=1e-4,
                          ν_init=6.0, ν_bounds=(2.1, 50.0), ν_shrink_rate=0.0) -> Tuple
 
-ECM/ECME (Expectation-Conditional-Maximization) estimation for a continuous HMM
-with per-state Student-t emissions t_ν_k(μ_k, σ_k). The E-step augments the
+ECM (Expectation-Conditional-Maximization) estimation with a hybrid surrogate
+ν block for a continuous HMM with per-state Student-t emissions
+t_ν_k(μ_k, σ_k). The E-step augments the
 standard forward-backward with the latent precision
 u_{t,k} = (ν_k + 1) / (ν_k + ((o_t - μ_k)/σ_k)^2)
 and the M-step updates (μ_k, σ_k) in closed form given u_{t,k}; ν_k is
@@ -420,9 +421,18 @@ The penalised objective is
 
 which corresponds to an exponential prior on 1/ν (equivalently a Pareto-like
 shrinkage of ν toward the Gaussian limit ν → ∞). Setting ν_shrink_rate = 0
-recovers the standard Peel & McLachlan (2000) / Liu & Rubin (1995) ECME
-(the ν block maximizes the observed-data Student-t likelihood directly)
-with no shrinkage. Setting ν_shrink_rate > 0 pulls heavy-tailed states back
+recovers the unpenalised update. The ν block is a hybrid generalised
+block-coordinate (surrogate) step: it maximizes the posterior-weighted
+marginal Student-t log-likelihood sum_t γ_t(k) log t_ν(o_t; μ_k, σ_k) with
+the smoothed posteriors γ held fixed. This follows the spirit of the
+Liu & Rubin (1995) ECME ν-block, which is an observed-data-likelihood step
+only in their single-component i.i.d. setting (all γ_t(k) = 1); for mixtures
+the posterior-weighted objective differs from the observed-data likelihood
+(Peel & McLachlan 2000 note ECME does not extend straightforwardly), and in
+the HMM the observed-data likelihood also depends on ν_k through the forward
+recursion, so observed-data ascent is not guaranteed and convergence is
+diagnosed from the log-likelihood trace (see the paper's algorithms
+appendix). Setting ν_shrink_rate > 0 pulls heavy-tailed states back
 toward moderate tail weight and reduces the CHMM-t IS kurtosis overshoot.
 
 Returns (T, μ, σ, ν, π, ll_history, gamma).
