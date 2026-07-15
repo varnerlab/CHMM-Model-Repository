@@ -6,14 +6,24 @@
 # asserted without quantification).
 #
 # For each basket (the main six-asset universe and the non-overlapping
-# six-name basket) the marginals and both copulas are fitted ONCE (the fits
-# are deterministic given the data and the fit seeds); the simulation is then
-# repeated over 20 fixed seeds. Both copulas are simulated from the SAME seed
-# in each replicate (common random numbers), so the per-seed difference in
-# OoS off-diagonal correlation MAE is a paired observation. We report the
-# per-copula mean and standard deviation, the paired per-seed gap
-# (Student-t minus Gaussian), its mean, sd, and a 95% t-interval on 19
-# degrees of freedom, and whether that interval covers zero.
+# six-name basket) the marginals and both copulas are fitted ONCE. The fits
+# are DETERMINISTIC given the data: quantile-initialised EM and the
+# Kendall-tau / profile-MLE copula estimators consume no RNG (verified
+# empirically by fitting under different, deliberately perturbed global RNG
+# states and comparing all parameters exactly), so the fitted models here are
+# identical to the headline runs' regardless of seed convention.
+#
+# The simulation is then repeated over 20 fixed seeds using the strict
+# common-random-number simulate methods of src/CrossAsset.jl: within each
+# replicate both copulas consume identical base normals and identical
+# marginal-path draws, and the Student-t's chi-square mixing variates come
+# from a component stream the Gaussian never touches. The per-seed difference
+# in OoS off-diagonal correlation MAE is therefore a paired CRN observation.
+# We report the per-copula mean and standard deviation, the paired per-seed
+# gap (Student-t minus Gaussian), its mean, sd, and a 95% t-interval on 19
+# degrees of freedom, and whether that interval covers zero. The interval is
+# Monte-Carlo precision for this fixed-fit simulation design, not sampling
+# uncertainty about copula performance on new data.
 #
 # Output: results/cross_asset/seed_uncertainty.{csv,txt}
 # ========================================================================================= #
@@ -23,7 +33,6 @@ include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 
 using Printf
 
-const FIT_SEED = 20260422;            # same fit-seed convention as run_nonoverlap_basket.jl
 const SIM_SEEDS = collect(20260501:20260520);
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
@@ -71,9 +80,11 @@ for (b, (basket, assets)) in enumerate(BASKETS)
     n_oos = size(R_oos, 1);
 
     println("[fit] per-asset CHMM-N at K = $K");
+    # No fit seeds: quantile-initialised EM and the copula estimators are
+    # deterministic given the data (no RNG consumed while fitting), so these
+    # are exactly the headline parameterisations.
     chmms = Vector{AbstractMarkovModel}(undef, d);
     for j in 1:d
-        Random.seed!(FIT_SEED + 1000*b + j);
         chmms[j] = build(MyContinuousHiddenMarkovModel, (
             observations=R_is[:, j], number_of_states=K, max_iter=MAX_ITER));
     end
@@ -84,10 +95,8 @@ for (b, (basket, assets)) in enumerate(BASKETS)
     mae_t = zeros(length(SIM_SEEDS));
     mae_g = zeros(length(SIM_SEEDS));
     for (i, s) in enumerate(SIM_SEEDS)
-        Random.seed!(s);
-        sim_t = simulate(t_copula, n_oos, N_PATHS);
-        Random.seed!(s);
-        sim_g = simulate(gauss_copula, n_oos, N_PATHS);
+        sim_t = simulate(t_copula, n_oos, N_PATHS, s);
+        sim_g = simulate(gauss_copula, n_oos, N_PATHS, s);
         mae_t[i] = correlation_reproduction(R_oos, sim_t).offdiag_mae;
         mae_g[i] = correlation_reproduction(R_oos, sim_g).offdiag_mae;
         @printf("  seed %d: t %.4f  gauss %.4f  gap %+.4f\n", s, mae_t[i], mae_g[i], mae_t[i] - mae_g[i]);
@@ -135,9 +144,12 @@ open(txt_path, "w") do io
     println(io, "Across-seed OoS off-diagonal MAE uncertainty, Student-t vs Gaussian  (2026-07 rerun, finding 4)");
     println(io, "="^96);
     println(io);
-    println(io, "Marginals: per-asset CHMM-N at K = $K (fit seeds $FIT_SEED + 1000b + j); copulas fitted once");
-    println(io, "per basket; $(length(SIM_SEEDS)) simulation seeds ($(SIM_SEEDS[1])..$(SIM_SEEDS[end])), $N_PATHS paths each,");
-    println(io, "common random numbers across the two copulas within each seed (paired design).");
+    println(io, "Marginals: per-asset CHMM-N at K = $K; fits are deterministic given the data (no RNG");
+    println(io, "consumed while fitting; verified), so they equal the headline parameterisations. Copulas");
+    println(io, "fitted once per basket; $(length(SIM_SEEDS)) simulation seeds ($(SIM_SEEDS[1])..$(SIM_SEEDS[end])), $N_PATHS paths each,");
+    println(io, "strict common random numbers (shared base normals and shared marginal draws within each");
+    println(io, "replicate; Student-t chi-square mixing from its own component stream). The t-intervals are");
+    println(io, "Monte-Carlo precision for this fixed-fit design, not sampling uncertainty on new data.");
     for (basket, _) in BASKETS
         r = results[basket];
         println(io);
@@ -153,8 +165,8 @@ open(txt_path, "w") do io
     for (basket, _) in BASKETS
         r = results[basket];
         verdict = r.covers_zero ?
-            "the 95% interval covers zero, so the gap is within across-seed simulation noise" :
-            "the 95% interval excludes zero, so the gap is resolved beyond across-seed simulation noise";
+            "the 95% Monte-Carlo interval covers zero under this fixed-fit CRN design" :
+            "the 95% Monte-Carlo interval excludes zero, i.e. the gap is stable across replicates under this fixed-fit CRN design";
         @printf(io, "  %s: paired gap %+.4f, %s.\n", basket, r.gap_mean, verdict);
     end
 end

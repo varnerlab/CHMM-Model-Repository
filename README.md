@@ -127,6 +127,9 @@ The suite (89 tests) loads the framework through `Include.jl`, exactly as the
 runners do. `test/runtests.jl` sets `ENV["GKSwstype"] = "100"` so the
 visualisation tests render through the headless GR workstation; the suite
 therefore runs to completion on machines without a display (CI, SSH sessions).
+Expect roughly two minutes of test time on an M-series laptop, plus dependency
+precompilation on the first invocation, which can take several additional
+minutes in a fresh depot; allow for that before concluding the suite has hung.
 
 ## Data
 

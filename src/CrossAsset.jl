@@ -520,6 +520,83 @@ function simulate(model::MyStudentTCopulaModel, T_sim::Int, n_paths::Int)::Array
     return out;
 end
 
+# --- STRICT COMMON-RANDOM-NUMBER (CRN) SIMULATION ----------------------------- #
+# Component-stream seeds for the CRN simulate methods below. The base-normal
+# (:z), chi-square mixing (:w), and per-asset marginal (:m) draws each get
+# their own deterministic reseed per path, so a Gaussian and a Student-t
+# copula simulated with the same crn_seed consume identical base normals and
+# identical marginal-path draws, while the Student-t's chi-square mixing
+# variates come from a component stream the Gaussian never touches.
+# (2026-07 technical-review rerun, finding 1: same-seed resets alone are a
+# paired-seed design, not strict CRN, because _sample_t_copula consumes an
+# extra chi-square stream that shifts everything drawn after it.)
+_crn_component_seed(crn_seed::Int, p::Int, component::Symbol, j::Int=0)::Int = begin
+    base = crn_seed + 1_000_003 * p;
+    component === :z ? base :
+    component === :w ? base + 500_000 :
+                       base + 1_000 + j;   # :m, per-asset marginal stream
+end
+
+"""
+    simulate(model::Union{MyGaussianCopulaModel, MyStudentTCopulaModel},
+             T_sim::Int, n_paths::Int, crn_seed::Int) -> Array{Float64,3}
+
+Strict common-random-number variant of the rank-reordering simulator. Same
+procedure as the three-argument method, but every random component is drawn
+after a deterministic per-path, per-component reseed derived from `crn_seed`,
+so the Gaussian and Student-t copulas can be compared on identical base
+normals and identical marginal draws (the chi-square mixing draws of the
+Student-t come from their own component stream). The three-argument methods
+are unchanged and remain the ones used by the headline runners.
+"""
+function simulate(model::MyGaussianCopulaModel, T_sim::Int, n_paths::Int, crn_seed::Int)::Array{Float64,3}
+    d = length(model.tickers);
+    L = cholesky(Symmetric(model.Sigma)).L;
+    out = zeros(T_sim, d, n_paths);
+    starts = [ _stationary(model.marginals[j]) for j in 1:d ];
+    for p in 1:n_paths
+        Random.seed!(_crn_component_seed(crn_seed, p, :z));
+        Z = randn(T_sim, d) * L';
+        U = cdf.(Normal(), Z);
+        for j in 1:d
+            Random.seed!(_crn_component_seed(crn_seed, p, :m, j));
+            g = _simulate_chmm_marginal(model.marginals[j], starts[j], T_sim);
+            ord_g = sortperm(g);
+            ord_u = ordinalrank(U[:, j]);
+            reordered = Vector{Float64}(undef, T_sim);
+            reordered[1:T_sim] = g[ord_g];
+            out[:, j, p] = reordered[ord_u];
+        end
+    end
+    return out;
+end
+
+function simulate(model::MyStudentTCopulaModel, T_sim::Int, n_paths::Int, crn_seed::Int)::Array{Float64,3}
+    d = length(model.tickers);
+    L = cholesky(Symmetric(model.Sigma)).L;
+    ν = model.nu;
+    out = zeros(T_sim, d, n_paths);
+    starts = [ _stationary(model.marginals[j]) for j in 1:d ];
+    for p in 1:n_paths
+        Random.seed!(_crn_component_seed(crn_seed, p, :z));
+        Z = randn(T_sim, d) * L';
+        Random.seed!(_crn_component_seed(crn_seed, p, :w));
+        w = rand(Chisq(ν), T_sim) ./ ν;
+        X = Z ./ sqrt.(w);
+        U = cdf.(TDist(ν), X);
+        for j in 1:d
+            Random.seed!(_crn_component_seed(crn_seed, p, :m, j));
+            g = _simulate_chmm_marginal(model.marginals[j], starts[j], T_sim);
+            ord_g = sortperm(g);
+            ord_u = ordinalrank(U[:, j]);
+            reordered = Vector{Float64}(undef, T_sim);
+            reordered[1:T_sim] = g[ord_g];
+            out[:, j, p] = reordered[ord_u];
+        end
+    end
+    return out;
+end
+
 function simulate(model::MyTruncatedCVineCopulaModel, T_sim::Int, n_paths::Int)::Array{Float64,3}
     d = length(model.tickers);
     out = zeros(T_sim, d, n_paths);
