@@ -1,5 +1,9 @@
 using Test
 
+# Headless GR workstation so the Visualize tests run without a display
+# (CI, SSH, Pkg.test sandboxes); same guard as runners/headline/run_quantgan_baseline.jl.
+ENV["GKSwstype"] = "100"
+
 # Load the project
 include(joinpath(@__DIR__, "..", "Include.jl"))
 

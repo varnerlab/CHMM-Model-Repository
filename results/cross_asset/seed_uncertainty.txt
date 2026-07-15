@@ -1,0 +1,23 @@
+================================================================================================
+Across-seed OoS off-diagonal MAE uncertainty, Student-t vs Gaussian  (2026-07 rerun, finding 4)
+================================================================================================
+
+Marginals: per-asset CHMM-N at K = 3 (fit seeds 20260422 + 1000b + j); copulas fitted once
+per basket; 20 simulation seeds (20260501..20260520), 200 paths each,
+common random numbers across the two copulas within each seed (paired design).
+
+------------------------------------------------------------------------------------------------
+Basket: main  (SPY, NVDA, JNJ, JPM, AAPL, QQQ)   nu* = 6.0
+  Student-t OoS off-diag MAE: mean 0.2089  sd 0.0017
+  Gaussian  OoS off-diag MAE: mean 0.2033  sd 0.0009
+  Paired gap (t - Gauss): mean +0.0056  sd 0.0019  95% t-CI [+0.0047, +0.0065]  covers 0: false
+
+------------------------------------------------------------------------------------------------
+Basket: nonoverlap  (MSFT, UNH, BAC, CAT, PG, XOM)   nu* = 6.0
+  Student-t OoS off-diag MAE: mean 0.2545  sd 0.0017
+  Gaussian  OoS off-diag MAE: mean 0.2463  sd 0.0010
+  Paired gap (t - Gauss): mean +0.0082  sd 0.0022  95% t-CI [+0.0072, +0.0092]  covers 0: false
+
+Reading (computed):
+  main: paired gap +0.0056, the 95% interval excludes zero, so the gap is resolved beyond across-seed simulation noise.
+  nonoverlap: paired gap +0.0082, the 95% interval excludes zero, so the gap is resolved beyond across-seed simulation noise.

@@ -50,6 +50,14 @@ Financial markets exhibit volatility clustering, heavy-tailed returns, and regim
 
 ## Quick Start
 
+This repository is a script-loaded research harness, not a conventional Julia
+package: `include("Include.jl")` brings the full type and algorithm surface
+into `Main` in a documented load order, and every runner and the test suite
+load the code the same way. The `src/ContinuousHMM.jl` module file is an
+intentionally empty package entry point that exists only so the `Project.toml`
+package metadata is valid and `Pkg.test()` runs; `using ContinuousHMM` does
+not expose the framework API.
+
 ```julia
 include("Include.jl")
 
@@ -109,6 +117,17 @@ See [`r_msgarch/README.md`](r_msgarch/README.md) for the full version-pinning
 contract. The Julia test suite skips the MS-GARCH reference test if R is
 unavailable, so `Pkg.test()` works without R.
 
+## Testing
+
+```bash
+julia --project=. -e 'using Pkg; Pkg.test()'
+```
+
+The suite (89 tests) loads the framework through `Include.jl`, exactly as the
+runners do. `test/runtests.jl` sets `ENV["GKSwstype"] = "100"` so the
+visualisation tests render through the headless GR workstation; the suite
+therefore runs to completion on machines without a display (CI, SSH sessions).
+
 ## Data
 
 | Dataset | Period | Trading Days | Coverage |
@@ -149,6 +168,7 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 |   |-- baselines/                        # Appendix: SV-AR(1), MSM, Merton-JD, HSMM-Gamma, filtered bootstrap, CAViaR, ...
 |   `-- diagnostics/                      # catch-all
 |-- src/                                  # loaded in this order by Include.jl
+|   |-- ContinuousHMM.jl                  # Empty package entry point (Pkg.test() metadata only; not the API)
 |   |-- Types.jl                          # HMM / GARCH / copula / semi-Markov type definitions
 |   |-- Files.jl                          # JLD2 data loaders
 |   |-- Factory.jl                        # build() constructors

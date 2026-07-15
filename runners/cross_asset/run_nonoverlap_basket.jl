@@ -8,7 +8,8 @@
 # overlapping ETFs and constituents (SPY holds all four single names; QQQ holds
 # AAPL and NVDA), which makes the dependence structure strongly positive and the
 # copula task easier. This runner repeats the copula composition on a basket of
-# six single names, one per GICS sector, with no ETFs and no cross-holdings:
+# six single names, one representative from each of six selected GICS sectors,
+# with no ETFs and no cross-holdings:
 #
 #   MSFT (Information Technology), UNH (Health Care), BAC (Financials),
 #   CAT (Industrials), PG (Consumer Staples), XOM (Energy)
@@ -142,7 +143,7 @@ open(txt_path, "w") do io
     println(io, "Non-overlapping six-name basket, copula composition at K = $K  (T1q / 2026-07 review)");
     println(io, "="^96);
     println(io);
-    println(io, "Universe: $(join(ASSETS, ", "))  (one per GICS sector, no ETFs, no cross-holdings)");
+    println(io, "Universe: $(join(ASSETS, ", "))  (one from each of six selected GICS sectors, no ETFs, no cross-holdings)");
     println(io, "Marginals: per-asset CHMM-N at K = $K, fitted on IS; copulas via Kendall-tau inversion;");
     println(io, "rank reordering; $N_PATHS paths; seed $SEED.");
     println(io);
@@ -151,7 +152,7 @@ open(txt_path, "w") do io
     @printf(io, "Student-t copula nu* = %.1f\n", t_copula.nu);
     println(io);
     println(io, "Per-asset KS pass rates (alpha = 0.05):");
-    @printf(io, "  %-6s  %-10s  %-10s  %-12s  %-12s\n", "asset", "t IS", "t OoS", "Gauss IS", "Gauss OoS");
+    @printf(io, "  %-6s  %-10s  %-10s  %-12s  %s\n", "asset", "t IS", "t OoS", "Gauss IS", "Gauss OoS");
     for j in 1:d
         @printf(io, "  %-6s  %8.1f%%  %8.1f%%  %10.1f%%  %10.1f%%\n", ASSETS[j],
                 ks_t_is[j], ks_t_oos[j], ks_g_is[j], ks_g_oos[j]);

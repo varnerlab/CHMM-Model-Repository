@@ -2,7 +2,7 @@
 Non-overlapping six-name basket, copula composition at K = 3  (T1q / 2026-07 review)
 ================================================================================================
 
-Universe: MSFT, UNH, BAC, CAT, PG, XOM  (one per GICS sector, no ETFs, no cross-holdings)
+Universe: MSFT, UNH, BAC, CAT, PG, XOM  (one from each of six selected GICS sectors, no ETFs, no cross-holdings)
 Marginals: per-asset CHMM-N at K = 3, fitted on IS; copulas via Kendall-tau inversion;
 rank reordering; 200 paths; seed 20260422.
 
@@ -10,7 +10,7 @@ Observed dependence (mean |off-diag rho|, IS): 0.361 vs 0.529 for the main baske
 Student-t copula nu* = 6.0
 
 Per-asset KS pass rates (alpha = 0.05):
-  asset   t IS        t OoS       Gauss IS      Gauss OoS   
+  asset   t IS        t OoS       Gauss IS      Gauss OoS
   MSFT        90.5%      91.0%        91.5%        89.5%
   UNH         99.5%      21.5%        98.5%        18.0%
   BAC         96.5%      82.5%        98.5%        84.5%
