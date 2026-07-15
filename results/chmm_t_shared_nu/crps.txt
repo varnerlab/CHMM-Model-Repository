@@ -1,0 +1,7 @@
+Sample CRPS for the shared-ν CHMM-t (K = 3), scored on the stored
+sims_K3.jld2 simulations with the unbiased sorted-ensemble estimator of
+run_kstar3_headline.jl (comparable with results/kstar3_headline/summary.txt).
+Paths: 1000; IS T = 2516; OoS T = 572.
+
+CRPS IS  = 1.1198
+CRPS OoS = 1.0406

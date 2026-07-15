@@ -102,10 +102,13 @@ function _spectral_modes(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVec
 end
 
 function _summarise(rows)
-    contribs_t1 = [real(r.w_k * r.lambda) for r in rows];   # τ = 1 contribution
-    abs_t1_sum = sum(abs.(contribs_t1));
-    sorted_idx = sortperm(abs.(contribs_t1); rev=true);
-    sorted_contribs = abs.(contribs_t1[sorted_idx]);
+    # τ = 1 contribution as the complex modulus |w_k λ_k|, matching both the
+    # documented definition below and run_spectral_rank.jl (the SPY diagnostic);
+    # the previous real(...) convention diverged for complex-conjugate modes.
+    contribs_t1 = [abs(r.w_k * r.lambda) for r in rows];
+    abs_t1_sum = sum(contribs_t1);
+    sorted_idx = sortperm(contribs_t1; rev=true);
+    sorted_contribs = contribs_t1[sorted_idx];
     cum = cumsum(sorted_contribs) ./ abs_t1_sum;
     dom_share = sorted_contribs[1] / abs_t1_sum;
     n_for_95 = findfirst(x -> x >= 0.95, cum);
