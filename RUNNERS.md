@@ -98,7 +98,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_ged_diagnostics.jl` | `results/ged_diagnostics/...` | Appendix `sec:supp_p_partition` ($\hat p_k$ partition diagnostic) |
 | `runners/baselines/run_leverage_effect.jl` | `results/diagnostics/leverage_effect/...` | Appendix `sec:leverage_effect` |
 | `runners/baselines/run_ks_block_bootstrap_oos.jl` | `results/ks_block_bootstrap/...` | Appendix `sec:ks_block_bootstrap` (OoS-anchored block-bootstrap KS, including body operating-point summary at $L = 20$) |
-| `runners/baselines/run_hsmm_ml_gamma.jl` | `results/hsmm_ml_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
+| `runners/baselines/run_hsmm_gamma.jl` | `results/hsmm_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
 | `runners/baselines/run_filtered_bootstrap_var.jl` | `results/filtered_bootstrap_var/...` | Item 6a of REVIEW_RESPONSE_PLAN.md (Hull-White-style filtered historical-simulation VaR contender for body Section 5). |
 | `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
 | `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH(1,1)-$t$ row + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH) |

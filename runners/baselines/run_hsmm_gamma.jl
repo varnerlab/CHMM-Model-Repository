@@ -1,5 +1,5 @@
 # =========================================================================== #
-# run_hsmm_ml_gamma.jl
+# run_hsmm_gamma.jl
 #
 # Closes peer-review item P3.14 / R1 RE3: Gamma-sojourn HSMM as a co-headline
 # foil to the truncated-Pareto HSMM. Same Yu (2010) forward-backward EM as
@@ -14,9 +14,9 @@
 # regime transitions and therefore richer absolute-return autocorrelation.
 #
 # Outputs:
-#   results/hsmm_ml_gamma/hsmm_ml_gamma_K3.jld2
-#   results/hsmm_ml_gamma/hsmm_ml_gamma_K18.jld2
-#   results/hsmm_ml_gamma/hsmm_ml_gamma_metrics.csv
+#   results/hsmm_gamma/hsmm_gamma_K3.jld2
+#   results/hsmm_gamma/hsmm_gamma_K18.jld2
+#   results/hsmm_gamma/hsmm_gamma_metrics.csv
 # =========================================================================== #
 
 using Pkg; Pkg.activate(".");
@@ -43,7 +43,7 @@ const TOL         = 1e-3;      # log-likelihood tolerance per observation
 const ALPHA_KS    = 0.05;
 const KS          = [3, 18];   # K values to fit
 
-const OUT_DIR     = joinpath(_ROOT, "results", "hsmm_ml_gamma");
+const OUT_DIR     = joinpath(_ROOT, "results", "hsmm_gamma");
 const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
 mkpath(OUT_DIR);
 mkpath(PAPER_ROBUSTNESS_DIR);
@@ -51,7 +51,7 @@ mkpath(PAPER_ROBUSTNESS_DIR);
 Random.seed!(SEED);
 
 println("="^70)
-println("  ML HSMM (Yu 2010 explicit-duration EM) on $TICKER")
+println("  Moment-updated Gamma-sojourn HSMM (Yu 2010 forward-backward; MoM duration block) on $TICKER")
 println("  K values:  $KS")
 println("  D_max:     $D_MAX")
 println("  Max iter:  $MAX_ITER (tol $TOL per obs)")
@@ -479,7 +479,7 @@ using HypothesisTests
 results = Dict{Int,Any}();
 for K in KS
     println("\n" * "="^70)
-    println("  Fitting ML HSMM at K = $K")
+    println("  Fitting moment-updated Gamma-sojourn HSMM at K = $K")
     println("="^70)
     Random.seed!(SEED + K);
     @time m = fit_hsmm_ml(R_is, K; D=D_MAX, max_iter=MAX_ITER, tol=TOL);
@@ -492,7 +492,7 @@ for K in KS
     @printf("[K=%d] OoS KS = %.1f%%  kurt = %.3f  ACF-MAE |G| = %.4f  raw = %.4f\n",
         K, 100 * metr_oos.ks_rate, metr_oos.kurt, metr_oos.acf_mae, metr_oos.acf_mae_raw);
     results[K] = (model=m, metr_is=metr_is, metr_oos=metr_oos);
-    save(joinpath(OUT_DIR, "hsmm_ml_gamma_K$K.jld2"), Dict(
+    save(joinpath(OUT_DIR, "hsmm_gamma_K$K.jld2"), Dict(
         "K" => K,
         "alpha" => m.α,
         "beta" => m.β,
@@ -508,7 +508,7 @@ for K in KS
 end
 
 # Write CSV summary (mirror to paper-side robustness/)
-open(joinpath(OUT_DIR, "hsmm_ml_gamma_metrics.csv"), "w") do io
+open(joinpath(OUT_DIR, "hsmm_gamma_metrics.csv"), "w") do io
     write(io, "K,IS_KS,OoS_KS,IS_kurt,OoS_kurt,IS_ACF_MAE_abs,OoS_ACF_MAE_abs,IS_ACF_MAE_raw,OoS_ACF_MAE_raw,n_iter,final_ll\n")
     for K in KS
         r = results[K];
@@ -522,11 +522,11 @@ open(joinpath(OUT_DIR, "hsmm_ml_gamma_metrics.csv"), "w") do io
 end
 
 # Mirror CSV to paper-side robustness/
-cp(joinpath(OUT_DIR, "hsmm_ml_gamma_metrics.csv"),
-   joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_ml_gamma_metrics.csv"); force=true);
+cp(joinpath(OUT_DIR, "hsmm_gamma_metrics.csv"),
+   joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_gamma_metrics.csv"); force=true);
 
-println("\n[done] Gamma-sojourn ML HSMM fits saved to $OUT_DIR");
-println("Paper CSV: $(joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_ml_gamma_metrics.csv"))");
+println("\n[done] Moment-updated Gamma-sojourn HSMM fits saved to $OUT_DIR");
+println("Paper CSV: $(joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_gamma_metrics.csv"))");
 println();
 println("Comparison reference (from results/hsmm_ml/hsmm_ml_metrics.csv, truncated Pareto sojourn):");
 println("  K=3 (Pareto):  IS KS = 98.4%, OoS KS = 91.0%, |G_t| ACF-MAE = 0.0629");
