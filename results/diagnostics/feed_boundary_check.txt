@@ -1,0 +1,31 @@
+============================================================================================
+OoS feed-boundary diagnostic  (third-audit item 1; replaces vendor_stitch_check.txt)
+============================================================================================
+Provenance: the raw vendor files are date-disjoint. Polygon/Massive consolidated
+aggregates cover 2014-01-03 .. 2024-12-31; the Alpaca Markets IEX-feed extension
+covers 2025-01-03 .. 2026-04-20. NO cross-vendor overlap exists in data/, so no
+vendor-equality check is possible from the repository data. The retired
+vendor_stitch_check compared the stitched OoS rows with the Alpaca file they were
+copied from (circular; exact equality by construction) and is superseded here.
+
+The feed switch falls INSIDE the 573-session OoS window (2024-01-04 .. 2026-04-20).
+Segments: Polygon-sourced returns end on sessions < 2025-01-03; Alpaca-sourced
+returns end on sessions > 2025-01-03; the single cross-boundary return spans both.
+The pre-vs-post KS is CONFOUNDED with genuine time variation; it is a descriptive
+break diagnostic, not a vendor-equality test.
+
+[VWAP field]
+  Polygon segment (2024)      : n=249  mean=+0.228  sd=1.640  exc.kurt=+2.31
+  Alpaca segment  (2025-2026) : n=322  mean=+0.142  sd=2.215  exc.kurt=+5.24
+  two-sample KS (pre vs post) : D=0.0988  p=0.1291
+  cross-boundary return       : +1.523 (annualised)
+
+[close column]
+  Polygon segment (2024)      : n=249  mean=+0.229  sd=2.004  exc.kurt=+1.81
+  Alpaca segment  (2025-2026) : n=322  mean=+0.141  sd=2.913  exc.kurt=+19.77
+  two-sample KS (pre vs post) : D=0.0650  p=0.5924
+  cross-boundary return       : +2.511 (annualised)
+
+[VaR] CHMM-N K = 3 filter-conditional VaR breaches by feed segment
+  Polygon segment: n=250  breaches(5%)=17 (6.80%, exp 12.5)  breaches(1%)=4 (1.60%, exp 2.5)
+  Alpaca segment : n=323  breaches(5%)=19 (5.88%, exp 16.2)  breaches(1%)=5 (1.55%, exp 3.2)
