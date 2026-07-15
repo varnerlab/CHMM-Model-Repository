@@ -1,0 +1,26 @@
+====================================================================================================
+Benjamini-Hochberg FDR adjustment for the VaR back-test panels (2026-07 review, finding 3)
+====================================================================================================
+
+Each panel is one BH family; q-values by the step-up procedure; FDR level q = 0.05.
+
+walkforward cc  : 24 rows,  5 raw rejections at 5%,  3 BH rejections at q = 0.05
+    W2 3 0.01                    p = 0.0000   q = 0.0000   BH-reject
+    W2 3 0.05                    p = 0.0108   q = 0.0648   raw-only (not BH-significant)
+    W2 18 0.01                   p = 0.0000   q = 0.0000   BH-reject
+    W2 18 0.05                   p = 0.0018   q = 0.0144   BH-reject
+    W4 18 0.01                   p = 0.0223   q = 0.1070   raw-only (not BH-significant)
+
+four-family cc  : 16 rows,  0 raw rejections at 5%,  0 BH rejections at q = 0.05
+
+four-family DQ  : 16 rows,  7 raw rejections at 5%,  6 BH rejections at q = 0.05
+    CHMM-N 18 0.01               p = 0.0169   q = 0.0451   BH-reject
+    CHMM-t (λ=20.0) 3 0.01       p = 0.0109   q = 0.0358   BH-reject
+    CHMM-t (λ=20.0) 18 0.01      p = 0.0005   q = 0.0080   BH-reject
+    CHMM-L 3 0.01                p = 0.0026   q = 0.0139   BH-reject
+    CHMM-L 18 0.01               p = 0.0302   q = 0.0690   raw-only (not BH-significant)
+    CHMM-GED 3 0.01              p = 0.0112   q = 0.0358   BH-reject
+    CHMM-GED 18 0.01             p = 0.0011   q = 0.0088   BH-reject
+
+Reading (computed): rejections whose q-value stays below 0.05 survive the
+multiplicity correction within their panel; raw-only rows do not.

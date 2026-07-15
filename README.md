@@ -1,6 +1,6 @@
 # CHMM-Model
 
-A Julia framework for modeling equity return dynamics as a **Continuous Hidden Markov Model (CHMM) digital twin**, with a four-family emission ablation under a unified ECM scaffold (Gaussian, Student-t with per-state $\nu_k$, Laplace, Generalised Error Distribution with per-state $p_k$) and cross-asset copula composition. Companion code repository to the working paper in [`../CHMM-paper`](https://github.com/altashly1/CHMM-paper).
+A Julia framework for modeling equity return dynamics as a **Continuous Hidden Markov Model (CHMM) digital twin**, with a four-family emission ablation under a unified ECM scaffold (Gaussian, Student-t with per-state $\nu_k$, Laplace, Generalised Error Distribution with per-state $p_k$) and cross-asset copula composition. Companion code repository to the working paper in [`../CHMM-Paper-Repository`](https://github.com/varnerlab/CHMM-Paper-Repository).
 
 The framework compares the CHMM against a broad panel of alternatives:
 
@@ -175,7 +175,7 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 
 ## Related Repositories
 
-- [`CHMM-paper`](https://github.com/altashly1/CHMM-paper) — LaTeX source for the working paper this code supports
+- [`CHMM-Paper-Repository`](https://github.com/varnerlab/CHMM-Paper-Repository) — LaTeX source for the working paper this code supports
 - [`SM-CHMM-AR-Model`](https://github.com/altashly1/SM-CHMM-AR-Model) / [`SM-CHMM-AR-Paper`](https://github.com/altashly1/SM-CHMM-AR-Paper) — companion VIX / semi-Markov extension
 - [JumpHMM.jl](https://github.com/varnerlab/JumpHMM.jl) — discrete HMM core package from the prior paper
 

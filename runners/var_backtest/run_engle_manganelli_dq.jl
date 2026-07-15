@@ -83,10 +83,11 @@ function filter_predictive(y::AbstractVector, T::AbstractMatrix, μ::AbstractVec
     pred = zeros(n + 1, K);
     pred[1, :] = π_init;
     for t in 1:n
-        b = [pdf(Normal(μ[k], σ[k]), y[t]) for k in 1:K];
-        post = pred[t, :] .* b;
-        Z = sum(post);
-        if Z <= 0; post .= pred[t, :]; else; post ./= Z; end
+        # log-space update (2026-07 review): logpdf + logsumexp avoids tail underflow;
+        # prior fallback retained as a numerical safeguard for all-(-Inf) rows.
+        logpost = log.(pred[t, :]) .+ [logpdf(Normal(μ[k], σ[k]), y[t]) for k in 1:K];
+        Z = _logsumexp_vec(logpost);
+        post = isfinite(Z) ? exp.(logpost .- Z) : copy(pred[t, :]);
         pred[t + 1, :] = vec(post' * T);
     end
     return pred;

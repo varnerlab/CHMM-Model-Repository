@@ -16,7 +16,7 @@ joint dependence constructions: Single Index Model (SIM) with SPY as market
 factor, Gaussian copula, or Student-t copula (nu selected by profile MLE).
 Evaluates cross-asset correlation reproduction on top of marginal fidelity.
 
-Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: 18.
+Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: K* = 3 (K = 18 retained as the excess kurtosis-fidelity sensitivity reference).
 
 ## Which artifact uses which pipeline
 

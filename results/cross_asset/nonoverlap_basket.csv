@@ -1,0 +1,13 @@
+asset,ks_t_is,ks_t_oos,ks_gauss_is,ks_gauss_oos
+MSFT,90.5,91.0,91.5,89.5
+UNH,99.5,21.5,98.5,18.0
+BAC,96.5,82.5,98.5,84.5
+CAT,97.5,82.5,98.5,86.5
+PG,100.0,97.5,99.5,95.5
+XOM,78.5,57.0,78.5,65.0
+summary,metric,t,gauss,
+offdiag_mae,IS,0.0307,0.0320,
+offdiag_mae,OoS,0.2531,0.2476,
+nu_star,,6.0,,
+mean_abs_offdiag_rho_IS,nonoverlap,0.3612,,
+mean_abs_offdiag_rho_IS,main_basket,0.5287,,
