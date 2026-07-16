@@ -99,7 +99,7 @@ model = build(MyContinuousHiddenMarkovModel,
 
 T_mat = zeros(K_STAR, K_STAR);
 for i in 1:K_STAR; T_mat[i, :] = probs(model.transition[i]); end
-π_stat = (T_mat^1000)[1, :];
+π_stat = _stationary_pi(T_mat);   # checked left-eigenvector solve (spectral_common.jl)
 start_dist = Categorical(π_stat);
 
 println("  Simulating $N_PATHS IS-length paths (seed $(SEED + 1))...")

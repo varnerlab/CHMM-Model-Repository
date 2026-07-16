@@ -21,7 +21,7 @@ using Printf
 using Distributions
 
 const SEED      = 20260420;
-const MAX_ITER  = 60;
+const MAX_ITER  = 4000;   # converged fits (sixth review, finding 2); tol 1e-4
 const DT        = 1/252;
 const RISK_FREE = 0.0;
 const N_M_DRAW  = 200_000;  # samples per state for m_k / M_k
@@ -49,156 +49,25 @@ R_is = all_R[:, idx_spy];
 println("  IS = $(length(R_is)) days");
 
 # ----------------------------------------------------------------------------------------- #
-# Shared-ν ECM (single ν across all K states), copied verbatim from
-# runners/headline/run_chmm_t_shared_nu.jl. Returns (T, μ, σ, ν, π).
-function _logsumexp(v::AbstractVector)
-    m = maximum(v)
-    isfinite(m) || return m
-    return m + log(sum(exp.(v .- m)))
-end
-
+# Shared-ν ECM via the library fitter (third private copy removed, 2026-07-16
+# sixth-review sweep; the library baum_welch_student_t_shared_nu carries the
+# evaluate-before-update / best-evaluated-iterate contract and ll_history).
 function ecm_shared_nu(obs::AbstractVector, K::Int;
-        max_iter::Int=60, tol::Float64=1e-4,
+        max_iter::Int=MAX_ITER, tol::Float64=1e-4,
         ν_init::Float64=NU_INIT, ν_bounds::Tuple{Float64,Float64}=NU_BOUNDS)
-    N = length(obs)
-    sorted_data = sort(obs)
-    chunk = floor(Int, N/K)
-    μ = zeros(K); σ = zeros(K)
-    for s in 1:K
-        a = (s-1)*chunk + 1
-        b = (s == K) ? N : s*chunk
-        μ[s] = mean(sorted_data[a:b])
-        σ[s] = max(std(sorted_data[a:b]), 1e-6)
-    end
-    ν = ν_init
-    T = ones(K, K) ./ K
-    π = ones(K) ./ K
-
-    function logpdf_t(x, μk, σk, νk)
-        return logpdf(LocationScale(μk, σk, TDist(νk)), x)
-    end
-
-    function Q_shared(νv, γ, μ, σ, obs)
-        acc = 0.0; n = length(obs); kk = size(γ, 2)
-        for k in 1:kk
-            d = LocationScale(μ[k], σ[k], TDist(νv))
-            for t in 1:n
-                acc += γ[t, k] * logpdf(d, obs[t])
-            end
-        end
-        return acc
-    end
-
-    function gss_nu(γ, μ, σ, obs, lo, hi; iters=40)
-        φ = (sqrt(5)-1)/2
-        a = lo; b = hi
-        c = b - φ*(b-a); d = a + φ*(b-a)
-        fc = Q_shared(c, γ, μ, σ, obs); fd = Q_shared(d, γ, μ, σ, obs)
-        for _ in 1:iters
-            if fc > fd
-                b = d; d = c; fd = fc
-                c = b - φ*(b-a); fc = Q_shared(c, γ, μ, σ, obs)
-            else
-                a = c; c = d; fc = fd
-                d = a + φ*(b-a); fd = Q_shared(d, γ, μ, σ, obs)
-            end
-        end
-        return 0.5*(a+b)
-    end
-
-    last_μ = copy(μ); last_σ = copy(σ); last_ν = ν
-    last_T = copy(T); last_π = copy(π)
-
-    prev_ll = -Inf
-    for _ in 1:max_iter
-        # E-STEP
-        log_B = zeros(N, K)
-        for t in 1:N, k in 1:K
-            log_B[t, k] = logpdf_t(obs[t], μ[k], σ[k], ν)
-        end
-        log_α = zeros(N, K)
-        log_α[1, :] = log.(π) .+ log_B[1, :]
-        for t in 2:N, j in 1:K
-            log_α[t, j] = _logsumexp(log_α[t-1, :] .+ log.(T[:, j])) + log_B[t, j]
-        end
-        ll_now = _logsumexp(log_α[N, :])
-        if !isfinite(ll_now)
-            μ = last_μ; σ = last_σ; ν = last_ν; T = last_T; π = last_π
-            break
-        end
-        last_μ = copy(μ); last_σ = copy(σ); last_ν = ν
-        last_T = copy(T); last_π = copy(π)
-
-        log_β = zeros(N, K)
-        for t in N-1:-1:1, i in 1:K
-            log_β[t, i] = _logsumexp(log.(T[i, :]) .+ log_B[t+1, :] .+ log_β[t+1, :])
-        end
-
-        γ = zeros(N, K)
-        for t in 1:N
-            denom = _logsumexp(log_α[t, :] .+ log_β[t, :])
-            γ[t, :] = exp.((log_α[t, :] .+ log_β[t, :]) .- denom)
-        end
-
-        ξ_sum = zeros(K, K)
-        for t in 1:N-1
-            denom = _logsumexp(log_α[t, :] .+ log_β[t, :])
-            for i in 1:K, j in 1:K
-                ξ_sum[i, j] += exp(log_α[t, i] + log(T[i, j]) + log_B[t+1, j] + log_β[t+1, j] - denom)
-            end
-        end
-
-        # Latent precisions with shared ν
-        u = zeros(N, K)
-        for t in 1:N, k in 1:K
-            δ2 = ((obs[t] - μ[k]) / σ[k])^2
-            u[t, k] = (ν + 1.0) / (ν + δ2)
-        end
-
-        # M-STEP
-        π = γ[1, :]
-        for k in 1:K
-            wu = γ[:, k] .* u[:, k]
-            Σwu = sum(wu); Σγ = sum(γ[:, k])
-            if Σwu > 0
-                μ[k] = sum(wu .* obs) / Σwu
-            end
-            if Σγ > 0
-                σ2 = sum(wu .* (obs .- μ[k]).^2) / Σγ
-                σ[k] = max(sqrt(max(σ2, 1e-12)), 1e-6)
-            end
-        end
-        ν = gss_nu(γ, μ, σ, obs, ν_bounds[1], ν_bounds[2])
-
-        for i in 1:K
-            r = sum(ξ_sum[i, :])
-            if r > 0
-                T[i, :] = ξ_sum[i, :] ./ r
-            end
-        end
-
-        if abs(ll_now - prev_ll) < tol; break; end
-        prev_ll = ll_now
-    end
-
-    return (T=T, μ=μ, σ=σ, ν=ν, π=π)
+    T, μ, σ, ν, π, ll_hist, _ = baum_welch_student_t_shared_nu(
+        collect(Float64, obs), K;
+        max_iter=max_iter, tol=tol, ν_init=ν_init, ν_bounds=ν_bounds)
+    inc = length(ll_hist) >= 2 ? ll_hist[end] - ll_hist[end-1] : 0.0
+    println("  n_evals = $(length(ll_hist)), final inc = $(round(inc, sigdigits=3)), converged = $(abs(inc) < tol)")
+    return (T=T, μ=μ, σ=σ, ν=ν, π=π, ll_history=ll_hist)
 end
 
-# ----------------------------------------------------------------------------------------- #
-"""
-For a shared-ν CHMM-t fit (NamedTuple with fields T, μ, σ, ν, π), return:
-  T   :: K×K transition matrix (rows sum to 1)
-  π̄   :: K stationary vector
-  m   :: K vector of per-state E[|G_t| | s_t = k]   (estimated by sampling)
-  M   :: K vector of per-state E[G_t^2 | s_t = k]
-The only difference from run_spectral_rank.jl's _T_pibar_m is the emission sampler:
-here we sample the shared-ν location-scale Student-t instead of model.emission[k].
-"""
 function _T_pibar_m_t(fit; n_draw::Int = N_M_DRAW, seed::Int = 0)
     Random.seed!(seed);
     K = length(fit.μ);
     T = copy(fit.T);
-    π̄ = (T^2000)[1, :];
+    π̄ = _stationary_pi(T);   # checked left-eigenvector solve (spectral_common.jl)
     m = zeros(K); M = zeros(K);
     for k in 1:K
         d = LocationScale(fit.μ[k], fit.σ[k], TDist(fit.ν));

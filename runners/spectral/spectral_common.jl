@@ -20,21 +20,61 @@
 using Random, LinearAlgebra, Statistics
 
 """
+    _stationary_pi(T) -> Vector{Float64}
+
+Stationary distribution of a row-stochastic transition matrix by a constrained
+left-eigenvector linear solve (2026-07-16 sixth review, finding 7: fixed
+matrix powers such as `(T^2000)[1, :]` carry no residual check and can retain
+starting-row dependence for highly persistent chains). Asserts uniqueness of
+the unit eigenvalue, non-negativity, normalization, and a small stationarity
+residual before returning.
+"""
+function _stationary_pi(T::AbstractMatrix{Float64})
+    K = size(T, 1);
+    # uniqueness of the unit eigenvalue (irreducible + aperiodic chain)
+    λ = eigvals(Matrix(T));
+    n_unit = count(l -> abs(l - 1.0) < 1e-8, λ);
+    n_unit == 1 || error("_stationary_pi: expected a unique unit eigenvalue, found $n_unit");
+    # constrained solve: π' (T - I) = 0 with sum(π) = 1
+    A = vcat(transpose(T) - I, ones(1, K));
+    b = vcat(zeros(K), 1.0);
+    π̄ = A \ b;
+    @assert minimum(π̄) > -1e-10 "_stationary_pi: negative stationary mass $(minimum(π̄))";
+    π̄ = max.(π̄, 0.0);
+    π̄ ./= sum(π̄);
+    resid = norm(transpose(π̄) * T - transpose(π̄), Inf);
+    @assert resid < 1e-10 "_stationary_pi: stationarity residual $resid";
+    return π̄;
+end
+
+"""
     _T_pibar_m(model, K; n_draw, seed) -> (T, π̄, m, M)
 
-Transition matrix, stationary vector, and per-state sampled moments
-m_k = E[|G| | s = k], M_k = E[G² | s = k] for a fitted CHMM.
+Transition matrix, stationary vector, and per-state moments
+m_k = E[|G| | s = k], M_k = E[G² | s = k] for a fitted CHMM. For Normal
+emissions the moments are closed-form (folded-normal mean; μ² + σ²), removing
+Monte-Carlo variation from the model-vs-sample comparison (sixth review,
+finding 8); non-Normal emissions fall back to `n_draw` sampled draws per
+state under `seed`.
 """
 function _T_pibar_m(model, K::Int; n_draw::Int, seed::Int=0)
     Random.seed!(seed);
     T = zeros(K, K);
     for i in 1:K; T[i, :] = probs(model.transition[i]); end
-    π̄ = (T^2000)[1, :];
+    π̄ = _stationary_pi(T);
     m = zeros(K); M = zeros(K);
     for k in 1:K
-        s = [rand(model.emission[k]) for _ in 1:n_draw];
-        m[k] = mean(abs.(s));
-        M[k] = mean(s.^2);
+        e = model.emission[k];
+        if e isa Normal
+            μ = mean(e); σ = std(e);
+            z = μ / σ;
+            m[k] = σ * sqrt(2 / π) * exp(-z^2 / 2) + μ * (1 - 2 * cdf(Normal(), -z));
+            M[k] = μ^2 + σ^2;
+        else
+            s = [rand(e) for _ in 1:n_draw];
+            m[k] = mean(abs.(s));
+            M[k] = mean(s .^ 2);
+        end
     end
     return T, π̄, m, M;
 end

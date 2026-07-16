@@ -284,26 +284,29 @@ The returned parameters are the iterate whose observed-data log-likelihood is
 it), and `gamma` is the smoothed posterior computed under exactly those
 parameters.
 """
-function baum_welch(observations::Array{Float64,1}, number_of_states::Int64; 
-    max_iter::Int64=30, tol::Float64=1e-4)::Tuple{Array{Float64,2}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,2}}
-    
+function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
+    max_iter::Int64=30, tol::Float64=1e-4,
+    init::Union{Nothing,NamedTuple}=nothing)::Tuple{Array{Float64,2}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,2}}
+
     # initialize -
     N = length(observations);
     K = number_of_states;
-    
+
     # 1. ROBUST INITIALIZATION (Quantile Based) ------------------------------- #
-    # We split sorted data into K chunks to initialize means/stds
+    # We split sorted data into K chunks to initialize means/stds. An explicit
+    # `init = (μ = ..., σ = ..., T = ..., π = ...)` overrides the quantile
+    # start (used by baum_welch_multistart for optimizer-sensitivity runs).
     sorted_data = sort(observations);
     chunk_size = floor(Int, N / K);
-    
+
     curr_μ = zeros(K);
     curr_σ = zeros(K);
-    
+
     for s in 1:K
         start_idx = (s - 1) * chunk_size + 1;
         end_idx = (s == K) ? N : (s * chunk_size);
         data_subset = sorted_data[start_idx:end_idx];
-        
+
         curr_μ[s] = mean(data_subset);
         curr_σ[s] = std(data_subset);
         if (curr_σ[s] < 1e-6)
@@ -314,6 +317,13 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
     # Initialize T and π uniformly (can be improved with diagonal dominance)
     curr_T = ones(K, K) ./ K;
     curr_π = ones(K) ./ K;
+
+    if init !== nothing
+        curr_μ = copy(collect(Float64, init.μ));
+        curr_σ = max.(copy(collect(Float64, init.σ)), 1e-6);
+        curr_T = copy(Matrix{Float64}(init.T));
+        curr_π = copy(collect(Float64, init.π));
+    end
     
     # Storage for history
     ll_history = Float64[];
@@ -420,6 +430,126 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
 
     # return -
     return (curr_T, curr_μ, curr_σ, curr_π, ll_history, final_gamma);
+end
+
+
+"""
+    baum_welch_multistart(observations, number_of_states; n_starts=5,
+                          max_iter=2000, tol=1e-4, seed=0, jitter=0.25) -> Tuple
+
+Multistart Gaussian Baum-Welch with per-start optimizer diagnostics
+(2026-07-16 sixth review, findings 1-2: the deterministic quantile start plus
+a fixed 60-iteration cap left high-state fits unconverged with no retained
+optimizer evidence).
+
+Start 1 is the canonical quantile initialization; starts 2..n_starts jitter it
+(μ shifted by `jitter`·σ·N(0,1), σ scaled by exp(`jitter`·N(0,1)), transition
+rows renormalized from |1/K + (jitter/K)·N(0,1)|), each run under the same
+`max_iter`/`tol` contract as `baum_welch`. Returns
+
+    (T, μ, σ, π, ll_history, gamma, diagnostics)
+
+for the start with the highest final evaluated log-likelihood, where
+`diagnostics` is a Vector of per-start NamedTuples
+`(start, ll, n_evals, final_increment, converged)` and `converged` is
+`final_increment < tol` (i.e. the run stopped on the tolerance rule rather
+than the iteration cap).
+"""
+function baum_welch_multistart(observations::Array{Float64,1}, number_of_states::Int64;
+    n_starts::Int64=5, max_iter::Int64=2000, tol::Float64=1e-4,
+    seed::Int64=0, jitter::Float64=0.25)
+
+    K = number_of_states;
+    N = length(observations);
+
+    # canonical quantile start parameters (mirrors baum_welch's own init)
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
+    μq = zeros(K); σq = zeros(K);
+    for s in 1:K
+        lo = (s - 1) * chunk_size + 1;
+        hi = (s == K) ? N : (s * chunk_size);
+        μq[s] = mean(sorted_data[lo:hi]);
+        σq[s] = max(std(sorted_data[lo:hi]), 1e-6);
+    end
+
+    best = nothing;
+    best_ll = -Inf;
+    diagnostics = NamedTuple[];
+    for s in 1:n_starts
+        init = nothing;
+        if s > 1
+            rng = Random.MersenneTwister(seed + 7919 * s);
+            μ0 = μq .+ jitter .* σq .* randn(rng, K);
+            σ0 = max.(σq .* exp.(jitter .* randn(rng, K)), 1e-6);
+            T0 = abs.(1.0 / K .+ (jitter / K) .* randn(rng, K, K)) .+ 1e-8;
+            T0 = T0 ./ sum(T0, dims=2);
+            init = (μ = μ0, σ = σ0, T = T0, π = ones(K) ./ K);
+        end
+        out = baum_welch(observations, K; max_iter=max_iter, tol=tol, init=init);
+        llh = out[5];
+        inc = length(llh) >= 2 ? llh[end] - llh[end-1] : 0.0;
+        push!(diagnostics, (start = s, ll = llh[end], n_evals = length(llh),
+                            final_increment = inc, converged = abs(inc) < tol));
+        if llh[end] > best_ll
+            best_ll = llh[end];
+            best = out;
+        end
+    end
+
+    return (best[1], best[2], best[3], best[4], best[5], best[6], diagnostics);
+end
+
+
+"""
+    truncated_pareto_logpmf(α, D) -> Vector{Float64}
+
+Log-pmf of the truncated discrete Pareto duration law
+p_α(d) = d^{-(α+1)} / Z_D(α) on d = 1..D, with Z_D(α) = Σ_{d=1}^{D} d^{-(α+1)}.
+"""
+function truncated_pareto_logpmf(α::Float64, D::Int)
+    w = [-(α + 1.0) * log(Float64(d)) for d in 1:D];
+    mw = maximum(w);
+    Z = mw + log(sum(exp.(w .- mw)));
+    return w .- Z;
+end
+
+"""
+    fit_truncated_pareto_alpha(expected_counts, D; bounds=(0.05, 8.0)) -> Float64
+
+Exact M-step for the truncated discrete Pareto duration parameter from expected
+duration counts w_d: maximizes the expected complete-data log-likelihood
+
+    ℓ(α) = Σ_d w_d · log p_α(d) = -(α+1) Σ_d w_d log d − (Σ_d w_d) · log Z_D(α),
+
+whose score equation is E_w[log d] = E_α[log d] under the NORMALIZED truncated
+pmf. ℓ is concave in α (one-parameter exponential family with natural
+parameter -(α+1) and sufficient statistic log d), so a golden-section search
+over `bounds` finds the maximizer. (2026-07-16 sixth review, finding 4: the
+previous update α = 1 / E_w[log d] is the continuous UNTRUNCATED Pareto
+formula and does not optimize the declared truncated discrete likelihood, so
+the EM carrying it was not an exact ML update.)
+"""
+function fit_truncated_pareto_alpha(expected_counts::Vector{Float64}, D::Int;
+                                    bounds::Tuple{Float64,Float64}=(0.05, 8.0))
+    s = sum(expected_counts);
+    if s <= 1e-9; return 1.5; end
+    ℓ(α) = sum(expected_counts[d] * truncated_pareto_logpmf(α, D)[d] for d in 1:D);
+    gr = (sqrt(5.0) - 1.0) / 2.0;
+    a, b = bounds;
+    c = b - gr * (b - a); d = a + gr * (b - a);
+    fc = ℓ(c); fd = ℓ(d);
+    for _ in 1:200
+        if fc > fd
+            b, d, fd = d, c, fc;
+            c = b - gr * (b - a); fc = ℓ(c);
+        else
+            a, c, fc = c, d, fd;
+            d = a + gr * (b - a); fd = ℓ(d);
+        end
+        if (b - a) < 1e-8; break; end
+    end
+    return (a + b) / 2;
 end
 
 

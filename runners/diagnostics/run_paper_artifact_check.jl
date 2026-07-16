@@ -80,12 +80,16 @@ const CHECKS = [
     ("dq_chmm_n_k3_a01_p",    "results/diagnostics/engle_manganelli_dq.txt",               "sections/sensitivity_appendix.tex", "0.056"),
     ("msgarch_k4_medvar",     "results/msgarch_conditional_var/msgarch_conditional_var.csv", "sections/results.tex",            "-4.16"),
     ("hill_observed_top5",    "results/diagnostics/tail_index_families.txt",               "sections/results.tex",              "3.15"),
-    ("spectral_median_share", "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.785"),
-    ("spectral_nem_min",      "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.333"),
-    ("spectral_spy_dom",      "results/diagnostics/spectral_rank.txt",                     "sections/sensitivity_appendix.tex", "0.939"),
-    ("spectral_dom_int_k18",  "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.935"),
-    ("spectral_acf_k3_near",  "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0543"),
-    ("spectral_acf_k18_near", "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0697"),
+    ("spectral_spy_top2",     "results/diagnostics/spectral_rank.txt",                     "sections/sensitivity_appendix.tex", "0.940"),
+    ("spectral_median_share", "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.654"),
+    ("spectral_min_share",    "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.405"),
+    ("spectral_dom_int_k18",  "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.880"),
+    ("spectral_acf_k3_is",    "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0497"),
+    ("spectral_acf_k18_is",   "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0551"),
+    ("spectral_acf_k3_oos",   "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0441"),
+    ("spectral_oos_zero",     "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0354"),
+    ("ceiling_m2_near",       "results/diagnostics/mode_capacity_ceiling.txt",             "sections/sensitivity_appendix.tex", "0.0169"),
+    ("ceiling_m17_near",      "results/diagnostics/mode_capacity_ceiling.txt",             "sections/sensitivity_appendix.tex", "0.0132"),
     ("xticker_refit_median",  "results/sector_panel/sector_panel_quarterly_refit.txt",     "sections/sensitivity_appendix.tex", "84.6"),
     ("acf_halflife",          "results/acf_horizon/acf_horizon.txt",                       "sections/results.tex",              "14.5"),
     ("acf_band_1_5",          "results/acf_horizon/acf_horizon.txt",                       "",                                  "0.0416"),
@@ -162,13 +166,23 @@ const KEYED = [
         r"difference is \[(-?[\d.]+),", 2, "-1.26", "sections/sensitivity_appendix.tex"),
     ("wins_kurt_diff_hi", "results/diagnostics/kurtosis_bootstrap.txt",
         r"difference is \[-?[\d.]+, ([\d.]+)\]", 2, "1.83", "sections/sensitivity_appendix.tex"),
+    # HSMM main-table row (exact truncated-discrete Pareto ML fit); the KS rates
+    # are stored as fractions and printed as percentages (scale = 100).
+    ("hsmm_k3_ks_is", "results/hsmm_ml/hsmm_ml_metrics.csv",
+        r"\n3,([\d.]+),", 1, "76.1", "sections/results.tex", 100.0),
+    ("hsmm_k3_ks_oos", "results/hsmm_ml/hsmm_ml_metrics.csv",
+        r"\n3,[\d.]+,([\d.]+),", 1, "67.7", "sections/results.tex", 100.0),
+    ("hsmm_k3_acf", "results/hsmm_ml/hsmm_ml_metrics.csv",
+        r"\n3,[\d.]+,[\d.]+,[\d.]+,[\d.]+,([\d.]+),", 4, "0.0394", "sections/results.tex"),
 ];
 
 println();
 println("="^96);
 println("  [3] Keyed checks   (regex-pinned artifact value, rounded to paper precision)");
 println("="^96);
-for (name, art_rel, pat, digits, expect, tex_rel) in KEYED
+for entry in KEYED
+    name, art_rel, pat, digits, expect, tex_rel = entry[1:6];
+    scale = length(entry) >= 7 ? entry[7] : 1.0;   # artifact value × scale = paper units
     art_path = joinpath(_ROOT, art_rel);
     art_text = isfile(art_path) ? read(art_path, String) : "";
     m = match(pat, art_text);
@@ -178,7 +192,7 @@ for (name, art_rel, pat, digits, expect, tex_rel) in KEYED
                 isempty(art_text) ? "MISSING FILE" : "regex not matched");
         continue;
     end
-    raw = parse(Float64, m.captures[1]);
+    raw = parse(Float64, m.captures[1]) * scale;
     formatted = string(round(raw, digits=digits));
     # normalise trailing zeros to the expected string's precision
     want = parse(Float64, expect);

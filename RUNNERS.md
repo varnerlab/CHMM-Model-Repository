@@ -81,7 +81,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | Runner | Output | Paper artefact |
 |---|---|---|
 | `runners/spectral/run_spectral_rank.jl` | `results/diagnostics/spectral_rank.txt` | Body Table 1 + Appendix `sec:spectral_rank` (SPY effective rank diagnostic) |
-| `runners/spectral/run_spectral_rank_cross_ticker.jl` | `results/diagnostics/spectral_rank_cross_ticker.txt` | Appendix `sec:spectral_rank_xticker` (K = 3 and K = 18, lag-1 + horizon-aware norms, model-vs-sample ACF MAE binding-ness check) |
+| `runners/spectral/run_spectral_rank_cross_ticker.jl` | `results/diagnostics/spectral_rank_cross_ticker.txt` + `spectral_rank_cross_ticker_fits.csv` | Appendix `sec:spectral_rank_xticker` (K = 3 and K = 18, converged multistart fits with per-ticker optimizer evidence, lag-1 + horizon-aware norms, IS + held-out OoS model-vs-sample ACF MAE) |
+| `runners/spectral/run_mode_capacity_ceiling.jl` | `results/diagnostics/mode_capacity_ceiling.txt` + `.csv` | Appendix `sec:spectral_rank_xticker` (best attainable m-mode geometric approximation of the sample ACF; the budget's capacity ceiling, m = 2 vs 17) |
 | `runners/spectral/run_t_singular_values.jl` | `results/diagnostics/t_singular_values.txt` | Supplementary transition-matrix singular-value diagnostic (per emission family) |
 
 ## Cross-asset extras
@@ -103,6 +104,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_leverage_effect.jl` | `results/diagnostics/leverage_effect/...` | Appendix `sec:leverage_effect` |
 | `runners/baselines/run_ks_block_bootstrap_oos.jl` | `results/ks_block_bootstrap/...` | Appendix `sec:ks_block_bootstrap` (OoS-anchored block-bootstrap KS, including body operating-point summary at $L = 20$) |
 | `runners/baselines/run_hsmm_gamma.jl` | `results/hsmm_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
+| `runners/baselines/run_hsmm_ml.jl` | `results/hsmm_ml/hsmm_ml_metrics.csv` + `hsmm_ml_K{3,18}.jld2` | Main `tab:model_comparison` HSMM-N row (ML explicit-duration HSMM, exact truncated-discrete Pareto duration M-step) |
 | `runners/baselines/run_filtered_bootstrap_var.jl` | `results/filtered_bootstrap_var/...` | Item 6a of REVIEW_RESPONSE_PLAN.md (Hull-White-style filtered historical-simulation VaR contender for body Section 5). |
 | `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
 | `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH-$t$ / MS-GARCH per-path ACF rows + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH; reports both pooled and per-path ACF conventions) |

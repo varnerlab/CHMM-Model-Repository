@@ -2,24 +2,32 @@
 # run_spectral_rank_cross_ticker.jl
 #
 # Cross-ticker spectral effective-rank diagnostic at K = 3 AND K = 18 across the 30-ticker
-# sector-balanced panel (+ SPY control). The K = 18 block reports how concentrated the
-# absolute-growth-rate ACF budget is when many modes are available; the K = 3 block runs
-# the same grouped diagnostic at the paper's headline state count. Because a lag-1 budget
-# alone is not an effective-rank diagnostic for the full lag-1..252 curve (a component
-# small at lag 1 can matter at later lags if its eigenvalue is larger or its phase
-# differs), every share is reported under TWO norms:
-#   - lag-1 norm:      B  = Σ_c |contrib_c(1)|
-#   - horizon-aware:   B∫ = Σ_c Σ_{τ=1..252} |contrib_c(τ)|
+# sector-balanced panel (+ SPY control), with CONVERGED MULTISTART fits and a HELD-OUT
+# out-of-sample ACF criterion (2026-07-16 sixth review, findings 1-2: the previous version
+# compared a converged K = 3 fit against K = 18 fits capped at 60 iterations — final
+# likelihood increments thousands of times the tolerance — from one deterministic start,
+# scored in-sample only).
 #
-# The block that actually answers "would more modes help the ACF fit at the typical
-# ticker?" is the model-vs-sample ACF comparison: per ticker, the MAE between the fitted
-# population |G| ACF and the observed IS sample |G| ACF at K = 3 versus K = 18, on the
-# short/medium band (lags 1-63) and the far band (64-252), with the zero-curve (i.i.d.)
-# reference. If K = 18's extra modes do not reduce that MAE relative to K = 3, the
-# decay-mode budget is not the binding constraint on the ACF fit at the typical ticker;
-# if they do, it is, and the paper's claim must be scoped accordingly.
+# Design:
+#   - Fits: baum_welch_multistart, tol = 1e-4, max_iter = 4000; K = 3 uses 3 starts,
+#     K = 18 uses 5 starts (canonical quantile start + jittered starts). Per ticker and
+#     per K the artifact records the best start, its evaluation count, final likelihood
+#     increment, a converged flag (tolerance rule, not the cap), and the LL spread
+#     across starts.
+#   - Shares: grouped-component budgets under the lag-1 norm B = Σ_c |contrib_c(1)| and
+#     the horizon-aware norm B∫ = Σ_c Σ_{τ=1..252} |contrib_c(τ)|.
+#   - ACF criterion: per ticker, MAE between the fitted population |G| ACF and the sample
+#     |G| ACF, near band (lags 1-63) and far band (64-252), on BOTH the IS window (fit
+#     window; descriptive) and the HELD-OUT OoS window (pre-specified criterion:
+#     near-band OoS MAE). The zero curve (i.i.d.) is the reference on each window.
+#
+# What this does and does not identify: both state counts are likelihood fits, so the
+# comparison shows what ML fitting delivers at each capacity; the attainable-accuracy
+# question ("could ANY m-mode combination do better?") is answered separately by
+# runners/spectral/run_mode_capacity_ceiling.jl.
 #
 # Output: results/diagnostics/spectral_rank_cross_ticker.txt
+#         results/diagnostics/spectral_rank_cross_ticker_fits.csv (per-ticker optimizer table)
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
@@ -30,10 +38,12 @@ using Printf
 
 const SEED      = 20260420;
 const K_LIST    = [3, 18];
-const MAX_ITER  = 60;
+const N_STARTS  = Dict(3 => 3, 18 => 5);
+const MAX_ITER  = 4000;
+const TOL       = 1e-4;
 const DT        = 1/252;
 const RISK_FREE = 0.0;
-const N_M_DRAW  = 200_000;
+const N_M_DRAW  = 200_000;   # non-Normal fallback only; Normal moments are analytic
 const MAXLAG    = 252;
 
 const OUT_DIR = joinpath(_ROOT, "results", "diagnostics");
@@ -53,14 +63,15 @@ const SECTOR_PANEL = [
 ];
 
 println("="^88);
-println("  Cross-ticker spectral effective-rank diagnostic at K in $(K_LIST)");
+println("  Cross-ticker spectral diagnostic, K in $(K_LIST), converged multistart + held-out ACF");
 println("="^88);
 
 # ----------------------------------------------------------------------------------------- #
-# Data
+# Data (IS fit window + held-out OoS window)
 # ----------------------------------------------------------------------------------------- #
-println("\n[setup] Loading IS panel...");
+println("\n[setup] Loading IS + OoS panels...");
 train_dataset = MyPortfolioDataSet() |> x -> x["dataset"];
+oos_dataset   = MyOutOfSamplePortfolioDataSet() |> x -> x["dataset"];
 max_days = nrow(train_dataset["AAPL"]);
 filtered = Dict{String,DataFrame}();
 for (t, data) in train_dataset
@@ -75,16 +86,18 @@ function _sample_acf_abs(x::AbstractVector, maxlag::Int)
     return [sum((a[1:n-τ] .- μ) .* (a[1+τ:n] .- μ)) / v for τ in 1:maxlag];
 end
 
+_band(v, lo, hi) = mean(abs.(v[lo:hi]));
+
 # ----------------------------------------------------------------------------------------- #
 # Loop over tickers x K
 # ----------------------------------------------------------------------------------------- #
 panel_results = Dict{Int, Dict{String, NamedTuple}}(K => Dict{String, NamedTuple}() for K in K_LIST);
-acf_fit = Dict{String, NamedTuple}();   # per-ticker ACF-fit MAEs at both K + zero reference
+acf_fit  = Dict{String, NamedTuple}();   # per-ticker ACF MAEs at both K, IS + OoS, + zero refs
+fit_rows = NamedTuple[];                 # per-ticker x K optimizer evidence
 
-for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
+for (si, sector_name) in enumerate(vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"]))
     if sector_name == "SPY (control)"
-        ticks = ["SPY"];
-        sec = "Index";
+        ticks = ["SPY"]; sec = "Index";
     else
         sec = sector_name;
         ticks = first([ts for (s, ts) in SECTOR_PANEL if s == sec]);
@@ -96,34 +109,61 @@ for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
             continue;
         end
         R_is = all_R[:, idx];
-        ρ_obs = _sample_acf_abs(R_is, MAXLAG);
+        R_oos = try
+            collect(Float64, log_growth_matrix(oos_dataset, ticker; Δt=DT, risk_free_rate=RISK_FREE));
+        catch e
+            @warn "no OoS series for $ticker: $e"; Float64[];
+        end
+        ρ_is = _sample_acf_abs(R_is, MAXLAG);
+        ρ_oos = isempty(R_oos) ? Float64[] : _sample_acf_abs(R_oos, MAXLAG);
         maes = Dict{Int, NamedTuple}();
         for K in K_LIST
-            Random.seed!(SEED);
             try
-                mdl = build(MyContinuousHiddenMarkovModel,
-                    (observations=R_is, number_of_states=K, max_iter=MAX_ITER));
-                T, π̄, m, M = _T_pibar_m(mdl, K; n_draw=N_M_DRAW, seed=SEED);
-                σ²_G, comps, κ_V, recon_err = _spectral_components(T, π̄, m, M);
+                T, μ, σ, πv, llh, γ, diags = baum_welch_multistart(R_is, K;
+                    n_starts=N_STARTS[K], max_iter=MAX_ITER, tol=TOL,
+                    seed=SEED + 100 * idx + K);
+                best = argmax([d.ll for d in diags]);
+                d = diags[best];
+                lls = [x.ll for x in diags];
+                push!(fit_rows, (ticker=ticker, K=K, best_start=d.start,
+                                 n_evals=d.n_evals, final_inc=d.final_increment,
+                                 converged=d.converged, ll_best=d.ll,
+                                 ll_spread=maximum(lls) - minimum(lls),
+                                 n_converged=count(x -> x.converged, diags)));
+                # spectral quantities from the best fit
+                mdl_T = T;
+                π̄ = _stationary_pi(mdl_T);
+                m = zeros(K); M = zeros(K);
+                for k in 1:K
+                    z = μ[k] / σ[k];
+                    m[k] = σ[k] * sqrt(2 / π) * exp(-z^2 / 2) + μ[k] * (1 - 2 * cdf(Normal(), -z));
+                    M[k] = μ[k]^2 + σ[k]^2;
+                end
+                σ²_G, comps, κ_V, recon_err = _spectral_components(mdl_T, π̄, m, M);
                 s = _component_summary(comps);
                 panel_results[K][ticker] = (sector=sec, n_comps=length(comps),
                                             recon_err=recon_err, s...);
-                ρ_mod = _theoretical_acf(T, π̄, m, M, MAXLAG);
-                maes[K] = (near = mean(abs.(ρ_mod[1:63] .- ρ_obs[1:63])),
-                           far  = mean(abs.(ρ_mod[64:MAXLAG] .- ρ_obs[64:MAXLAG])));
-                @printf("  %-6s [%s] K=%-2d  dom = %.3f (int %.3f)   n95 = %d (int %d)   acf-mae 1-63 = %.4f\n",
-                        ticker, sec, K, s.dom_share, s.dom_share_int,
-                        s.n_for_95, s.n_for_95_int, maes[K].near);
+                ρ_mod = _theoretical_acf(mdl_T, π̄, m, M, MAXLAG);
+                maes[K] = (is_near  = mean(abs.(ρ_mod[1:63] .- ρ_is[1:63])),
+                           is_far   = mean(abs.(ρ_mod[64:MAXLAG] .- ρ_is[64:MAXLAG])),
+                           oos_near = isempty(ρ_oos) ? NaN : mean(abs.(ρ_mod[1:63] .- ρ_oos[1:63])),
+                           oos_far  = isempty(ρ_oos) ? NaN : mean(abs.(ρ_mod[64:MAXLAG] .- ρ_oos[64:MAXLAG])));
+                @printf("  %-6s [%s] K=%-2d  conv=%s n=%d inc=%.1e  dom=%.3f (int %.3f)  oos-near=%.4f\n",
+                        ticker, sec, K, d.converged ? "y" : "N", d.n_evals, d.final_increment,
+                        s.dom_share, s.dom_share_int, maes[K].oos_near);
             catch e
                 @warn "fit failed for $ticker at K=$K: $e";
             end
         end
         if all(K -> haskey(maes, K), K_LIST)
             acf_fit[ticker] = (sector=sec,
-                               near_k3 = maes[3].near,  near_k18 = maes[18].near,
-                               far_k3  = maes[3].far,   far_k18  = maes[18].far,
-                               near_zero = mean(abs.(ρ_obs[1:63])),
-                               far_zero  = mean(abs.(ρ_obs[64:MAXLAG])));
+                               is_near_k3 = maes[3].is_near,   is_near_k18 = maes[18].is_near,
+                               is_far_k3  = maes[3].is_far,    is_far_k18  = maes[18].is_far,
+                               oos_near_k3 = maes[3].oos_near, oos_near_k18 = maes[18].oos_near,
+                               oos_far_k3  = maes[3].oos_far,  oos_far_k18  = maes[18].oos_far,
+                               is_near_zero = _band(ρ_is, 1, 63),  is_far_zero = _band(ρ_is, 64, MAXLAG),
+                               oos_near_zero = isempty(ρ_oos) ? NaN : _band(ρ_oos, 1, 63),
+                               oos_far_zero  = isempty(ρ_oos) ? NaN : _band(ρ_oos, 64, MAXLAG));
         end
     end
 end
@@ -133,107 +173,106 @@ end
 # ----------------------------------------------------------------------------------------- #
 function _dist_summary(K)
     rs = collect(values(panel_results[K]));
-    dom  = [r.dom_share for r in rs];
-    domI = [r.dom_share_int for r in rs];
-    n95  = [r.n_for_95 for r in rs];
-    n95I = [r.n_for_95_int for r in rs];
-    return (n=length(rs), dom=dom, domI=domI, n95=n95, n95I=n95I);
+    return (n=length(rs),
+            dom  = [r.dom_share for r in rs],  domI = [r.dom_share_int for r in rs],
+            n95  = [r.n_for_95 for r in rs],   n95I = [r.n_for_95_int for r in rs]);
 end
 
-Δ_near = [f.near_k3 - f.near_k18 for f in values(acf_fit)];
-Δ_far  = [f.far_k3  - f.far_k18  for f in values(acf_fit)];
+vals(f) = [getfield(x, f) for x in values(acf_fit)];
+Δ_is_near  = vals(:is_near_k3)  .- vals(:is_near_k18);
+Δ_oos_near = vals(:oos_near_k3) .- vals(:oos_near_k18);
+
+conv_rows(K) = [r for r in fit_rows if r.K == K];
 
 # ----------------------------------------------------------------------------------------- #
 # Output
 # ----------------------------------------------------------------------------------------- #
+open(joinpath(OUT_DIR, "spectral_rank_cross_ticker_fits.csv"), "w") do io
+    println(io, "ticker,K,best_start,n_evals,final_increment,converged,ll_best,ll_spread,n_converged_starts");
+    for r in sort(fit_rows, by = x -> (x.ticker, x.K))
+        @printf(io, "%s,%d,%d,%d,%.3e,%d,%.4f,%.4f,%d\n",
+                r.ticker, r.K, r.best_start, r.n_evals, r.final_inc,
+                r.converged ? 1 : 0, r.ll_best, r.ll_spread, r.n_converged);
+    end
+end
+
 out_path = joinpath(OUT_DIR, "spectral_rank_cross_ticker.txt");
 open(out_path, "w") do io
     println(io, "="^96);
-    println(io, "Cross-ticker spectral effective-rank diagnostic  (grouped components; K = 3 and K = 18)");
+    println(io, "Cross-ticker spectral effective-rank diagnostic (converged multistart; held-out ACF criterion)");
     println(io, "="^96);
-    println(io, "Setup: CHMM-N at K in $(K_LIST), sector-balanced 30-ticker panel + SPY control,");
-    println(io, "       seed = $SEED, n_draw = $N_M_DRAW per state for m_k, IS window.");
-    println(io, "Complex-conjugate eigenvalue pairs are grouped into single real damped-oscillatory");
-    println(io, "components; contrib_c(τ) is each component's SIGNED real ACF contribution.");
-    println(io, "Two ranking norms per ticker:");
-    println(io, "  lag-1 norm      dom/n95      on B  = Σ_c |contrib_c(1)|");
-    println(io, "  horizon-aware   domI/n95I    on B∫ = Σ_c Σ_{τ=1..$MAXLAG} |contrib_c(τ)|");
-    println(io, "(B is not a percentage of ρ(1) itself: signed contributions can cancel.)");
-    println(io, "recon = max |spectral - direct| ACF reconstruction error over τ = 1..$MAXLAG.");
+    println(io, "Setup: CHMM-N at K in $(K_LIST), 30-ticker sector panel + SPY control.");
+    println(io, "Fits: baum_welch_multistart, tol = $TOL, max_iter = $MAX_ITER; starts per K:");
+    println(io, "      K = 3 -> $(N_STARTS[3]) starts, K = 18 -> $(N_STARTS[18]) starts (canonical quantile + jittered).");
+    println(io, "Emission moments are analytic (folded normal); stationary vector by checked left-");
+    println(io, "eigenvector solve. Held-out criterion (pre-specified): near-band (lags 1-63) MAE of");
+    println(io, "the fitted population |G| ACF against the OUT-OF-SAMPLE window's sample ACF.");
+    println(io);
+    println(io, "-"^96);
+    println(io, "Optimizer evidence (per K, across tickers; per-ticker rows in spectral_rank_cross_ticker_fits.csv)");
+    println(io, "-"^96);
     for K in K_LIST
-        println(io);
-        println(io, "-"^96);
-        println(io, "K = $K per-ticker table");
-        println(io, "-"^96);
-        @printf(io, "%-6s %-26s %-10s %-10s %-6s %-7s %-6s %-9s\n",
-                "ticker", "sector", "dom_share", "dom_int", "n95", "n95_int", "ncomp", "recon");
-        println(io, "-"^96);
-        for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["Index"])
-            for ticker in sort([t for (t, r) in panel_results[K] if r.sector == sector_name])
-                r = panel_results[K][ticker];
-                @printf(io, "%-6s %-26s %-10.3f %-10.3f %-6d %-7d %-6d %-9.1e\n",
-                        ticker, r.sector, r.dom_share, r.dom_share_int,
-                        r.n_for_95, r.n_for_95_int, r.n_comps, r.recon_err);
-            end
-        end
+        rows = conv_rows(K);
+        n_conv = count(r -> r.converged, rows);
+        incs = [abs(r.final_inc) for r in rows];
+        nev  = [r.n_evals for r in rows];
+        sprd = [r.ll_spread for r in rows];
+        @printf(io, "  K = %-2d : converged (tol rule) %d / %d fits;  n_evals median %d  max %d;\n",
+                K, n_conv, length(rows), round(Int, median(nev)), maximum(nev));
+        @printf(io, "           |final increment| median %.1e  max %.1e;  cross-start LL spread median %.3f  max %.3f\n",
+                median(incs), maximum(incs), median(sprd), maximum(sprd));
+    end
+    for K in K_LIST
         d = _dist_summary(K);
         println(io);
-        println(io, "K = $K cross-ticker distribution (n = $(d.n) tickers):");
+        println(io, "-"^96);
+        println(io, "K = $K grouped-component budget shares (n = $(d.n) tickers)");
+        println(io, "-"^96);
         @printf(io, "  dominant lag-1 share    : median %.3f  Q1 %.3f  Q3 %.3f  min %.3f\n",
                 median(d.dom), quantile(d.dom, 0.25), quantile(d.dom, 0.75), minimum(d.dom));
         @printf(io, "  dominant horizon share  : median %.3f  Q1 %.3f  Q3 %.3f  min %.3f\n",
                 median(d.domI), quantile(d.domI, 0.25), quantile(d.domI, 0.75), minimum(d.domI));
-        @printf(io, "  n_for_95 (lag-1)        : median %.1f  Q1 %.1f  Q3 %.1f  max %d\n",
-                median(d.n95), quantile(d.n95, 0.25), quantile(d.n95, 0.75), maximum(d.n95));
-        @printf(io, "  n_for_95 (horizon)      : median %.1f  Q1 %.1f  Q3 %.1f  max %d\n",
-                median(d.n95I), quantile(d.n95I, 0.25), quantile(d.n95I, 0.75), maximum(d.n95I));
+        @printf(io, "  n_for_95 (lag-1)        : median %.1f  max %d\n", median(d.n95), maximum(d.n95));
+        @printf(io, "  n_for_95 (horizon)      : median %.1f  max %d\n", median(d.n95I), maximum(d.n95I));
     end
     println(io);
     println(io, "-"^96);
-    println(io, "Does the K = 18 mode budget buy ACF fit over K = 3?  (model-vs-sample |G| ACF MAE, IS window)");
+    println(io, "Model-vs-sample |G| ACF MAE (fitted population ACF against the window's sample ACF)");
     println(io, "-"^96);
-    println(io, "Per ticker: MAE between the fitted population ACF and the observed IS sample ACF,");
-    println(io, "near band lags 1-63 and far band 64-$MAXLAG; 'zero' is the i.i.d. reference curve ρ = 0.");
-    println(io);
-    @printf(io, "%-6s %-26s %-9s %-9s %-9s %-9s %-9s %-9s\n",
-            "ticker", "sector", "n_K3", "n_K18", "n_zero", "f_K3", "f_K18", "f_zero");
+    @printf(io, "%-6s %-24s %-8s %-8s %-8s %-9s %-9s %-9s\n",
+            "ticker", "sector", "IS_K3", "IS_K18", "IS_zero", "OoS_K3", "OoS_K18", "OoS_zero");
     println(io, "-"^96);
     for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["Index"])
         for ticker in sort([t for (t, f) in acf_fit if f.sector == sector_name])
             f = acf_fit[ticker];
-            @printf(io, "%-6s %-26s %-9.4f %-9.4f %-9.4f %-9.4f %-9.4f %-9.4f\n",
-                    ticker, f.sector, f.near_k3, f.near_k18, f.near_zero,
-                    f.far_k3, f.far_k18, f.far_zero);
+            @printf(io, "%-6s %-24s %-8.4f %-8.4f %-8.4f %-9.4f %-9.4f %-9.4f\n",
+                    ticker, f.sector, f.is_near_k3, f.is_near_k18, f.is_near_zero,
+                    f.oos_near_k3, f.oos_near_k18, f.oos_near_zero);
         end
     end
     println(io);
-    println(io, "Cross-ticker medians (n = $(length(acf_fit))):");
-    @printf(io, "  near band 1-63   : K3 %.4f   K18 %.4f   zero %.4f   Δ(K3 - K18) median %.4f  Q1 %.4f  Q3 %.4f\n",
-            median([f.near_k3 for f in values(acf_fit)]),
-            median([f.near_k18 for f in values(acf_fit)]),
-            median([f.near_zero for f in values(acf_fit)]),
-            median(Δ_near), quantile(Δ_near, 0.25), quantile(Δ_near, 0.75));
-    @printf(io, "  far band 64-%d  : K3 %.4f   K18 %.4f   zero %.4f   Δ(K3 - K18) median %.4f  Q1 %.4f  Q3 %.4f\n",
-            MAXLAG,
-            median([f.far_k3 for f in values(acf_fit)]),
-            median([f.far_k18 for f in values(acf_fit)]),
-            median([f.far_zero for f in values(acf_fit)]),
-            median(Δ_far), quantile(Δ_far, 0.25), quantile(Δ_far, 0.75));
-    @printf(io, "  tickers where K18 beats K3 on the near band: %d / %d\n",
-            count(>(0), Δ_near), length(Δ_near));
+    n = length(acf_fit);
+    println(io, "Cross-ticker medians over n = $n tickers (near band, lags 1-63):");
+    @printf(io, "  IS  (fit window)  : K3 %.4f   K18 %.4f   zero %.4f   Δ(K3 - K18) median %.4f   K18 better on %d / %d\n",
+            median(vals(:is_near_k3)), median(vals(:is_near_k18)), median(vals(:is_near_zero)),
+            median(Δ_is_near), count(>(0), Δ_is_near), n);
+    @printf(io, "  OoS (held out)    : K3 %.4f   K18 %.4f   zero %.4f   Δ(K3 - K18) median %.4f   K18 better on %d / %d\n",
+            median(vals(:oos_near_k3)), median(vals(:oos_near_k18)), median(vals(:oos_near_zero)),
+            median(Δ_oos_near), count(>(0), Δ_oos_near), n);
+    println(io, "Far band (lags 64-252) medians:");
+    @printf(io, "  IS  : K3 %.4f   K18 %.4f   zero %.4f      OoS : K3 %.4f   K18 %.4f   zero %.4f\n",
+            median(vals(:is_far_k3)), median(vals(:is_far_k18)), median(vals(:is_far_zero)),
+            median(vals(:oos_far_k3)), median(vals(:oos_far_k18)), median(vals(:oos_far_zero)));
     println(io);
-    println(io, "Reading:");
-    println(io, "  - The K = 18 share tables describe how concentrated the fitted budget is when 17");
-    println(io, "    modes are available; a median dominant share below 0.90 means the fitted K = 18");
-    println(io, "    chains spread their ACF budget over several modes at the typical ticker, so the");
-    println(io, "    K = 18 cross-section alone does NOT establish that a two-mode (K = 3) budget is");
-    println(io, "    sufficient.");
-    println(io, "  - The binding-ness question is settled by the ACF-fit block: if the median");
-    println(io, "    Δ(K3 - K18) near-band MAE is small relative to the zero-curve margin, the extra");
-    println(io, "    K = 18 modes buy little ACF fit at the typical ticker and the mode budget is not");
-    println(io, "    the binding constraint at K = 3; a materially positive Δ says it is binding.");
-    println(io, "  - This is an IS model-vs-sample comparison across the fitted panel; it is not an");
-    println(io, "    out-of-sample forecast comparison.");
+    println(io, "Reading (scope):");
+    println(io, "  - These are converged multistart LIKELIHOOD fits, so the comparison shows what ML");
+    println(io, "    fitting delivers at each state count, on the fit window and on a held-out window.");
+    println(io, "  - It does NOT by itself bound what any m-mode combination could achieve; the");
+    println(io, "    attainable-accuracy ceiling is measured by run_mode_capacity_ceiling.jl, and the");
+    println(io, "    two artifacts should be read together.");
+    println(io, "  - The ticker count is descriptive (no cross-sectional dependence correction; the");
+    println(io, "    panel shares market-wide factors, and SPY is included).");
 end
 println();
 println("[done] Wrote $out_path");
+println("[done] Wrote $(joinpath(OUT_DIR, "spectral_rank_cross_ticker_fits.csv"))");

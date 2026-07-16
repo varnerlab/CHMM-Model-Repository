@@ -96,4 +96,26 @@ end
         end
         @test length(rows) == 572
     end
+
+    @testset "ML HSMM artifact: EM monotone, returned iterate evaluated, CSV shape" begin
+        # (2026-07-16 sixth review, findings 4-5: the ML-HSMM comparator needs
+        # live provenance and evidence that the corrected truncated-Pareto EM
+        # actually improves the likelihood monotonically.)
+        csv_path = joinpath(_ARTROOT, "hsmm_ml", "hsmm_ml_metrics.csv");
+        @test isfile(csv_path)
+        hdr, rows = _read_csv_table(csv_path);
+        @test "final_inc_perobs" in String.(hdr)
+        @test length(rows) == 2                       # K = 3 and K = 18
+        for K in (3, 18)
+            jld_path = joinpath(_ARTROOT, "hsmm_ml", "hsmm_ml_K$(K).jld2");
+            @test isfile(jld_path)
+            d = JLD2.load(jld_path);
+            h = d["ll_history"];
+            @test all(isfinite, h)
+            @test all(diff(h) .> -1e-6)               # EM monotonicity
+            # metrics CSV final_ll matches the last EVALUATED iterate
+            row = rows[findfirst(r -> parse(Int, r[1]) == K, rows)];
+            @test parse(Float64, row[findfirst(==("final_ll"), String.(hdr))]) ≈ h[end] atol = 1e-3
+        end
+    end
 end

@@ -25,7 +25,8 @@ include(joinpath(@__DIR__, "spectral_common.jl"));
 using Printf
 
 const SEED      = 20260420;
-const MAX_ITER  = 60;
+const MAX_ITER  = 4000;   # converged fits (sixth review, finding 2); tol 1e-4
+const N_STARTS  = Dict(2 => 1, 3 => 3, 18 => 5);
 const DT        = 1/252;
 const RISK_FREE = 0.0;
 const N_M_DRAW  = 200_000;  # samples per state for m_k (folded mean) estimate
@@ -52,11 +53,21 @@ println("  IS = $(length(R_is)) days");
 
 # ----------------------------------------------------------------------------------------- #
 function _run_at_K(K::Int)
-    println("\n[fit] CHMM-N at K = $K on SPY IS...");
-    Random.seed!(SEED);
-    m_n = build(MyContinuousHiddenMarkovModel,
-                (observations=R_is, number_of_states=K, max_iter=MAX_ITER));
-    T, π̄, m, M = _T_pibar_m(m_n, K; n_draw=N_M_DRAW, seed=SEED);
+    println("\n[fit] CHMM-N at K = $K on SPY IS (multistart, converged)...");
+    Tm, μ, σ, πv, llh, γ, diags = baum_welch_multistart(collect(Float64, R_is), K;
+        n_starts=get(N_STARTS, K, 3), max_iter=MAX_ITER, tol=1e-4, seed=SEED + K);
+    d_best = diags[argmax([d.ll for d in diags])];
+    @printf("  best start %d: n_evals = %d, final inc = %.2e, converged = %s\n",
+            d_best.start, d_best.n_evals, d_best.final_increment, d_best.converged);
+    # spectral inputs from the best fit (analytic folded-normal moments)
+    T = Tm;
+    π̄ = _stationary_pi(T);
+    m = zeros(K); M = zeros(K);
+    for k in 1:K
+        z = μ[k] / σ[k];
+        m[k] = σ[k] * sqrt(2 / π) * exp(-z^2 / 2) + μ[k] * (1 - 2 * cdf(Normal(), -z));
+        M[k] = μ[k]^2 + σ[k]^2;
+    end
     σ²_G, comps, κ_V, recon_err = _spectral_components(T, π̄, m, M);
     s = _component_summary(comps);
 

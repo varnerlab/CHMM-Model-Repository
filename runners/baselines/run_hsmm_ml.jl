@@ -1,26 +1,37 @@
 # =========================================================================== #
-# run_hsmm_gamma.jl
+# run_hsmm_ml.jl
 #
-# Closes peer-review item P3.14 / R1 RE3: Gamma-sojourn HSMM as a co-headline
-# foil to the truncated-Pareto HSMM. Same Yu (2010) forward-backward EM as
-# run_hsmm_ml.jl, but with discrete-Gamma sojourns (continuous Gamma(α, β)
-# discretized to integer durations 1..D_max via P(D = d) = F_Γ(d) - F_Γ(d-1)).
-# M-step uses method-of-moments on the expected-duration counts to recover
-# (α, β) per state, then re-evaluates the truncated discrete pmf.
+# Maximum-likelihood explicit-duration HSMM at K in {3, 18} on SPY using
+# Yu (2010) forward-backward over augmented (state, duration) pairs. Gaussian
+# emissions, off-diagonal transitions (no self-loops), truncated discrete
+# Pareto sojourns with D_max = 200.
 #
-# R1 RE3 framing: the truncated-Pareto HSMM has |G_t| ACF-MAE that matches the
-# i.i.d. baseline; a Gamma sojourn (closer to Bulla & Berzel 2008) may close
-# the ACF gap because the lighter-tailed Gamma sojourns produce more frequent
-# regime transitions and therefore richer absolute-return autocorrelation.
+# This is the ML counterpart to the plug-in SemiMarkov.jl (which Viterbi-decodes
+# from a flat CHMM and fits sojourns post-hoc); here the entire (transition,
+# emission, sojourn) tuple is updated jointly via EM.
+#
+# Restored to the live runner tree with two corrections (2026-07-16 sixth
+# review, findings 4-5):
+#   1. The duration M-step now maximizes the ACTUAL expected truncated-discrete
+#      Pareto log-likelihood via the library fit_truncated_pareto_alpha
+#      (concave 1-D objective, golden-section). The previous update
+#      alpha = 1 / E_w[log d] was the continuous untruncated Pareto formula
+#      and did not optimize the declared pmf, so the EM was not exact ML.
+#   2. The EM driver follows the repository evaluate-before-update contract:
+#      the returned parameters are always the last EVALUATED iterate
+#      (ll_history[end]), never an unevaluated post-M-step mutation, and the
+#      metrics CSV records the final per-observation likelihood increment.
 #
 # Outputs:
-#   results/hsmm_gamma/hsmm_gamma_K3.jld2
-#   results/hsmm_gamma/hsmm_gamma_K18.jld2
-#   results/hsmm_gamma/hsmm_gamma_metrics.csv
+#   results/hsmm_ml/hsmm_ml_K3.jld2
+#   results/hsmm_ml/hsmm_ml_K18.jld2
+#   results/hsmm_ml/hsmm_ml_metrics.csv     (rows: K, IS_KS, OoS_KS, ACF_MAE_abs,
+#                                                ACF_MAE_raw, kurt_sim, n_iter, ll)
 # =========================================================================== #
 
-using Pkg; Pkg.activate(".");
-include(joinpath(@__DIR__, "..", "..", "Include.jl"));
+const _PROJECT_ROOT = abspath(joinpath(@__DIR__, "..", ".."));
+using Pkg; Pkg.activate(_PROJECT_ROOT);
+include(joinpath(_PROJECT_ROOT, "Include.jl"));
 
 using Random
 using Statistics
@@ -38,20 +49,18 @@ const DT          = 1/252;
 const N_PATHS     = 1000;
 const L_LAGS      = 252;
 const D_MAX       = 200;       # max sojourn length; well above empirical max
-const MAX_ITER    = 40;        # EM max iterations
-const TOL         = 1e-3;      # log-likelihood tolerance per observation
+const MAX_ITER    = 400;       # EM max iterations
+const TOL         = 1e-5;      # log-likelihood tolerance per observation
 const ALPHA_KS    = 0.05;
 const KS          = [3, 18];   # K values to fit
 
-const OUT_DIR     = joinpath(_ROOT, "results", "hsmm_gamma");
-const PAPER_ROBUSTNESS_DIR = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository", "results", "robustness"));
+const OUT_DIR     = joinpath(_ROOT, "results", "hsmm_ml");
 mkpath(OUT_DIR);
-mkpath(PAPER_ROBUSTNESS_DIR);
 
 Random.seed!(SEED);
 
 println("="^70)
-println("  Moment-updated Gamma-sojourn HSMM (Yu 2010 forward-backward; MoM duration block) on $TICKER")
+println("  ML HSMM (Yu 2010 explicit-duration EM) on $TICKER")
 println("  K values:  $KS")
 println("  D_max:     $D_MAX")
 println("  Max iter:  $MAX_ITER (tol $TOL per obs)")
@@ -70,32 +79,13 @@ n_oos         = length(R_oos);
 println("[setup] IS = $n_is, OoS = $n_oos")
 
 # --------------------------------------------------------------------------- #
-# Truncated discrete Gamma: pmf p(d) = F_Γ(d; α, β) - F_Γ(d-1; α, β) on
-# {1, ..., D_max}, then renormalised. α = shape, β = scale; mean αβ, variance αβ².
+# Truncated discrete Pareto: pmf p(d) ∝ d^(-α-1) on {1, ..., D_max}
 # --------------------------------------------------------------------------- #
-function _gamma_logpmf(α::Float64, β::Float64, D::Int)
-    α = clamp(α, 0.3, 50.0); β = clamp(β, 0.5, 200.0);
-    G = Distributions.Gamma(α, β);
-    p = Vector{Float64}(undef, D);
-    @inbounds for d in 1:D
-        p[d] = max(cdf(G, Float64(d)) - cdf(G, Float64(d - 1)), 1e-300);
-    end
-    p ./= sum(p);
-    return log.(p);
-end
+_pareto_logpmf(α::Float64, D::Int) = truncated_pareto_logpmf(α, D);
 
-# Method-of-moments fit on expected duration counts: α = m1^2 / Var, β = Var / m1.
-# Robust fallbacks for degenerate counts (variance ≈ 0 or near-zero total mass).
-function _fit_gamma_ab(expected_counts::Vector{Float64}, D::Int)
-    s = sum(expected_counts);
-    if s <= 1e-9; return (2.0, 5.0); end
-    m1 = sum(expected_counts[d] * Float64(d) for d in 1:D) / s;
-    m2 = sum(expected_counts[d] * Float64(d)^2 for d in 1:D) / s;
-    var_d = max(m2 - m1^2, 1e-3);
-    α = clamp(m1^2 / var_d, 0.3, 50.0);
-    β = clamp(var_d / m1,    0.5, 200.0);
-    return (α, β);
-end
+# Exact truncated-discrete Pareto ML update (library; sixth review, finding 4)
+_fit_pareto_alpha(expected_counts::Vector{Float64}, D::Int) =
+    fit_truncated_pareto_alpha(expected_counts, D);
 
 # --------------------------------------------------------------------------- #
 # Gaussian log-density helper
@@ -114,8 +104,7 @@ mutable struct MLHSMM
     A::Matrix{Float64}                      # off-diagonal transition matrix (rows sum to 1, A[k,k] = 0)
     μ::Vector{Float64}                      # state means
     σ::Vector{Float64}                      # state stds
-    α::Vector{Float64}                      # per-state Gamma shape α
-    β::Vector{Float64}                      # per-state Gamma scale β
+    α::Vector{Float64}                      # per-state Pareto α
     log_p::Matrix{Float64}                  # log p_s(d), size K × D_max
     ll_history::Vector{Float64}
 end
@@ -131,13 +120,12 @@ function _init_hsmm(R::Vector{Float64}, K::Int, D::Int)
     # Off-diagonal init: uniform over j ≠ i
     A = fill(1.0 / (K - 1), K, K);
     @inbounds for i in 1:K; A[i, i] = 0.0; end
-    α = fill(2.0, K);    # Gamma shape init (mean αβ = 10 days at β = 5)
-    β = fill(5.0, K);    # Gamma scale init
+    α = fill(1.5, K);                       # Pareto α init
     log_p = zeros(K, D);
     @inbounds for s in 1:K
-        log_p[s, :] = _gamma_logpmf(α[s], β[s], D);
+        log_p[s, :] = _pareto_logpmf(α[s], D);
     end
-    return MLHSMM(K, π, A, μ, σ, α, β, log_p, Float64[]);
+    return MLHSMM(K, π, A, μ, σ, α, log_p, Float64[]);
 end
 
 # --------------------------------------------------------------------------- #
@@ -370,9 +358,8 @@ function _m_step!(m::MLHSMM, R::Vector{Float64}, post; D::Int=D_MAX)
     end
     @inbounds for s in 1:K
         if sum(eta_d[s, :]) > 1e-9
-            (a, b) = _fit_gamma_ab(eta_d[s, :], Dt);
-            m.α[s] = a; m.β[s] = b;
-            m.log_p[s, :] = _gamma_logpmf(a, b, Dt);
+            m.α[s] = _fit_pareto_alpha(eta_d[s, :], Dt);
+            m.log_p[s, :] = _pareto_logpmf(m.α[s], Dt);
         end
     end
     return nothing;
@@ -385,13 +372,17 @@ function fit_hsmm_ml(R::Vector{Float64}, K::Int; D::Int=D_MAX, max_iter::Int=MAX
     println("[hsmm-ml] K=$K, T=$(length(R)), D=$D ...");
     m = _init_hsmm(R, K, D);
     last_ll = -Inf;
-    for it in 1:max_iter
+    # Evaluate-before-update: every iteration evaluates the CURRENT parameters,
+    # then checks convergence/cap, and only then mutates via the M-step, so the
+    # returned parameters are always the iterate whose likelihood is
+    # ll_history[end] (repository EM contract).
+    for it in 1:(max_iter + 1)
         post = _e_step(m, R; D=D);
         ll = post.ll;
         push!(m.ll_history, ll);
         @printf("  [%2d] log-lik = %.4f  (per-obs %.5f)\n", it, ll, ll / length(R));
-        if abs(ll - last_ll) / max(length(R), 1) < tol && it > 4
-            println("  → converged at iter $it");
+        if (abs(ll - last_ll) / max(length(R), 1) < tol && it > 4) || (it == max_iter + 1)
+            println(it == max_iter + 1 ? "  → iteration cap" : "  → converged at iter $it");
             break;
         end
         last_ll = ll;
@@ -479,7 +470,7 @@ using HypothesisTests
 results = Dict{Int,Any}();
 for K in KS
     println("\n" * "="^70)
-    println("  Fitting moment-updated Gamma-sojourn HSMM at K = $K")
+    println("  Fitting ML HSMM at K = $K")
     println("="^70)
     Random.seed!(SEED + K);
     @time m = fit_hsmm_ml(R_is, K; D=D_MAX, max_iter=MAX_ITER, tol=TOL);
@@ -492,10 +483,9 @@ for K in KS
     @printf("[K=%d] OoS KS = %.1f%%  kurt = %.3f  ACF-MAE |G| = %.4f  raw = %.4f\n",
         K, 100 * metr_oos.ks_rate, metr_oos.kurt, metr_oos.acf_mae, metr_oos.acf_mae_raw);
     results[K] = (model=m, metr_is=metr_is, metr_oos=metr_oos);
-    save(joinpath(OUT_DIR, "hsmm_gamma_K$K.jld2"), Dict(
+    save(joinpath(OUT_DIR, "hsmm_ml_K$K.jld2"), Dict(
         "K" => K,
         "alpha" => m.α,
-        "beta" => m.β,
         "mu" => m.μ,
         "sigma" => m.σ,
         "A" => m.A,
@@ -507,35 +497,20 @@ for K in KS
     ));
 end
 
-# Write CSV summary (mirror to paper-side robustness/)
-open(joinpath(OUT_DIR, "hsmm_gamma_metrics.csv"), "w") do io
-    write(io, "K,IS_KS,OoS_KS,IS_kurt,OoS_kurt,IS_ACF_MAE_abs,OoS_ACF_MAE_abs,IS_ACF_MAE_raw,OoS_ACF_MAE_raw,n_iter,final_ll\n")
+# Write CSV summary
+open(joinpath(OUT_DIR, "hsmm_ml_metrics.csv"), "w") do io
+    write(io, "K,IS_KS,OoS_KS,IS_kurt,OoS_kurt,IS_ACF_MAE_abs,OoS_ACF_MAE_abs,IS_ACF_MAE_raw,OoS_ACF_MAE_raw,n_iter,final_ll,final_inc_perobs\n")
     for K in KS
         r = results[K];
-        write(io, @sprintf("%d,%.4f,%.4f,%.4f,%.4f,%.6f,%.6f,%.6f,%.6f,%d,%.4f\n",
+        h = r.model.ll_history;
+        inc = length(h) >= 2 ? (h[end] - h[end-1]) / max(length(R_is), 1) : 0.0;
+        write(io, @sprintf("%d,%.4f,%.4f,%.4f,%.4f,%.6f,%.6f,%.6f,%.6f,%d,%.4f,%.2e\n",
             K, r.metr_is.ks_rate, r.metr_oos.ks_rate,
             r.metr_is.kurt, r.metr_oos.kurt,
             r.metr_is.acf_mae, r.metr_oos.acf_mae,
             r.metr_is.acf_mae_raw, r.metr_oos.acf_mae_raw,
-            length(r.model.ll_history), last(r.model.ll_history)));
+            length(h), last(h), inc));
     end
 end
 
-# Mirror CSV to paper-side robustness/
-cp(joinpath(OUT_DIR, "hsmm_gamma_metrics.csv"),
-   joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_gamma_metrics.csv"); force=true);
-
-println("\n[done] Moment-updated Gamma-sojourn HSMM fits saved to $OUT_DIR");
-println("Paper CSV: $(joinpath(PAPER_ROBUSTNESS_DIR, "hsmm_gamma_metrics.csv"))");
-println();
-println("Comparison reference (read live from results/hsmm_ml/hsmm_ml_metrics.csv, truncated Pareto sojourn):");
-let ml_csv = joinpath(_ROOT, "results", "hsmm_ml", "hsmm_ml_metrics.csv")
-    if isfile(ml_csv)
-        for line in readlines(ml_csv)[2:end]
-            f = split(line, ",");
-            println("  K=$(f[1]) (Pareto):  IS KS = $(round(100*parse(Float64,f[2]),digits=1))%, OoS KS = $(round(100*parse(Float64,f[3]),digits=1))%, |G_t| ACF-MAE = $(f[6])");
-        end
-    else
-        println("  (hsmm_ml_metrics.csv not found; run runners/baselines/run_hsmm_ml.jl)");
-    end
-end
+println("\n[done] ML HSMM fits saved to $OUT_DIR")
