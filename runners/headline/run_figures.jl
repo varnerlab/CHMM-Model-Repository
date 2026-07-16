@@ -101,7 +101,7 @@ function kfigs_save_is_comparison(sim_is, _, tag, _, out_path)
     panel_size = (700, 500);
 
     # Panel (a): marginal density
-    p_a = plot(xlabel="Excess growth rate", ylabel="Probability density (AU)",
+    p_a = plot(xlabel="Annualised log growth rate", ylabel="Probability density (AU)",
         size=panel_size; _STYLE...);
     histogram!(p_a, R_is, normalize=:pdf, bins=200, alpha=0.35, color=:lightgray, label="Observed");
     density!(p_a, sim_is[:,1], lw=2, color=_SIM_C, alpha=0.85, label="CHMM-$tag");
@@ -141,7 +141,7 @@ function kfigs_save_oos_validation(sim_oos, m_oos, tag, _, out_path)
     panel_size = (700, 500);
 
     # Panel (a): OoS density fan (marginal fidelity, visual)
-    p_a = plot(xlabel="Excess growth rate", ylabel="Probability density (AU)",
+    p_a = plot(xlabel="Annualised log growth rate", ylabel="Probability density (AU)",
         size=panel_size; _STYLE...);
     _sim_paths_to_plot = min(50, N_PATHS);
     for i in 1:_sim_paths_to_plot

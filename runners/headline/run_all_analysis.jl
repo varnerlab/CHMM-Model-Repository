@@ -23,7 +23,7 @@ include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 
 # --- CONFIGURATION ---
 const TICKER = "SPY";
-const RETURN_LABEL = "Excess Growth Rate";
+const RETURN_LABEL = "Annualised Log Growth Rate";  # r_f = 0, so this is log growth, not measured excess return
 const K_VALUES = [3, 6, 9, 12, 15, 18, 21];
 const RISK_FREE_RATE = 0.0;
 const ΔT = 1/252;
