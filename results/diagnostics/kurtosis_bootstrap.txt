@@ -13,11 +13,23 @@ L     | IS median | IS 95% CI         | OoS median | OoS 95% CI         | Pr(IS 
 20    |     7.302 | [2.167, 12.400]   |      4.906 | [0.903, 8.260]   | 0.739
 50    |     7.183 | [1.924, 12.418]   |      4.985 | [0.957, 7.697]   | 0.733
 
-Reading:
-  - IS 95% CI lower bound across all L: 1.92; OoS 95% CI upper bound across all L: 8.97
-  - IS and OoS CIs overlap; the IS-OoS kurtosis difference (~2.4 units) is
-    not robustly distinguishable at conventional levels under this bootstrap.
+Bootstrap distribution of the DIFFERENCE (IS - OoS excess kurtosis) - the
+inferential object. The difference CI, not the overlap of the two marginal CIs,
+is what tests whether the windows differ:
+L     | diff median | percentile 95% CI   | basic 95% CI        | covers 0?
+----------------------------------------------------------------------------------------
+5     |       2.490 | [-4.044,  9.536]   | [-4.809,  8.771]   | yes
+10    |       2.660 | [-4.244,  9.673]   | [-4.946,  8.971]   | yes
+20    |       2.428 | [-4.238,  9.553]   | [-4.826,  8.965]   | yes
+50    |       2.334 | [-4.269,  9.649]   | [-4.922,  8.996]   | yes
 
-  - Pr(IS > OoS) at L = 10: 0.756. Read as the bootstrap empirical p-value for the
-    one-sided null 'IS kurtosis = OoS kurtosis' against the alternative that IS
-    is heavier than OoS. Values close to 1 favour the alternative.
+Reading:
+  - At L = 10 the percentile 95% CI for the IS - OoS difference is [-4.244, 9.673],
+    which covers zero: the data do not exclude equal IS and OoS excess kurtosis
+    at the 5% level under this bootstrap. This is a non-rejection, not evidence
+    of equality.
+
+  - Pr(IS > OoS) at L = 10: 0.756. This is a DESCRIPTIVE bootstrap probability -
+    the fraction of independent resample pairs in which the IS draw exceeds the
+    OoS draw. It is NOT a p-value: each window is resampled around its own
+    observed kurtosis, so no equal-kurtosis null is imposed (fourth-review item 3).

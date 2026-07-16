@@ -641,6 +641,200 @@ end
 
 
 """
+    baum_welch_student_t_shared_nu(observations, number_of_states; max_iter=30, tol=1e-4,
+                                   ν_init=6.0, ν_bounds=(2.1, 50.0)) -> Tuple
+
+ECM estimation for a continuous HMM with Student-t emissions t_ν(μ_k, σ_k)
+sharing a SINGLE degrees-of-freedom parameter ν across all K states (the
+standard Student-t HMM of the time-series literature, as opposed to the
+per-state ν_k mixture of `baum_welch_student_t`). The E-step and the
+(μ_k, σ_k) CM updates are identical to the per-state fitter; the ν block is a
+golden-section search on the AGGREGATE Q-function
+
+    Q(ν) = Σ_t Σ_k γ_t(k) log t_ν(o_t; μ_k, σ_k)
+
+with the smoothed posteriors γ held fixed. As with the per-state ν block this
+is a hybrid surrogate step, so observed-data ascent is not guaranteed and the
+routine keeps a best-evaluated checkpoint: every iterate is scored by a
+forward pass BEFORE it can be mutated, and the returned parameters are the
+best finite evaluated iterate.
+
+Returns (T, μ, σ, ν, π, ll_history, gamma) with ν::Float64 the shared
+degrees of freedom. The returned parameters' observed-data log-likelihood
+equals maximum(ll_history), and `gamma` is the smoothed posterior computed
+under exactly those parameters.
+"""
+function baum_welch_student_t_shared_nu(observations::Array{Float64,1}, number_of_states::Int64;
+    max_iter::Int64=30, tol::Float64=1e-4,
+    ν_init::Float64=6.0, ν_bounds::Tuple{Float64,Float64}=(2.1, 50.0))
+
+    N = length(observations);
+    K = number_of_states;
+
+    # Quantile-based init on μ, σ; uniform init on T, π; shared ν_init.
+    sorted_data = sort(observations);
+    chunk_size = floor(Int, N / K);
+    curr_μ = zeros(K); curr_σ = zeros(K);
+    for s in 1:K
+        start_idx = (s - 1) * chunk_size + 1;
+        end_idx = (s == K) ? N : (s * chunk_size);
+        data_subset = sorted_data[start_idx:end_idx];
+        curr_μ[s] = mean(data_subset);
+        curr_σ[s] = max(std(data_subset), 1e-6);
+    end
+    curr_ν = ν_init;
+    curr_T = ones(K, K) ./ K;
+    curr_π = ones(K) ./ K;
+
+    ll_history = Float64[];
+    final_gamma = zeros(N, K);
+    prev_ll = -Inf;
+
+    _logpdf_t(x, μ, σ, ν) = logpdf(LocationScale(μ, σ, TDist(ν)), x);
+
+    # Aggregate Q-function of the shared ν (up to constants independent of ν):
+    # Q(ν) = Σ_k Σ_t γ_t(k) logpdf_t(o_t; μ_k, σ_k, ν)
+    function _q_shared_nu(ν, γ, μ, σ, o)
+        acc = 0.0; n = length(o);
+        @inbounds for k in 1:length(μ)
+            d = LocationScale(μ[k], σ[k], TDist(ν));
+            for t in 1:n
+                acc += γ[t, k] * logpdf(d, o[t]);
+            end
+        end
+        return acc;
+    end
+
+    # Golden-section search over the shared ν ∈ ν_bounds (maximize Q).
+    function _gss_shared_nu(γ, μ, σ, o, lo, hi; iters=40)
+        φ = (sqrt(5.0) - 1.0) / 2.0;
+        a = lo; b = hi;
+        c = b - φ*(b - a); d = a + φ*(b - a);
+        fc = _q_shared_nu(c, γ, μ, σ, o); fd = _q_shared_nu(d, γ, μ, σ, o);
+        for _ in 1:iters
+            if fc > fd
+                b = d; d = c; fd = fc;
+                c = b - φ*(b - a); fc = _q_shared_nu(c, γ, μ, σ, o);
+            else
+                a = c; c = d; fc = fd;
+                d = a + φ*(b - a); fd = _q_shared_nu(d, γ, μ, σ, o);
+            end
+        end
+        return 0.5*(a + b);
+    end
+
+    # Best-evaluated checkpoint: same contract as the per-state fitter. The
+    # shared-ν surrogate block does not guarantee observed-data ascent, so
+    # every iterate is scored BEFORE mutation and the best finite iterate
+    # (parameters, LL, γ) is what the routine returns.
+    best_ll = -Inf;
+    best_μ = copy(curr_μ); best_σ = copy(curr_σ); best_ν = curr_ν;
+    best_T = copy(curr_T); best_π = copy(curr_π);
+    best_gamma = zeros(N, K);
+
+    for iter in 1:(max_iter + 1)
+
+        # E-STEP: emission log-likelihoods + forward-backward.
+        log_B = zeros(N, K);
+        for t in 1:N, k in 1:K
+            log_B[t, k] = _logpdf_t(observations[t], curr_μ[k], curr_σ[k], curr_ν);
+        end
+
+        log_alpha = zeros(N, K);
+        log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
+        for t in 2:N, j in 1:K
+            log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
+        end
+
+        # Likelihood of the CURRENT (pre-M-step) parameters; a non-finite
+        # forward pass falls back to the best evaluated checkpoint.
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        if !isfinite(current_ll)
+            break;
+        end
+        push!(ll_history, current_ll);
+
+        log_beta = zeros(N, K);
+        for t in N-1:-1:1, i in 1:K
+            log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
+            log_beta[t, i] = _logsumexp_vec(log_terms);
+        end
+
+        γ = zeros(N, K);
+        for t in 1:N
+            γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
+                           _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
+        end
+        final_gamma = γ;
+
+        if current_ll > best_ll
+            best_ll = current_ll;
+            best_μ = copy(curr_μ); best_σ = copy(curr_σ); best_ν = curr_ν;
+            best_T = copy(curr_T); best_π = copy(curr_π);
+            best_gamma = copy(γ);
+        end
+
+        # Convergence / iteration-cap check BEFORE mutating the parameters.
+        if (abs(current_ll - prev_ll) < tol) || (iter == max_iter + 1)
+            break;
+        end
+        prev_ll = current_ll;
+
+        expected_transitions = zeros(K, K);
+        for t in 1:N-1
+            log_denom = _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]);
+            for i in 1:K, j in 1:K
+                log_xi = log_alpha[t, i] + log(curr_T[i, j]) + log_B[t+1, j] + log_beta[t+1, j] - log_denom;
+                expected_transitions[i, j] += exp(log_xi);
+            end
+        end
+
+        # Latent precisions with the shared ν.
+        u = zeros(N, K);
+        for t in 1:N, k in 1:K
+            δ2 = ((observations[t] - curr_μ[k]) / curr_σ[k])^2;
+            u[t, k] = (curr_ν + 1.0) / (curr_ν + δ2);
+        end
+
+        # M-STEP (CM): μ_k, σ_k given u, then the shared ν via GSS on the
+        # aggregate Q.
+        curr_π = γ[1, :];
+
+        for k in 1:K
+            wu = γ[:, k] .* u[:, k];
+            Σwu = sum(wu);
+            Σγ = sum(γ[:, k]);
+            if Σwu > 0
+                curr_μ[k] = sum(wu .* observations) / Σwu;
+            end
+            if Σγ > 0
+                σ2 = sum(wu .* (observations .- curr_μ[k]).^2) / Σγ;
+                curr_σ[k] = max(sqrt(max(σ2, 1e-12)), 1e-6);
+            end
+        end
+        curr_ν = _gss_shared_nu(γ, curr_μ, curr_σ, observations,
+                                ν_bounds[1], ν_bounds[2]);
+
+        for i in 1:K
+            r_sum = sum(expected_transitions[i, :]);
+            if r_sum > 0
+                curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
+            end
+        end
+    end
+
+    # Return the best evaluated finite iterate.
+    if isfinite(best_ll)
+        curr_μ = best_μ; curr_σ = best_σ; curr_ν = best_ν;
+        curr_T = best_T; curr_π = best_π;
+        final_gamma = best_gamma;
+    end
+
+    return (curr_T, curr_μ, curr_σ, curr_ν, curr_π, ll_history, final_gamma);
+end
+
+
+"""
     _weighted_median(x, w) -> Float64
 
 Weighted median of observations `x` with weights `w ≥ 0`. Returns the first

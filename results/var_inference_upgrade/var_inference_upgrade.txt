@@ -34,15 +34,19 @@ SPY OoS, T = 573 aligned one-step-ahead forecasts, seed = 20260420
     CAViaR-SAV             0    0.01  6         0.8322    0.9100   
     CAViaR-SAV             0    0.05  25        0.5647    0.4750   
 
-[2] Finite-sample DQ calibration at α = 0.01 (parametric bootstrap, B = 500)
+[2] Finite-sample DQ calibration at α = 0.01 (parametric bootstrap, B = 2000)
     Simulate OoS paths of length 573 from the fitted null (started from the
     filtered IS/OoS-boundary state), rerun the identical one-step-ahead VaR filter
     + DQ statistic (q = 4 lags + intercept + VaR_t) on each path;
     p_boot = (1 + #{DQ_b >= DQ_obs}) / (B + 1).
+    SCOPE: the calibration covers exactly TWO rows - CHMM-N K=3 and MS-GARCH K=4 -
+    and conditions on the estimated parameters (no per-replicate re-estimation).
+    Finite-sample inference is therefore limited to these two rows; the other
+    strict-tail DQ rows in the family panel carry asymptotic p-values only.
     model          breaches  DQ_obs    p_asym    p_boot    null DQ q50/q90/q95/q99       
     ------------------------------------------------------------------------------------------
-    CHMM-N K=3     9         12.266    0.0563    0.1697     2.14 / 17.39 / 21.94 / 35.87
-    MS-GARCH K=4   11        15.562    0.0163    0.0918     1.77 / 14.05 / 20.30 / 39.69
+    CHMM-N K=3     9         12.266    0.0563    0.1869     2.09 / 17.12 / 22.20 / 41.13
+    MS-GARCH K=4   11        15.562    0.0163    0.0960     1.82 / 15.39 / 19.91 / 39.68
     (asymptotic chi^2_6 quantiles for reference: q50 = 5.35, q90 = 10.64, q95 = 12.59, q99 = 16.81)
 
 [3] Paired quantile-loss (pinball) comparison on the same 573 forecast days

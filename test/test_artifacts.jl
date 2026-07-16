@@ -52,17 +52,18 @@ end
         end
     end
 
-    @testset "Rolling copula: paired like-for-like design" begin
+    @testset "Rolling copula: paired 2x2 family/refit design" begin
         path = abspath(joinpath(_ARTROOT, "..", "..", "CHMM-Paper-Repository",
                                 "results", "robustness", "rolling_copula_oos.csv"));
         @test isfile(path)
         hdr, rows = _read_csv_table(path);
         ci = Dict(String(h) => i for (i, h) in enumerate(hdr));
         qrows = [r for r in rows if tryparse(Int, r[ci["qi"]]) !== nothing];
-        # Every quarter carries BOTH arms' scores (static and rolling) against
-        # the same block, and the blocks tile the OoS span with no gap.
+        # Every quarter carries ALL FOUR arms' scores (static/rolling x
+        # Gaussian/Student-t) against the same block, and the blocks tile the
+        # OoS span with no gap.
         @test length(qrows) >= 9
-        total_days = 0; prev_end = nothing;
+        total_days = 0; prev_end = nothing; n_complete = 0;
         for r in qrows
             q_start = parse(Int, r[ci["q_start"]]);
             q_end = parse(Int, r[ci["q_end"]]);
@@ -71,15 +72,19 @@ end
             prev_end === nothing || @test q_start == prev_end + 1
             prev_end = q_end;
             total_days += n_days;
-            @test tryparse(Float64, r[ci["mae_static"]]) !== nothing
-            @test tryparse(Float64, r[ci["mae_roll"]]) !== nothing
-            d = parse(Float64, r[ci["diff"]]);
-            @test isapprox(d, parse(Float64, r[ci["mae_static"]]) -
-                              parse(Float64, r[ci["mae_roll"]]); atol=1e-4)
+            for col in ("mae_static_t", "mae_roll_t", "mae_static_g", "mae_roll_g")
+                @test tryparse(Float64, r[ci[col]]) !== nothing
+            end
+            # The in_inference flag marks exactly the complete 63-day blocks
+            # (the partial final block is scored but excluded from paired
+            # inference, by the stated convention).
+            flag = parse(Int, r[ci["in_inference"]]);
+            @test flag == Int(n_days == 63)
+            n_complete += flag;
         end
-        # Complete coverage of the 572-observation OoS span (final partial
-        # block included by the stated convention).
+        # Complete coverage of the 572-observation OoS span.
         @test total_days == 572
+        @test n_complete == 9
     end
 
     @testset "CRPS per-day loss matrix covers all five displayed rows" begin

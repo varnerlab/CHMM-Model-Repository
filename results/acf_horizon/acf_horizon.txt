@@ -7,6 +7,13 @@ seed+2 (moving-block bootstrap, block length 20, 1000 replicates),
 seed+3 (i.i.d. permutation floor, 1000 shuffles). ACF estimator:
 StatsBase.autocor of |G_t| at lags 1..252, as in run_kstar3_headline.jl.
 
+Observed-ACF bootstrap band validity: the L = 20 moving-block bootstrap
+severs dependence across block boundaries, so its percentile band is a valid
+uncertainty statement only for lags <= 20. The band is reported (CSV) and
+plotted (figure) only over that range; entries beyond lag 20 are NaN.
+No long-lag claim is made from this band; the horizon comparison below rests on
+the banded MAE table alone.
+
 Horizon-banded |G_t| ACF MAE (mean over paths of the band-mean absolute error):
 ------------------------------------------------------------
 Band (lags)      CHMM-N MAE i.i.d. floor MAE

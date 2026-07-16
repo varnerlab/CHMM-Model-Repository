@@ -106,142 +106,16 @@ function _simulate_paths(model, start_dist, n_is::Int, n_oos::Int, n_paths::Int)
 end
 
 # ========================================================================================= #
-# Shared-ν Student-t ECM, reproduced verbatim from runners/headline/run_chmm_t_shared_nu.jl
-# (single ν across all K states, GSS on the aggregate Q-function).
+# Shared-ν Student-t ECM: library fitter (src/Compute.jl, baum_welch_student_t_shared_nu),
+# same evaluate-before-update / best-evaluated-checkpoint contract as the per-family fitters.
+# The wrapper matches the named-tuple shape used by the simulation code below.
 # ========================================================================================= #
-function _logsumexp(v::AbstractVector)
-    m = maximum(v)
-    isfinite(m) || return m
-    return m + log(sum(exp.(v .- m)))
-end
-
 function ecm_shared_nu(obs::AbstractVector, K::Int;
         max_iter::Int=60, tol::Float64=1e-4,
         ν_init::Float64=NU_INIT, ν_bounds::Tuple{Float64,Float64}=NU_BOUNDS)
-    N = length(obs)
-    sorted_data = sort(obs)
-    chunk = floor(Int, N/K)
-    μ = zeros(K); σ = zeros(K)
-    for s in 1:K
-        a = (s-1)*chunk + 1
-        b = (s == K) ? N : s*chunk
-        μ[s] = mean(sorted_data[a:b])
-        σ[s] = max(std(sorted_data[a:b]), 1e-6)
-    end
-    ν = ν_init
-    T = ones(K, K) ./ K
-    π = ones(K) ./ K
-
-    function logpdf_t(x, μk, σk, νk)
-        return logpdf(LocationScale(μk, σk, TDist(νk)), x)
-    end
-
-    # Aggregate Q-function over shared ν: Σ_t Σ_k γ_t(k) logpdf_t(o_t; μ_k, σ_k, ν)
-    function Q_shared(νv, γ, μ, σ, obs)
-        acc = 0.0; n = length(obs); kk = size(γ, 2)
-        for k in 1:kk
-            d = LocationScale(μ[k], σ[k], TDist(νv))
-            for t in 1:n
-                acc += γ[t, k] * logpdf(d, obs[t])
-            end
-        end
-        return acc
-    end
-
-    function gss_nu(γ, μ, σ, obs, lo, hi; iters=40)
-        φ = (sqrt(5)-1)/2
-        a = lo; b = hi
-        c = b - φ*(b-a); d = a + φ*(b-a)
-        fc = Q_shared(c, γ, μ, σ, obs); fd = Q_shared(d, γ, μ, σ, obs)
-        for _ in 1:iters
-            if fc > fd
-                b = d; d = c; fd = fc
-                c = b - φ*(b-a); fc = Q_shared(c, γ, μ, σ, obs)
-            else
-                a = c; c = d; fc = fd
-                d = a + φ*(b-a); fd = Q_shared(d, γ, μ, σ, obs)
-            end
-        end
-        return 0.5*(a+b)
-    end
-
-    last_μ = copy(μ); last_σ = copy(σ); last_ν = ν
-    last_T = copy(T); last_π = copy(π)
-
-    prev_ll = -Inf
-    for _ in 1:max_iter
-        # E-STEP
-        log_B = zeros(N, K)
-        for t in 1:N, k in 1:K
-            log_B[t, k] = logpdf_t(obs[t], μ[k], σ[k], ν)
-        end
-        log_α = zeros(N, K)
-        log_α[1, :] = log.(π) .+ log_B[1, :]
-        for t in 2:N, j in 1:K
-            log_α[t, j] = _logsumexp(log_α[t-1, :] .+ log.(T[:, j])) + log_B[t, j]
-        end
-        ll_now = _logsumexp(log_α[N, :])
-        if !isfinite(ll_now)
-            μ = last_μ; σ = last_σ; ν = last_ν; T = last_T; π = last_π
-            break
-        end
-        last_μ = copy(μ); last_σ = copy(σ); last_ν = ν
-        last_T = copy(T); last_π = copy(π)
-
-        log_β = zeros(N, K)
-        for t in N-1:-1:1, i in 1:K
-            log_β[t, i] = _logsumexp(log.(T[i, :]) .+ log_B[t+1, :] .+ log_β[t+1, :])
-        end
-
-        γ = zeros(N, K)
-        for t in 1:N
-            denom = _logsumexp(log_α[t, :] .+ log_β[t, :])
-            γ[t, :] = exp.((log_α[t, :] .+ log_β[t, :]) .- denom)
-        end
-
-        ξ_sum = zeros(K, K)
-        for t in 1:N-1
-            denom = _logsumexp(log_α[t, :] .+ log_β[t, :])
-            for i in 1:K, j in 1:K
-                ξ_sum[i, j] += exp(log_α[t, i] + log(T[i, j]) + log_B[t+1, j] + log_β[t+1, j] - denom)
-            end
-        end
-
-        # Latent precisions with shared ν
-        u = zeros(N, K)
-        for t in 1:N, k in 1:K
-            δ2 = ((obs[t] - μ[k]) / σ[k])^2
-            u[t, k] = (ν + 1.0) / (ν + δ2)
-        end
-
-        # M-STEP
-        π = γ[1, :]
-        for k in 1:K
-            wu = γ[:, k] .* u[:, k]
-            Σwu = sum(wu); Σγ = sum(γ[:, k])
-            if Σwu > 0
-                μ[k] = sum(wu .* obs) / Σwu
-            end
-            if Σγ > 0
-                σ2 = sum(wu .* (obs .- μ[k]).^2) / Σγ
-                σ[k] = max(sqrt(max(σ2, 1e-12)), 1e-6)
-            end
-        end
-        # Shared ν: GSS on aggregate Q
-        ν = gss_nu(γ, μ, σ, obs, ν_bounds[1], ν_bounds[2])
-
-        for i in 1:K
-            r = sum(ξ_sum[i, :])
-            if r > 0
-                T[i, :] = ξ_sum[i, :] ./ r
-            end
-        end
-
-        if abs(ll_now - prev_ll) < tol; break; end
-        prev_ll = ll_now
-    end
-
-    return (T=T, μ=μ, σ=σ, ν=ν, π=π)
+    T, μ, σ, ν, π, ll_hist, _ = baum_welch_student_t_shared_nu(collect(Float64, obs), K;
+        max_iter=max_iter, tol=tol, ν_init=ν_init, ν_bounds=ν_bounds)
+    return (T=T, μ=μ, σ=σ, ν=ν, π=π, ll_history=ll_hist)
 end
 
 function _stationary_T(T)
@@ -421,7 +295,10 @@ end
 dm_rows = NamedTuple[];
 for (a, b) in pairs_list
     out = dm_statistic(loss_series[a], loss_series[b]);
-    push!(dm_rows, (a=a, b=b, mean_diff=out.dbar, dm=out.dm, p_raw=out.pval, h=out.h));
+    # HAC 95% CI for the mean loss difference: dbar +/- 1.96 * sigma_lr / sqrt(T).
+    half = 1.959963984540054 * out.σ_lr / sqrt(out.T);
+    push!(dm_rows, (a=a, b=b, mean_diff=out.dbar, ci_lo=out.dbar - half, ci_hi=out.dbar + half,
+                    dm=out.dm, p_raw=out.pval, h=out.h));
 end
 p_holm = holm_adjust([r.p_raw for r in dm_rows]);
 dm_rows = [(; r..., p_holm=p_holm[i]) for (i, r) in enumerate(dm_rows)];
@@ -464,7 +341,7 @@ open(txt_path, "w") do io
     println(io, "Setup    : SPY daily log excess growth; IS n = $n_steps, OoS T = $n_steps_oos; seed = $SEED; K* = $K_STAR.");
     println(io, "Rows     : CHMM-N, CHMM-t (penalised ECM, lambda = $LAMBDA_T), CHMM-L, CHMM-GED (per-cell reseed:");
     println(io, "           SEED fit / SEED+1 simulation, as run_kstar3_headline.jl), and shared-nu CHMM-t");
-    println(io, "           (ecm_shared_nu of run_chmm_t_shared_nu.jl, nu bounds $NU_BOUNDS, own seed convention).");
+    println(io, "           (library baum_welch_student_t_shared_nu, nu bounds $NU_BOUNDS, own seed convention).");
     println(io, "Ensemble : one $N_PATHS-path unconditional (marginal-predictive) simulation bundle per model.");
     println(io, "CRPS     : unbiased sample CRPS via the sorted-ensemble identity (sec:crps_methods),");
     println(io, "           CRPS_t = (1/N) sum_i |x_i - y_t| - (1/(N(N-1))) sum_{i<j} |x_i - x_j|.");
@@ -485,23 +362,24 @@ open(txt_path, "w") do io
     println(io, "Pairwise Diebold-Mariano tests on the per-day OoS CRPS loss differential d_t = l_A(t) - l_B(t).");
     println(io, "Positive DM means row A's CRPS exceeds row B's (A worse). p-values are two-sided.");
     println(io);
-    @printf(io, "  %-16s %-16s %12s %10s %10s %10s\n",
-            "A", "B", "mean d_t", "DM t", "p raw", "p Holm");
-    println(io, "  ", "-"^78);
+    @printf(io, "  %-16s %-16s %12s %24s %10s %10s %10s\n",
+            "A", "B", "mean d_t", "HAC 95% CI", "DM t", "p raw", "p Holm");
+    println(io, "  ", "-"^104);
     for r in dm_rows
-        @printf(io, "  %-16s %-16s %+12.6f %+10.4f %10.4f %10.4f\n",
-                r.a, r.b, r.mean_diff, r.dm, r.p_raw, r.p_holm);
+        @printf(io, "  %-16s %-16s %+12.6f [%+.6f, %+.6f] %+10.4f %10.4f %10.4f\n",
+                r.a, r.b, r.mean_diff, r.ci_lo, r.ci_hi, r.dm, r.p_raw, r.p_holm);
     end
     println(io);
     println(io, "-"^110);
     if n_reject_holm == 0
-        println(io, "Conclusion: none of the 10 pairwise DM tests rejects at the $(ALPHA) level after Holm");
-        println(io, "correction (raw rejections: $n_reject_raw/10). The five displayed K* = 3 CHMM rows are");
-        println(io, "statistically indistinguishable on mean OoS sample-CRPS under the HAC DM test.");
+        println(io, "Conclusion: none of the 10 pairwise equal-mean-loss nulls is rejected at the $(ALPHA) level");
+        println(io, "after Holm correction (raw rejections: $n_reject_raw/10). This is a non-rejection statement,");
+        println(io, "not an equivalence claim: no equivalence margin is pre-specified, so the panel does not");
+        println(io, "establish that the five rows are equivalent. The HAC 95% CIs above bound the plausible");
+        println(io, "mean-CRPS differences.");
     else
-        println(io, "Conclusion: $n_reject_holm of the 10 pairwise DM tests reject at the $(ALPHA) level after");
-        println(io, "Holm correction (raw rejections: $n_reject_raw/10). The displayed K* = 3 CHMM rows are");
-        println(io, "NOT all statistically indistinguishable on mean OoS sample-CRPS; see the panel above.");
+        println(io, "Conclusion: $n_reject_holm of the 10 pairwise equal-mean-loss nulls reject at the $(ALPHA)");
+        println(io, "level after Holm correction (raw rejections: $n_reject_raw/10); see the panel above.");
     end
     println(io);
     println(io, "Source: runners/robustness/run_crps_dm_kstar3.jl (per-day losses in per_day_losses.csv).");
@@ -512,10 +390,10 @@ println("  $txt_path");
 mkpath(PAPER_ROBUSTNESS_DIR);
 paper_csv_path = joinpath(PAPER_ROBUSTNESS_DIR, "crps_dm_kstar3.csv");
 open(paper_csv_path, "w") do io
-    println(io, "pair,mean_diff,dm_t,p_raw,p_holm");
+    println(io, "pair,mean_diff,ci_lo,ci_hi,dm_t,p_raw,p_holm");
     for r in dm_rows
-        @printf(io, "%s_vs_%s,%.6f,%.4f,%.4f,%.4f\n",
-                r.a, r.b, r.mean_diff, r.dm, r.p_raw, r.p_holm);
+        @printf(io, "%s_vs_%s,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f\n",
+                r.a, r.b, r.mean_diff, r.ci_lo, r.ci_hi, r.dm, r.p_raw, r.p_holm);
     end
 end
 println("  $paper_csv_path");

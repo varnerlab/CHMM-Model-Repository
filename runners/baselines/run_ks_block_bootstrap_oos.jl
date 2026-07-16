@@ -99,8 +99,11 @@ for L in BLOCK_LENGTHS
     Random.seed!(SEED + 1000 + L);
     null_stats = Vector{Float64}(undef, B_BOOT);
     for b in 1:B_BOOT
-        boot = stationary_block_bootstrap(R_oos, n_oos, L);
-        null_stats[b] = ks_statistic(R_oos, boot);
+        # Two-sample null: two INDEPENDENT stationary-block resamples per replicate,
+        # mimicking the actual observed-vs-simulated comparison (fourth-review item 4).
+        boot_a = stationary_block_bootstrap(R_oos, n_oos, L);
+        boot_b = stationary_block_bootstrap(R_oos, n_oos, L);
+        null_stats[b] = ks_statistic(boot_a, boot_b);
     end
     crit_values[L] = quantile(null_stats, 0.95);
     println("  L = $L : 95% critical value = $(round(crit_values[L], digits=4))");

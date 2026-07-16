@@ -3,22 +3,25 @@ KS p-value distribution + block-bootstrap recalibration.
 ======================================================================================================================================================
 
 Setup     : SPY IS (2516 observations); 500 simulated paths per generator under seed 20260422.
-Block boot: stationary block bootstrap (Politis-Romano 1994) of IS at mean block length L ∈ [5, 10, 20], B = 1000.
+Block boot: two-sample stationary-block-bootstrap null (Politis-Romano 1994), mean block length
+            L ∈ [5, 10, 20], B = 1000: each replicate draws TWO independent resamples of IS and
+            computes the KS statistic between them. The threshold is conditional on the empirical
+            IS distribution (no per-replicate generator refit); pass rates are descriptive.
 
 Block-bootstrap KS critical values (95% null quantile):
-  L = 5    crit = 0.0306
-  L = 10   crit = 0.0338
-  L = 20   crit = 0.035
+  L = 5    crit = 0.0433
+  L = 10   crit = 0.0469
+  L = 20   crit = 0.0497
   asymp.   crit = 0.0383   (1.36 * sqrt(2 / n) for two-sample KS at α = 0.05)
 
 Generator      | asymp pass% | mean pv | med pv | pv q05 | pv q25 | pv q75 | pv q95 | KS q05 | KS q50 | KS q95 | blk5% | blk10% | blk20%
 ------------------------------------------------------------------------------------------------------------------------------------------------------
-iid bootstrap  | 99.6        | 0.82    | 0.923  | 0.352  | 0.727  | 0.982  | 0.999  | 0.01   | 0.016  | 0.026  | 97.6  | 99.4   | 99.6  
-GARCH(1,1)     | 26.8        | 0.048   | 0.011  | 0.0    | 0.001  | 0.051  | 0.227  | 0.029  | 0.045  | 0.072  | 6.8   | 13.6   | 17.4  
-CHMM-N         | 94.8        | 0.546   | 0.585  | 0.047  | 0.284  | 0.816  | 0.976  | 0.014  | 0.022  | 0.039  | 81.2  | 89.4   | 91.6  
-CHMM-t         | 95.8        | 0.571   | 0.608  | 0.059  | 0.3    | 0.856  | 0.987  | 0.013  | 0.021  | 0.037  | 82.4  | 89.2   | 91.6  
-CHMM-L         | 94.4        | 0.504   | 0.516  | 0.047  | 0.254  | 0.75   | 0.948  | 0.015  | 0.023  | 0.039  | 80.2  | 88.0   | 90.4  
-CHMM-GED       | 95.6        | 0.547   | 0.561  | 0.064  | 0.296  | 0.816  | 0.968  | 0.014  | 0.022  | 0.037  | 83.2  | 90.2   | 93.2  
+iid bootstrap  | 99.6        | 0.82    | 0.923  | 0.352  | 0.727  | 0.982  | 0.999  | 0.01   | 0.016  | 0.026  | 100.0 | 100.0  | 100.0 
+GARCH(1,1)     | 26.8        | 0.048   | 0.011  | 0.0    | 0.001  | 0.051  | 0.227  | 0.029  | 0.045  | 0.072  | 42.4  | 54.4   | 63.0  
+CHMM-N         | 94.8        | 0.546   | 0.585  | 0.047  | 0.284  | 0.816  | 0.976  | 0.014  | 0.022  | 0.039  | 98.4  | 98.8   | 99.2  
+CHMM-t         | 95.8        | 0.571   | 0.608  | 0.059  | 0.3    | 0.856  | 0.987  | 0.013  | 0.021  | 0.037  | 98.2  | 99.4   | 99.6  
+CHMM-L         | 94.4        | 0.504   | 0.516  | 0.047  | 0.254  | 0.75   | 0.948  | 0.015  | 0.023  | 0.039  | 98.0  | 99.0   | 99.6  
+CHMM-GED       | 95.6        | 0.547   | 0.561  | 0.064  | 0.296  | 0.816  | 0.968  | 0.014  | 0.022  | 0.037  | 98.8  | 99.6   | 100.0 
 ======================================================================================================================================================
 
 Reading: 'asymp pass%' is the original Table 3 metric (fraction of paths with two-sample KS p-value ≥ 0.05).

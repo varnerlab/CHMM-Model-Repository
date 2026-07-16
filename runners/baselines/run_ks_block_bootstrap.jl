@@ -9,11 +9,17 @@
 #       "report the p-value distribution rather than only a pass rate" sub-ask.
 #
 #   (b) Block-bootstrap recalibration: empirical 95% critical value of the KS statistic
-#       under stationary block bootstrap of the IS series (mean block length L ∈ {5, 10,
-#       20}), then a "block-aware" pass rate per generator that compares each simulated
-#       path's KS statistic to the block-bootstrap critical value rather than the
-#       asymptotic Kolmogorov critical value. Addresses the referee's volatility-clustering
-#       concern on the asymptotic test.
+#       under a two-sample stationary-block-bootstrap null — each null replicate draws
+#       TWO independent stationary-block resamples of the IS series (mean block length
+#       L ∈ {5, 10, 20}) and computes the KS statistic between them, so the null mimics
+#       the actual comparison (two independent length-n series sharing the observed
+#       marginal and short-range dependence). A "block-aware" pass rate per generator
+#       then compares each simulated path's KS statistic to this critical value rather
+#       than the asymptotic Kolmogorov value. (Fourth-review item 4: the earlier
+#       construction compared the FIXED observed series against one resample of itself,
+#       a conditional one-sample distance threshold, not the stated two-sample null.)
+#       The threshold remains conditional on the empirical IS distribution — no
+#       generator refit is performed per replicate — so pass rates stay descriptive.
 #
 # Generators covered: CHMM-N / -t / -L at K = 18; GARCH(1,1) Gaussian; i.i.d. bootstrap.
 # All numbers under the revision seed 20260422 with N_paths = 500 (down from 1,000 for
@@ -119,8 +125,11 @@ for L in BLOCK_LENGTHS
     Random.seed!(SEED + 1000 + L);
     null_stats = Vector{Float64}(undef, B_BOOT);
     for b in 1:B_BOOT
-        boot = stationary_block_bootstrap(R_is, n_is, L);
-        null_stats[b] = ks_statistic(R_is, boot);
+        # Two-sample null: two INDEPENDENT stationary-block resamples per replicate,
+        # mimicking the actual observed-vs-simulated comparison (fourth-review item 4).
+        boot_a = stationary_block_bootstrap(R_is, n_is, L);
+        boot_b = stationary_block_bootstrap(R_is, n_is, L);
+        null_stats[b] = ks_statistic(boot_a, boot_b);
     end
     crit_values[L] = quantile(null_stats, 0.95);
     all_null_ks[L] = null_stats;
@@ -223,7 +232,10 @@ open(joinpath(OUT_DIR, "KS_Bootstrap_Recalibration.txt"), "w") do io
     println(io, "="^150);
     println(io, "");
     println(io, "Setup     : SPY IS ($n_is observations); $N_PATHS simulated paths per generator under seed $SEED.");
-    println(io, "Block boot: stationary block bootstrap (Politis-Romano 1994) of IS at mean block length L ∈ $BLOCK_LENGTHS, B = $B_BOOT.");
+    println(io, "Block boot: two-sample stationary-block-bootstrap null (Politis-Romano 1994), mean block length");
+    println(io, "            L ∈ $BLOCK_LENGTHS, B = $B_BOOT: each replicate draws TWO independent resamples of IS and");
+    println(io, "            computes the KS statistic between them. The threshold is conditional on the empirical");
+    println(io, "            IS distribution (no per-replicate generator refit); pass rates are descriptive.");
     println(io, "");
     println(io, "Block-bootstrap KS critical values (95% null quantile):");
     for L in BLOCK_LENGTHS

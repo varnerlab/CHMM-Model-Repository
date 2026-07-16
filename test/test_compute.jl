@@ -245,6 +245,20 @@
         llg_re = _forward_ll(obs, Tg, πg,
             [PGeneralizedGaussian(μg[k], αg[k], pg[k]) for k in 1:K])
         @test llg_re ≈ maximum(llg) atol=1e-8
+
+        # Shared-nu Student-t: returned params are the best evaluated iterate,
+        # a single finite nu is shared across states, and the trace is finite.
+        Ts, μs, σs, νs, πs, lls, γs = baum_welch_student_t_shared_nu(obs, K; max_iter=25)
+        @test νs isa Float64
+        @test 2.1 <= νs <= 50.0
+        @test all(isfinite, lls)
+        lls_re = _forward_ll(obs, Ts, πs,
+            [LocationScale(μs[k], σs[k], TDist(νs)) for k in 1:K])
+        @test lls_re ≈ maximum(lls) atol=1e-8
+        # Gamma is the smoothed posterior under exactly the returned params:
+        # rows sum to one and the shape matches.
+        @test size(γs) == (length(obs), K)
+        @test all(abs.(sum(γs, dims=2) .- 1.0) .< 1e-8)
     end
 
     @testset "Transition update on a known two-state chain" begin

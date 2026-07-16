@@ -7,7 +7,9 @@
 # QuantGAN (excluded below), the reference Bayesian MSGARCH row (R/renv,
 # standalone), and the standalone VaR back-test, walk-forward, state-selection,
 # spectral, cross-asset-uncertainty, and robustness runners are invoked
-# individually; see RUNNERS.md for the complete artefact-by-artefact map.
+# individually; see RUNNERS.md and results/artifacts_manifest.csv for the
+# complete artefact-by-artefact map (the manifest is validated by
+# runners/diagnostics/run_paper_artifact_check.jl).
 # Exits with status 1 if any stage fails (each stage is an independent
 # top-level include; failure in one does not abort the others, but it is
 # recorded and reported in the final summary):

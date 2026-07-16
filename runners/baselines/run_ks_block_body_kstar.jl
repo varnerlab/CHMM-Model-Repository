@@ -74,8 +74,11 @@ println("\n[block-boot] OoS-anchored 95% KS critical value at L = $L_BLOCK (B = 
 Random.seed!(SEED + 1000 + L_BLOCK);
 null_stats = Vector{Float64}(undef, B_BOOT);
 for b in 1:B_BOOT
-    boot = stationary_block_bootstrap(R_oos, n_oos, L_BLOCK);
-    null_stats[b] = ks_statistic(R_oos, boot);
+    # Two-sample null: two INDEPENDENT stationary-block resamples per replicate,
+    # mimicking the actual observed-vs-simulated comparison (fourth-review item 4).
+    boot_a = stationary_block_bootstrap(R_oos, n_oos, L_BLOCK);
+    boot_b = stationary_block_bootstrap(R_oos, n_oos, L_BLOCK);
+    null_stats[b] = ks_statistic(boot_a, boot_b);
 end
 crit_block = quantile(null_stats, 0.95);
 crit_asymp = 1.36 * sqrt(2 / n_oos);

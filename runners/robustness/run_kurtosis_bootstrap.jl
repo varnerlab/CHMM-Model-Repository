@@ -87,10 +87,22 @@ for L in Ls
             median(boot_oos), quantile(boot_oos, 0.025), quantile(boot_oos, 0.975));
 end
 
-# --- Tail-overlap test: do the IS and OoS bootstrap distributions overlap? ---
-# Operational reading: at each L, count fraction of (IS_b - OoS_b) > 0.
+# --- Descriptive bootstrap probability: fraction of (IS_b - OoS_b) > 0. ---
+# NOT a p-value: the two windows are resampled around their own observed kurtosis
+# levels, so no equal-kurtosis null is imposed (fourth-review item 3). The
+# inferential object is the DIFFERENCE distribution below.
 function _diff_p(b_is::Vector{Float64}, b_oos::Vector{Float64})
     return mean(b_is .> b_oos);
+end
+
+# --- Bootstrap distribution of the difference (IS_b - OoS_b) with percentile
+# and basic CIs. The IS and OoS resamples are independent, so the pairwise
+# differences approximate the sampling distribution of kurt_IS - kurt_OoS. ---
+function _diff_ci(b_is::Vector{Float64}, b_oos::Vector{Float64}, obs_diff::Float64)
+    d = b_is .- b_oos;
+    pct = (quantile(d, 0.025), quantile(d, 0.975));
+    bas = (2*obs_diff - quantile(d, 0.975), 2*obs_diff - quantile(d, 0.025));
+    return (pct=pct, basic=bas, med=median(d));
 end
 
 # --- Write summary ---
@@ -115,26 +127,45 @@ open(OUT, "w") do io
                 _diff_p(boot_is, boot_oos));
     end
     println(io);
-    println(io, "Reading:");
-    println(io, "  - IS 95% CI lower bound across all L: ", round(minimum([quantile(results_is[L], 0.025) for L in Ls]), digits=2),
-                 "; OoS 95% CI upper bound across all L: ", round(maximum([quantile(results_oos[L], 0.975) for L in Ls]), digits=2));
-    is_lo = minimum([quantile(results_is[L], 0.025) for L in Ls]);
-    oos_hi = maximum([quantile(results_oos[L], 0.975) for L in Ls]);
-    if is_lo > oos_hi
-        println(io, "  - IS 95% CI lies entirely above OoS 95% CI: the IS-OoS kurtosis disagreement");
-        println(io, "    is statistically distinguishable at conventional levels.");
-    elseif is_lo > _excess_kurtosis(g_oos) || oos_hi < _excess_kurtosis(g_is)
-        println(io, "  - IS and OoS CIs overlap, but each window's CI excludes the other window's");
-        println(io, "    point estimate: marginal evidence the windows differ.");
-    else
-        println(io, "  - IS and OoS CIs overlap; the IS-OoS kurtosis difference (~2.4 units) is");
-        println(io, "    not robustly distinguishable at conventional levels under this bootstrap.");
+    obs_diff = _excess_kurtosis(g_is) - _excess_kurtosis(g_oos);
+    println(io, "Bootstrap distribution of the DIFFERENCE (IS - OoS excess kurtosis) - the");
+    println(io, "inferential object. The difference CI, not the overlap of the two marginal CIs,");
+    println(io, "is what tests whether the windows differ:");
+    println(io, "L     | diff median | percentile 95% CI   | basic 95% CI        | covers 0?");
+    println(io, "-"^88);
+    for L in Ls
+        ci = _diff_ci(results_is[L], results_oos[L], obs_diff);
+        covers = (ci.pct[1] <= 0.0 <= ci.pct[2]) ? "yes" : "no";
+        @printf(io, "%-5d | %11.3f | [%6.3f, %6.3f]   | [%6.3f, %6.3f]   | %s\n",
+                L, ci.med, ci.pct[1], ci.pct[2], ci.basic[1], ci.basic[2], covers);
     end
     println(io);
-    @printf(io, "  - Pr(IS > OoS) at L = 10: %.3f. Read as the bootstrap empirical p-value for the\n",
+    println(io, "Reading:");
+    for L in Ls
+        ci = _diff_ci(results_is[L], results_oos[L], obs_diff);
+        if !(ci.pct[1] <= 0.0 <= ci.pct[2])
+            @printf(io, "  - At L = %d the percentile 95%% CI for the difference excludes zero.\n", L);
+        end
+    end
+    ci10 = _diff_ci(results_is[10], results_oos[10], obs_diff);
+    if ci10.pct[1] <= 0.0 <= ci10.pct[2]
+        @printf(io, "  - At L = 10 the percentile 95%% CI for the IS - OoS difference is [%.3f, %.3f],\n",
+                ci10.pct[1], ci10.pct[2]);
+        println(io, "    which covers zero: the data do not exclude equal IS and OoS excess kurtosis");
+        println(io, "    at the 5% level under this bootstrap. This is a non-rejection, not evidence");
+        println(io, "    of equality.");
+    else
+        @printf(io, "  - At L = 10 the percentile 95%% CI for the IS - OoS difference is [%.3f, %.3f],\n",
+                ci10.pct[1], ci10.pct[2]);
+        println(io, "    which excludes zero: the windows' excess kurtosis levels differ at the 5%");
+        println(io, "    level under this bootstrap.");
+    end
+    println(io);
+    @printf(io, "  - Pr(IS > OoS) at L = 10: %.3f. This is a DESCRIPTIVE bootstrap probability -\n",
             _diff_p(results_is[10], results_oos[10]));
-    println(io,  "    one-sided null 'IS kurtosis = OoS kurtosis' against the alternative that IS");
-    println(io,  "    is heavier than OoS. Values close to 1 favour the alternative.");
+    println(io,  "    the fraction of independent resample pairs in which the IS draw exceeds the");
+    println(io,  "    OoS draw. It is NOT a p-value: each window is resampled around its own");
+    println(io,  "    observed kurtosis, so no equal-kurtosis null is imposed (fourth-review item 3).");
 end
 
 println("[done] $OUT");

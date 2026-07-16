@@ -92,7 +92,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/cross_asset/run_non_us_asset.jl` | `results/non_us_asset/...` | Appendix `sec:non_us_asset_supp` (GLD / SLV stress test) |
 | `runners/cross_asset/run_non_us_asset_quarterly_refit.jl` | `results/non_us_asset/Non_US_Asset_QuarterlyRefit.{txt,csv}` | Item 11 of REVIEW_RESPONSE_PLAN.md (GLD quarterly-refit follow-up). Configurable via `GLD_REFIT_K`, `GLD_REFIT_FAMILY` env vars. |
 | `runners/cross_asset/run_full_tcopula_mle.jl` | `results/copula_profile_ci/full_tcopula_mle.txt` (paper `full_tcopula_mle.csv`) | Body Table 4 one-shot joint $(\Sigma, \nu)$ MLE confirming the two-step $\nu^\star = 6$ |
-| `runners/cross_asset/run_cross_asset_rolling_copula.jl` | `results/cross_asset/Rolling_Copula_OoS.txt` (paper `rolling_copula_oos.csv`) | Body Table 4 quarterly-rolling-refit copula (OoS off-diagonal MAE $0.185$; failure count $0/6$) |
+| `runners/cross_asset/run_cross_asset_rolling_copula.jl` | `results/cross_asset/Rolling_Copula_OoS.txt` (paper `rolling_copula_oos.csv`) | Appendix `tab:rolling_copula` 2x2 family/refit experiment: {static, rolling} x {Gaussian, Student-t} on identical quarter targets; refit effect 0.263 -> 0.185 (t), 0.260 -> 0.178 (G); family effect 0.003-0.007; partial block excluded from paired inference |
 
 ## Auxiliary baselines (Appendix B — extended baselines)
 

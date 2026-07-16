@@ -47,7 +47,7 @@ const MAX_ITER  = 60;            # CHMM Baum-Welch iterations (harness conventio
 const DT        = 1/252;
 const RISK_FREE = 0.0;
 const Q_LAGS    = 4;
-const B_BOOT    = parse(Int, get(ENV, "VAR_DQ_BOOT_B", "500"));
+const B_BOOT    = parse(Int, get(ENV, "VAR_DQ_BOOT_B", "2000"));
 
 const OUT_DIR = joinpath(_ROOT, "results", "var_inference_upgrade");
 mkpath(OUT_DIR);
@@ -529,6 +529,10 @@ open(txt_path, "w") do io
     println(io, "    filtered IS/OoS-boundary state), rerun the identical one-step-ahead VaR filter");
     println(io, "    + DQ statistic (q = $Q_LAGS lags + intercept + VaR_t) on each path;");
     println(io, "    p_boot = (1 + #{DQ_b >= DQ_obs}) / (B + 1).");
+    println(io, "    SCOPE: the calibration covers exactly TWO rows - CHMM-N K=3 and MS-GARCH K=4 -");
+    println(io, "    and conditions on the estimated parameters (no per-replicate re-estimation).");
+    println(io, "    Finite-sample inference is therefore limited to these two rows; the other");
+    println(io, "    strict-tail DQ rows in the family panel carry asymptotic p-values only.");
     @printf(io, "    %-14s %-9s %-9s %-9s %-9s %-30s\n",
         "model", "breaches", "DQ_obs", "p_asym", "p_boot", "null DQ q50/q90/q95/q99");
     println(io, "    " * "-"^90);
