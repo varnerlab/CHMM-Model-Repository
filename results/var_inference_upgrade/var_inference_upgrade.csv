@@ -1,0 +1,37 @@
+section,model,K,alpha,breaches,p_exact_binom,p_uc_asym,DQ_obs,DQ_p_asym,DQ_p_boot,B,mean_pinball,dloss_vs_chmm,t_NW,p_NW,nw_lags
+exact_binomial,CHMM-N,3,0.01,9,0.19927,0.20500,,,,,,,,,
+exact_binomial,CHMM-N,3,0.05,36,0.17821,0.17500,,,,,,,,,
+exact_binomial,CHMM-N,18,0.01,9,0.19927,0.20500,,,,,,,,,
+exact_binomial,CHMM-N,18,0.05,26,0.70118,0.60600,,,,,,,,,
+exact_binomial,CHMM-t (λ=20.0),3,0.01,8,0.29308,0.36900,,,,,,,,,
+exact_binomial,CHMM-t (λ=20.0),3,0.05,32,0.50174,0.52800,,,,,,,,,
+exact_binomial,CHMM-t (λ=20.0),18,0.01,10,0.08703,0.10500,,,,,,,,,
+exact_binomial,CHMM-t (λ=20.0),18,0.05,29,0.92353,0.94700,,,,,,,,,
+exact_binomial,CHMM-L,3,0.01,5,1.00000,0.75400,,,,,,,,,
+exact_binomial,CHMM-L,3,0.05,26,0.70118,0.60600,,,,,,,,,
+exact_binomial,CHMM-L,18,0.01,9,0.19927,0.20500,,,,,,,,,
+exact_binomial,CHMM-L,18,0.05,32,0.50174,0.52800,,,,,,,,,
+exact_binomial,CHMM-GED,3,0.01,7,0.52578,0.60600,,,,,,,,,
+exact_binomial,CHMM-GED,3,0.05,31,0.63129,0.65600,,,,,,,,,
+exact_binomial,CHMM-GED,18,0.01,9,0.19927,0.20500,,,,,,,,,
+exact_binomial,CHMM-GED,18,0.05,25,0.56474,0.47500,,,,,,,,,
+exact_binomial,MS-GARCH,2,0.01,12,0.01735,0.02170,,,,,,,,,
+exact_binomial,MS-GARCH,2,0.05,32,0.50174,0.52820,,,,,,,,,
+exact_binomial,MS-GARCH,3,0.01,11,0.03487,0.04950,,,,,,,,,
+exact_binomial,MS-GARCH,3,0.05,29,0.92353,0.94660,,,,,,,,,
+exact_binomial,MS-GARCH,4,0.01,11,0.03487,0.04950,,,,,,,,,
+exact_binomial,MS-GARCH,4,0.05,30,0.77337,0.79730,,,,,,,,,
+exact_binomial,Filtered bootstrap,0,0.01,8,0.29308,0.36900,,,,,,,,,
+exact_binomial,Filtered bootstrap,0,0.05,24,0.44242,0.36000,,,,,,,,,
+exact_binomial,CAViaR-SAV,0,0.01,6,0.83220,0.91000,,,,,,,,,
+exact_binomial,CAViaR-SAV,0,0.05,25,0.56474,0.47500,,,,,,,,,
+dq_bootstrap,CHMM-N,3,0.01,9,,,12.2661,0.05629,0.16966,500,,,,,
+dq_bootstrap,MS-GARCH,4,0.01,11,,,15.5621,0.01631,0.09182,500,,,,,
+pinball,CHMM-N K=3,,0.01,,,,,,,,0.072386,0.000000,0.0000,1.00000,0
+pinball,MS-GARCH K=4,,0.01,,,,,,,,0.076432,0.004047,1.4759,0.13998,5
+pinball,Filtered bootstrap,,0.01,,,,,,,,0.071327,-0.001059,-0.2109,0.83294,5
+pinball,CAViaR-SAV,,0.01,,,,,,,,0.071510,-0.000875,-0.4683,0.63956,5
+pinball,CHMM-N K=3,,0.05,,,,,,,,0.231864,0.000000,0.0000,1.00000,0
+pinball,MS-GARCH K=4,,0.05,,,,,,,,0.231278,-0.000586,-0.1418,0.88722,5
+pinball,Filtered bootstrap,,0.05,,,,,,,,0.231858,-0.000006,-0.0016,0.99869,5
+pinball,CAViaR-SAV,,0.05,,,,,,,,0.232889,0.001024,0.2262,0.82107,5

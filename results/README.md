@@ -44,13 +44,6 @@ Main tickers: SPY, NVDA, JNJ, JPM, AAPL, QQQ. Main K: K* = 3 (K = 18 retained as
 | `diagnostics/nu_diagnostics/...`                                        | A        | SPY, CHMM-t nu behavior      | Appendix                  |
 | `diagnostics/ryden_k2/...`                                              | A        | SPY, Ryden K=2 comparison    | Appendix                  |
 | `diagnostics/utility/VaR_ES_Backtest.*`                                 | A        | SPY                          | Appendix VaR / ES         |
-| `track_a/...`                                                           | A        | SPY, extended evaluation     | Table 4 extension / app.  |
-| `track_b1/...`                                                          | A        | SPY, QuantGAN-style baseline | Table 4 extension / app.  |
-| `track_b3/...`                                                          | A        | SPY, diffusion baseline      | Table 4 extension / app.  |
-| `track_b4/...`                                                          | A        | SPY, MS-GARCH baseline       | Table 4 extension / app.  |
-| `track_c1/...`                                                          | A        | SPY, semi-Markov ablation    | Table 4 extension / app.  |
-| `track_c3/...`                                                          | A        | SPY, conditional VaR         | Utility / risk section    |
-| `track_c4/...`                                                          | A        | SPY, leverage-emission row   | Table 4 extension / app.  |
 
 ## Table T2 vs. Table T3: quick disambiguation
 

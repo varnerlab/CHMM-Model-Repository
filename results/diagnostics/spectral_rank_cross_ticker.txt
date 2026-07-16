@@ -1,53 +1,58 @@
 ================================================================================================
-Cross-ticker spectral effective-rank diagnostic  (peer-review P2.1 / R2.W1)
+Cross-ticker spectral effective-rank diagnostic  (grouped components; third-review item 7)
 ================================================================================================
 Setup: CHMM-N at K = 18, sector-balanced 30-ticker panel + SPY control,
        seed = 20260420, n_draw = 200000 per state for m_k.
-Per-ticker columns: dom_share = (dominant non-unit eigenvalue's |w_k λ_k|) /
-       (sum of |w_k λ_k| over all non-unit eigenvalues, lag = 1).
-       n95 = number of modes carrying ≥ 95% of cumulative |w_k λ_k|.
-       n>1%% = number of modes with > 1% of total |w_k λ_k|.
+Complex-conjugate eigenvalue pairs are grouped into single real damped-oscillatory
+components; contrib_c(1) is each component's SIGNED real lag-1 ACF contribution.
+Per-ticker columns: dom_share = max_c |contrib_c(1)| / B with
+       B = Σ_c |contrib_c(1)| the absolute component-magnitude budget (B is not a
+       percentage of ρ(1) itself: signed contributions can cancel).
+       n95/n99 = number of components carrying ≥ 95% / 99% of cumulative B.
+       n>1%% = number of components with > 1% of B.
+       ncomp = grouped component count (≤ K - 1); recon = max |spectral - direct|
+       ACF reconstruction error over τ = 1..252.
 
-ticker sector                     dom_share  n95    n99    n>1%   
+ticker sector                     dom_share  n95    n99    n>1%    ncomp  recon    
 ------------------------------------------------------------------------------------------------
-AAPL   Information Technology     0.632      8      12     10     
-MSFT   Information Technology     0.691      12     16     12     
-NVDA   Information Technology     0.505      10     15     12     
-JNJ    Health Care                0.540      8      13     9      
-LLY    Health Care                0.791      10     15     11     
-UNH    Health Care                0.565      7      13     8      
-BAC    Financials                 0.765      9      13     11     
-JPM    Financials                 0.601      7      13     8      
-WFC    Financials                 0.811      9      14     9      
-AMZN   Consumer Discretionary     0.791      9      14     9      
-HD     Consumer Discretionary     0.726      8      12     9      
-MCD    Consumer Discretionary     0.860      7      14     5      
-DIS    Communication Services     0.477      4      11     4      
-NFLX   Communication Services     0.839      6      12     7      
-VZ     Communication Services     0.730      8      12     10     
-BA     Industrials                0.897      4      11     4      
-CAT    Industrials                0.762      9      13     10     
-HON    Industrials                0.760      5      12     6      
-KO     Consumer Staples           0.458      5      13     5      
-PG     Consumer Staples           0.807      6      12     5      
-WMT    Consumer Staples           0.560      6      11     6      
-COP    Energy                     0.540      6      13     6      
-CVX    Energy                     0.824      5      11     6      
-XOM    Energy                     0.656      5      12     5      
-DUK    Utilities                  0.663      5      11     5      
-NEE    Utilities                  0.860      6      12     6      
-SO     Utilities                  0.834      6      12     6      
-APD    Materials                  0.706      7      11     9      
-FCX    Materials                  0.678      9      14     8      
-NEM    Materials                  0.287      13     15     14     
-SPY    Index                      0.936      3      12     2      
+AAPL   Information Technology     0.661      5      8      7       12     1.0e-14  
+MSFT   Information Technology     0.774      7      10     9       11     1.9e-15  
+NVDA   Information Technology     0.575      7      10     8       12     1.7e-13  
+JNJ    Health Care                0.741      3      7      4       10     2.5e-14  
+LLY    Health Care                0.865      5      9      6       11     1.4e-14  
+UNH    Health Care                0.666      4      7      5       10     1.3e-14  
+BAC    Financials                 0.808      5      8      8       12     5.0e-14  
+JPM    Financials                 0.641      3      7      5       11     1.5e-14  
+WFC    Financials                 0.898      3      7      5       11     1.8e-14  
+AMZN   Consumer Discretionary     0.849      5      8      7       11     9.9e-14  
+HD     Consumer Discretionary     0.771      4      8      6       12     5.9e-14  
+MCD    Consumer Discretionary     0.876      4      9      5       11     6.4e-15  
+DIS    Communication Services     0.484      3      6      3       10     1.5e-13  
+NFLX   Communication Services     0.849      4      8      5       12     4.2e-14  
+VZ     Communication Services     0.805      4      6      5       11     8.9e-14  
+BA     Industrials                0.912      3      7      3       12     1.9e-14  
+CAT    Industrials                0.861      5      8      6       12     5.5e-14  
+HON    Industrials                0.771      3      6      4       12     3.0e-14  
+KO     Consumer Staples           0.927      3      6      4       9      1.6e-14  
+PG     Consumer Staples           0.843      4      8      5       12     3.9e-14  
+WMT    Consumer Staples           0.592      4      7      5       12     1.7e-14  
+COP    Energy                     0.565      3      9      5       13     1.6e-14  
+CVX    Energy                     0.886      2      5      3       11     4.8e-14  
+XOM    Energy                     0.680      4      8      5       12     5.2e-14  
+DUK    Utilities                  0.666      4      7      6       11     6.0e-14  
+NEE    Utilities                  0.893      3      7      3       12     1.2e-14  
+SO     Utilities                  0.851      4      6      5       11     1.4e-14  
+APD    Materials                  0.785      4      7      6       11     5.2e-14  
+FCX    Materials                  0.726      6      9      7       12     2.9e-15  
+NEM    Materials                  0.333      7      11     11      12     2.0e-14  
+SPY    Index                      0.939      2      8      3       12     5.8e-14  
 
 ------------------------------------------------------------------------------------------------
 Cross-ticker distribution (n = 31 tickers)
 ------------------------------------------------------------------------------------------------
-  dominant lag-1 share : median 0.726  Q1 0.583  Q3 0.809  min 0.287
-  n_for_95             : median 7.0  Q1 5.5  Q3 9.0  max 13
-  n_for_99             : median 12.0  Q1 12.0  Q3 13.5  max 16
+  dominant lag-1 share : median 0.785  Q1 0.666  Q3 0.863  min 0.333
+  n_for_95             : median 4.0  Q1 3.0  Q3 5.0  max 7
+  n_for_99             : median 8.0  Q1 7.0  Q3 8.0  max 11
 
 Reading: if median dom_share is ≥ 0.90, the rank-non-binding claim of
 Section 3 (theory.tex) is supported across the cross-ticker panel rather than

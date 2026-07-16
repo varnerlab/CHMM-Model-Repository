@@ -1,0 +1,19 @@
+MS-GARCH(1,1) conditional VaR back-test on SPY OoS, K in {2, 3, 4}
+  Haas-Mittnik-Paolella 2004 path-independent recursion; static IS fit,
+  Hamilton filter propagated through the OoS window; mixture-Normal quantile.
+  Forecast-origin set aligned with the CHMM harness: OoS T = 573 days
+  (boundary return from the last IS session into the first held-out session included).
+  Seed = 20260420. Critical values: chi^2_1(0.05) = 3.841, chi^2_2(0.05) = 5.991,
+  chi^2_6(0.05) = 12.592. DQ: q = 4 lagged hits + intercept + VaR_t.
+================================================================================================================
+K   α     breaches  br rate   med VaR   LR_uc     p_uc    LR_cc     p_cc    DQ        p_DQ   
+----------------------------------------------------------------------------------------------------------------
+2   0.01  12        0.0209    -4.049    5.270     0.022   6.631     0.036   15.195    0.019  
+2   0.05  32        0.0558    -2.611    0.398     0.528   0.425     0.809   3.143     0.791  
+3   0.01  11        0.0192    -4.139    3.857     0.050   5.506     0.064   15.235    0.019  
+3   0.05  29        0.0506    -2.649    0.004     0.947   0.197     0.906   3.554     0.737  
+4   0.01  11        0.0192    -4.164    3.857     0.050   5.506     0.064   15.562    0.016  
+4   0.05  30        0.0524    -2.672    0.066     0.797   0.186     0.911   2.571     0.860  
+
+Provenance note: replaces the untraced 572-forecast panel previously shipped in the
+paper repository (old 1% rows: breaches 11/11/7, p_cc 0.06/0.06/0.80, p_DQ 0.03/0.03/0.59).

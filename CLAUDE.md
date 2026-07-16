@@ -4,11 +4,11 @@ This file provides context for AI-assisted development on this codebase.
 
 ## Project Summary
 This project compares three approaches to modeling financial time series:
-1. **Continuous HMM (Baum-Welch, no jumps)** — the new contribution. Gaussian emissions trained via EM.
+1. **Continuous-emission HMM (Baum-Welch/ECM, no jumps)** — the new contribution. Four emission families (Gaussian, Student-t, Laplace, GED) trained via a unified EM/ECM framework.
 2. **Discrete HMM with Poisson jumps** — the baseline from the prior paper (JumpHMM.jl). Regime teleportation.
 3. **GARCH(1,1)** — the classical benchmark for conditional variance modeling.
 
-The study demonstrates that the continuous HMM at small K reproduces all three stylized facts (heavy tails, negligible linear ACF, persistent volatility clustering) without requiring jump mechanisms.
+The study shows that the continuous-emission HMM at small K matches the three symmetric stylized-fact diagnostics within stated, horizon-banded tolerances (heavy-tailed marginal, negligible linear ACF, and reduced absolute-return ACF error relative to i.i.d. baselines at short/medium horizons) without jump mechanisms; long-horizon persistence beyond ~63 lags is NOT reproduced (finite geometric memory), and the heavy-tail match is family-dependent.
 
 ## Module Load Order (Critical)
 Source files must be loaded in this exact order (defined in `Include.jl`):
@@ -26,7 +26,7 @@ Rearranging this order will cause `UndefVarError` at load time.
 AbstractMarkovModel
   |-- MyHiddenMarkovModel                  (discrete, baseline)
   |-- MyHiddenMarkovModelWithJumps         (discrete + Poisson jumps, baseline)
-  |-- MyContinuousHiddenMarkovModel        (continuous Gaussian, new contribution)
+  |-- MyContinuousHiddenMarkovModel        (continuous Gaussian; Student-t/Laplace/GED variants alongside)
 
 MyGARCHModel                               (GARCH(1,1) benchmark)
 

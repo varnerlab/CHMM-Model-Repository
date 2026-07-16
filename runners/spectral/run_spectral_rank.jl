@@ -2,24 +2,26 @@
 # run_spectral_rank.jl
 #
 # Effective spectral rank diagnostic for the absolute-return ACF identity (theory.tex
-# eq. acf_normalised). For CHMM-N at K = 18 and at K = 3 on SPY IS, compute
+# eq. acf_normalised). For CHMM-N at K = 18, 3, and 2 on SPY IS, group the non-unit
+# eigenvalues of T̂ into real damped(-oscillatory) components (complex-conjugate pairs
+# combined; third-review item 7), compute each component's signed real contribution
 #
-#   c_k = (m' diag(π̄) v_k)(w_k' m),         w_k(norm) = c_k / σ²_|G|,
-#   ρ_|G|(τ) = Σ_{k≥2} w_k(norm) λ_k^τ
+#   contrib_c(τ) = a_k λ_k^τ                      (real mode)
+#   contrib_c(τ) = 2 Re(a_k λ_k^τ)                (conjugate pair)
 #
-# and report the mode-by-mode contribution |w_k(norm)| against |λ_k|. Addresses peer-review
-# Tier-2 item B7: the body framing is "rank K - 1 = 17 non-unit eigenvalues at K = 18", but
-# the empirical question is how many of those modes carry non-trivial weight.
+# with a_k = (m' diag(π̄) v_k)(w_k' m) / σ²_|G|, and report the component-by-component
+# share of the absolute component-magnitude budget B = Σ_c |contrib_c(1)|. B is not a
+# percentage of ρ(1) itself (signed contributions can cancel); ρ(1) = Σ_c contrib_c(1)
+# and the max reconstruction error of the spectral sum against the direct matrix formula
+# over τ = 1..252 are reported alongside.
 #
 # Output: results/diagnostics/spectral_rank.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
 include(joinpath(@__DIR__, "..", "..", "Include.jl"));
+include(joinpath(@__DIR__, "spectral_common.jl"));
 
-using Random
-using LinearAlgebra
-using Statistics
 using Printf
 
 const SEED      = 20260420;
@@ -32,7 +34,7 @@ const OUT_DIR = joinpath(_ROOT, "results", "diagnostics");
 mkpath(OUT_DIR);
 
 println("="^80);
-println("  Effective spectral rank of ρ_|G| at K = 18, 3 and 2  (peer-review B7)");
+println("  Effective spectral rank of ρ_|G| at K = 18, 3 and 2  (grouped components)");
 println("="^80);
 
 println("\n[setup] Loading SPY IS...");
@@ -49,107 +51,23 @@ R_is = all_R[:, idx_spy];
 println("  IS = $(length(R_is)) days");
 
 # ----------------------------------------------------------------------------------------- #
-"""
-For a fitted CHMM, return:
-  T   :: K×K transition matrix (rows sum to 1)
-  π̄   :: K stationary vector
-  m   :: K vector of per-state E[|G_t| | s_t = k]   (estimated by sampling)
-  M   :: K vector of per-state E[G_t^2 | s_t = k]
-"""
-function _T_pibar_m(model, K::Int; n_draw::Int = N_M_DRAW, seed::Int = 0)
-    Random.seed!(seed);
-    T = zeros(K, K);
-    for i in 1:K; T[i, :] = probs(model.transition[i]); end
-    π̄ = (T^2000)[1, :];
-    m = zeros(K); M = zeros(K);
-    for k in 1:K
-        s = [rand(model.emission[k]) for _ in 1:n_draw];
-        m[k] = mean(abs.(s));
-        M[k] = mean(s.^2);
-    end
-    return T, π̄, m, M;
-end
-
-"""
-Compute the spectral decomposition c_k = (m' diag(π̄) v_k)(w_k' m) for each non-unit
-eigenvalue, plus σ²_|G| = E[G^2] - (E[|G|])² (the marginal variance of |G_t|).
-
-Returns a table sorted by |λ_k| descending. The dominant (λ = 1) eigenvalue is dropped.
-"""
-function _spectral_modes(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVector,
-                          M::AbstractVector)
-    K = length(m);
-    F = eigen(T);
-    λ = F.values;
-    V = F.vectors;          # columns: right eigenvectors
-    W = inv(V);             # rows:    left eigenvectors, with w_j' v_k = δ_jk
-    κ_V = cond(V);          # eigenvector-matrix conditioning (sixth-audit item 10):
-                            # large κ_V would flag numerically fragile modal weights w_k
-
-    σ²_G = π̄' * M - (π̄' * m)^2;
-
-    # find the unit eigenvalue (within numerical tolerance)
-    idx_one = argmin(abs.(λ .- 1.0));
-    rest = setdiff(1:K, idx_one);
-
-    rows = NamedTuple[];
-    for k in rest
-        v_k = V[:, k];
-        w_k = W[k, :];
-        c_k = (m' * Diagonal(π̄) * v_k) * dot(w_k, m);
-        w_k_norm = c_k / σ²_G;
-        push!(rows, (
-            lambda  = λ[k],
-            abs_lam = abs(λ[k]),
-            c_k     = c_k,
-            w_k     = w_k_norm,
-            abs_w   = abs(w_k_norm),
-            re_w    = real(w_k_norm),
-            im_w    = imag(w_k_norm),
-        ));
-    end
-    sort!(rows, by = r -> -r.abs_lam);
-    return σ²_G, rows, κ_V;
-end
-
-# ----------------------------------------------------------------------------------------- #
 function _run_at_K(K::Int)
     println("\n[fit] CHMM-N at K = $K on SPY IS...");
     Random.seed!(SEED);
     m_n = build(MyContinuousHiddenMarkovModel,
                 (observations=R_is, number_of_states=K, max_iter=MAX_ITER));
-    T, π̄, m, M = _T_pibar_m(m_n, K; seed=SEED);
-    σ²_G, rows, κ_V = _spectral_modes(T, π̄, m, M);
+    T, π̄, m, M = _T_pibar_m(m_n, K; n_draw=N_M_DRAW, seed=SEED);
+    σ²_G, comps, κ_V, recon_err = _spectral_components(T, π̄, m, M);
+    s = _component_summary(comps);
 
-    # Per-mode contribution to ρ(τ) at canonical lags. The right metric for
-    # "effective rank of the ACF" is |w_k λ_k^τ|, not |w_k| alone, because a
-    # mode with tiny |λ_k| has zero ACF contribution regardless of |w_k|.
-    enriched = NamedTuple[];
-    for r in rows
-        contribs = (
-            t1  = r.w_k * r.lambda^1,
-            t5  = r.w_k * r.lambda^5,
-            t20 = r.w_k * r.lambda^20,
-            t50 = r.w_k * r.lambda^50,
-        );
-        push!(enriched, merge(r, contribs));
-    end
-
-    abs_t1_sum = sum(abs(r.t1) for r in enriched);
-    sort!(enriched, by = r -> -abs(r.t1));   # rank by lag-1 contribution magnitude
     cum = 0.0;
     final_rows = NamedTuple[];
-    for r in enriched
-        cum += abs(r.t1);
-        push!(final_rows, merge(r, (cum_t1_share = cum / abs_t1_sum,)));
+    for c in comps
+        cum += c.mag_t1;
+        push!(final_rows, merge(c, (cum_share = cum / s.budget,)));
     end
 
-    n_for_95_t1 = findfirst(r -> r.cum_t1_share >= 0.95, final_rows);
-    n_for_99_t1 = findfirst(r -> r.cum_t1_share >= 0.99, final_rows);
-    n_above_1pct_t1 = count(r -> abs(r.t1) / abs_t1_sum > 0.01, final_rows);
-
-    return (K=K, sigma2_G=σ²_G, abs_t1_sum=abs_t1_sum, rows=final_rows, cond_V=κ_V,
-            n_above_1pct=n_above_1pct_t1, n_for_95=n_for_95_t1, n_for_99=n_for_99_t1);
+    return (K=K, sigma2_G=σ²_G, comps=final_rows, cond_V=κ_V, recon_err=recon_err, s...);
 end
 
 results_18 = _run_at_K(18);
@@ -160,52 +78,51 @@ results_2  = _run_at_K(2);   # K=2: rank-1 lower bound (single non-unit eigenval
 function _print_panel(io, r)
     println(io);
     println(io, "─"^110);
-    println(io, "K = $(r.K)   σ²_|G| = $(round(r.sigma2_G, digits=6))   ρ_|G|(1) = Σ w_k λ_k = $(round(real(sum(row.t1 for row in r.rows)), digits=4))   cond(V) = $(round(r.cond_V, digits=1))");
-    println(io, "Effective rank (lag-1 ACF contribution): ");
-    println(io, "  $(r.n_above_1pct) modes carry > 1% of Σ|w_k λ_k|;");
-    println(io, "  $(r.n_for_95) modes carry ≥ 95% of cumulative |w_k λ_k|;");
-    println(io, "  $(r.n_for_99) modes carry ≥ 99% of cumulative |w_k λ_k|.");
+    println(io, "K = $(r.K)   σ²_|G| = $(round(r.sigma2_G, digits=6))   ρ_|G|(1) = Σ_c contrib_c(1) = $(round(r.rho1, digits=4))   B = Σ_c |contrib_c(1)| = $(round(r.budget, digits=4))");
+    println(io, "cond(V) = $(round(r.cond_V, digits=1))   max reconstruction error vs direct matrix ACF (τ ≤ 252) = $(@sprintf("%.2e", r.recon_err))");
+    println(io, "Components: $(length(r.comps)) grouped real components from $(r.K - 1) non-unit eigenvalues.");
+    println(io, "Effective rank (share of the absolute component-magnitude budget B at lag 1):");
+    println(io, "  $(r.n_above_1pct) components carry > 1% of B;");
+    println(io, "  $(r.n_for_95) components carry ≥ 95% of cumulative B;");
+    println(io, "  $(r.n_for_99) components carry ≥ 99% of cumulative B.");
     println(io, "─"^110);
-    @printf(io, "%4s | %-12s | %-12s | %-10s | %-12s | %-12s | %-12s | %-10s\n",
-            "rank","|λ_k|","|w_k|","|w_k λ_k|","Re(w_k λ_k^5)","Re(w_k λ_k^20)","Re(w_k λ_k^50)","cum lag-1");
+    @printf(io, "%4s | %-5s | %-8s | %-8s | %-12s | %-12s | %-12s | %-12s | %-10s\n",
+            "rank","kind","|λ|","θ","contrib(1)","contrib(5)","contrib(20)","contrib(50)","cum share");
     println(io, "-"^110);
-    for (i, row) in enumerate(r.rows)
-        @printf(io, "%4d | %-12.4f | %-12.5f | %-10.5f | %-12.5f | %-12.6f | %-12.7f | %-10.4f\n",
-                i, row.abs_lam, abs(row.w_k),
-                abs(row.t1), real(row.t5), real(row.t20), real(row.t50),
-                row.cum_t1_share);
+    for (i, c) in enumerate(r.comps)
+        @printf(io, "%4d | %-5s | %-8.4f | %-8.4f | %-+12.5f | %-+12.5f | %-+12.6f | %-+12.7f | %-10.4f\n",
+                i, String(c.kind), c.abs_lam, c.theta,
+                c.contrib.t1, c.contrib.t5, c.contrib.t20, c.contrib.t50,
+                c.cum_share);
     end
 end
 
 out_path = joinpath(OUT_DIR, "spectral_rank.txt");
 open(out_path, "w") do io
     println(io, "="^90);
-    println(io, "Effective spectral rank of the absolute-return ACF identity  (peer-review B7)");
+    println(io, "Effective spectral rank of the absolute-return ACF identity  (grouped components)");
     println(io, "="^90);
     println(io, "Setup: CHMM-N on SPY IS, seed = $SEED, n_draw = $N_M_DRAW per state for m_k.");
-    println(io, "Identity: ρ_|G|(τ) = Σ_{k=2}^K w_k λ_k^τ,  w_k = (m' diag(π̄) v_k)(w_k' m) / σ²_|G|");
-    println(io, "(theory.tex eq. acf_normalised; v_k right and w_k left eigenvectors of T̂).");
-    println(io, "Modes are ordered by |λ_k| descending. Complex eigenvalues come in conjugate pairs.");
+    println(io, "Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (complex-");
+    println(io, "conjugate eigenvalue pairs combined into single damped-oscillatory components;");
+    println(io, "third-review item 7). Shares are of the absolute component-magnitude budget");
+    println(io, "B = Σ_c |contrib_c(1)|, which upper-bounds |ρ(1)| and is NOT a percentage of");
+    println(io, "ρ(1) itself: signed contributions can cancel. Components ranked by |contrib(1)|.");
     _print_panel(io, results_18);
     _print_panel(io, results_3);
     _print_panel(io, results_2);
     println(io);
     println(io, "Reading note. The body framing 'rank K-1 = 17 non-unit eigenvalues at K = 18'");
     println(io, "is an upper bound from the algebraic rank of T - 1 π̄^T. The empirical question");
-    println(io, "is how many of those 17 modes carry non-trivial weight w_k. The 'modes for ≥ 95%");
-    println(io, "of cumulative |w_k|' line above is the effective rank of ρ_|G|(τ) on this fit.");
+    println(io, "is how many grouped components carry non-trivial absolute contribution. The");
+    println(io, "'components for ≥ 95% of cumulative B' line above is the effective rank of");
+    println(io, "ρ_|G|(τ) on this fit under that budget definition.");
 end
 
-# also stdout summary
 println();
-println("[K = 18] effective rank: $(results_18.n_above_1pct) modes > 1%, ",
-        "$(results_18.n_for_95) modes ≥ 95% cum, ",
-        "$(results_18.n_for_99) modes ≥ 99% cum");
-println("[K =  3] effective rank: $(results_3.n_above_1pct) modes > 1%, ",
-        "$(results_3.n_for_95) modes ≥ 95% cum, ",
-        "$(results_3.n_for_99) modes ≥ 99% cum");
-println("[K =  2] effective rank: $(results_2.n_above_1pct) modes > 1%, ",
-        "$(results_2.n_for_95) modes ≥ 95% cum, ",
-        "$(results_2.n_for_99) modes ≥ 99% cum   (rank-1 lower bound)");
+for r in (results_18, results_3, results_2)
+    println("[K = $(r.K)] $(length(r.comps)) components: $(r.n_above_1pct) > 1%, ",
+            "$(r.n_for_95) for 95%, $(r.n_for_99) for 99%;  recon err $(@sprintf("%.2e", r.recon_err))");
+end
 println();
 println("[done] $out_path");

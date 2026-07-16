@@ -1,0 +1,48 @@
+==============================================================================================================
+K* = 3 CHMM CRPS Diebold-Mariano panel (Table 2 tab:model_comparison CRPS inference)
+==============================================================================================================
+
+Setup    : SPY daily log excess growth; IS n = 2516, OoS T = 572; seed = 20260420; K* = 3.
+Rows     : CHMM-N, CHMM-t (penalised ECM, lambda = 20.0), CHMM-L, CHMM-GED (per-cell reseed:
+           SEED fit / SEED+1 simulation, as run_kstar3_headline.jl), and shared-nu CHMM-t
+           (ecm_shared_nu of run_chmm_t_shared_nu.jl, nu bounds (2.1, 50.0), own seed convention).
+Ensemble : one 1000-path unconditional (marginal-predictive) simulation bundle per model.
+CRPS     : unbiased sample CRPS via the sorted-ensemble identity (sec:crps_methods),
+           CRPS_t = (1/N) sum_i |x_i - y_t| - (1/(N(N-1))) sum_{i<j} |x_i - x_j|.
+DM       : Newey-West HAC variance, Bartlett kernel, bandwidth h = floor(T^(1/3)) = 8;
+           two-sided p-values under the standard-normal null; Holm step-down over the 10 pairs.
+
+--------------------------------------------------------------------------------------------------------------
+Per-model mean OoS sample-CRPS (lower is better):
+
+  Model                                     mean CRPS  median CRPS
+  ----------------------------------------------------------------
+  CHMM-N                                       1.0393       0.6466
+  CHMM-t (penalised, lambda = 20)              1.0382       0.6400
+  CHMM-L                                       1.0432       0.6630
+  CHMM-GED                                     1.0398       0.6475
+  CHMM-t (shared nu)                           1.0406       0.6455
+
+--------------------------------------------------------------------------------------------------------------
+Pairwise Diebold-Mariano tests on the per-day OoS CRPS loss differential d_t = l_A(t) - l_B(t).
+Positive DM means row A's CRPS exceeds row B's (A worse). p-values are two-sided.
+
+  A                B                    mean d_t       DM t      p raw     p Holm
+  ------------------------------------------------------------------------------
+  chmm_n           chmm_t_pen          +0.001125    +0.5615     0.5745     1.0000
+  chmm_n           chmm_l              -0.003900    -1.7436     0.0812     0.7311
+  chmm_n           chmm_ged            -0.000440    -0.2177     0.8276     1.0000
+  chmm_n           chmm_t_shared_nu    -0.001258    -0.5115     0.6090     1.0000
+  chmm_t_pen       chmm_l              -0.005024    -2.0361     0.0417     0.4174
+  chmm_t_pen       chmm_ged            -0.001564    -0.6841     0.4939     1.0000
+  chmm_t_pen       chmm_t_shared_nu    -0.002382    -1.0337     0.3013     1.0000
+  chmm_l           chmm_ged            +0.003460    +1.7104     0.0872     0.7311
+  chmm_l           chmm_t_shared_nu    +0.002642    +1.1913     0.2335     1.0000
+  chmm_ged         chmm_t_shared_nu    -0.000818    -0.3670     0.7136     1.0000
+
+--------------------------------------------------------------------------------------------------------------
+Conclusion: none of the 10 pairwise DM tests rejects at the 0.05 level after Holm
+correction (raw rejections: 1/10). The five displayed K* = 3 CHMM rows are
+statistically indistinguishable on mean OoS sample-CRPS under the HAC DM test.
+
+Source: runners/robustness/run_crps_dm_kstar3.jl (per-day losses in per_day_losses.csv).

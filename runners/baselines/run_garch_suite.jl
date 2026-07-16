@@ -160,6 +160,23 @@ function acf_mae(R_obs::Vector{Float64}, sim::Matrix{Float64}; max_lag::Int=252)
     return mean(abs.(obs_acf .- sim_acf_mean));
 end
 
+# Per-path convention (third-review item 9 alignment): mean over paths of the
+# per-path |ACF(obs) - ACF(sim_path)| MAE — the SAME estimand as the headline
+# pipeline's Table-2 column (run_baselines_and_cross_asset.jl and
+# run_kstar3_headline.jl), which includes per-path ACF sampling noise. The
+# pooled acf_mae above averages the simulated ACF curves across paths BEFORE
+# the MAE, a population-curve estimand that is systematically smaller. The two
+# are different estimands of the same fitted model, not two fits.
+function acf_mae_perpath(R_obs::Vector{Float64}, sim::Matrix{Float64}; max_lag::Int=252)
+    obs_acf = autocor(abs.(R_obs), 1:max_lag);
+    n_sim = size(sim, 2);
+    s = 0.0;
+    for p in 1:n_sim
+        s += mean(abs.(obs_acf .- autocor(abs.(sim[:, p]), 1:max_lag)));
+    end
+    return s / n_sim;
+end
+
 function acf_mae_raw(R_obs::Vector{Float64}, sim::Matrix{Float64}; max_lag::Int=252)
     obs_acf = autocor(R_obs, 1:max_lag);
     n_sim = size(sim, 2);
@@ -203,6 +220,8 @@ function run_model(name::String, sim_fn_is, sim_fn_oos)
     sim_kurt = mean([kurtosis(sim_is[:, p]) for p in 1:N_PATHS]);
     acf = acf_mae(R_is, sim_is);
     acf_raw = acf_mae_raw(R_is, sim_is);
+    acf_pp_is = acf_mae_perpath(R_is, sim_is);
+    acf_pp_oos = acf_mae_perpath(R_oos, sim_oos);
     vb = var_backtest(R_oos, sim_oos);
 
     r = (
@@ -210,10 +229,11 @@ function run_model(name::String, sim_fn_is, sim_fn_oos)
         is_ks=is_ks, oos_ks=oos_ks,
         is_ad=is_ad, oos_ad=oos_ad,
         sim_kurt=sim_kurt, acf_mae=acf, acf_mae_raw=acf_raw,
+        acf_pp_is=acf_pp_is, acf_pp_oos=acf_pp_oos,
         br01=vb[0.01].br_rate, LRuc01=vb[0.01].LR_uc, LRind01=vb[0.01].LR_ind,
         br05=vb[0.05].br_rate, LRuc05=vb[0.05].LR_uc, LRind05=vb[0.05].LR_ind,
     );
-    println("  $(rpad(name, 14))  IS KS $(round(100*r.is_ks, digits=1))%  OoS KS $(round(100*r.oos_ks, digits=1))%  Kurt $(round(r.sim_kurt, digits=2))  ACF-MAE $(round(r.acf_mae, digits=4))  ACF-MAE(raw) $(round(r.acf_mae_raw, digits=4))  LR_uc01 $(round(r.LRuc01, digits=2))  LR_uc05 $(round(r.LRuc05, digits=2))");
+    println("  $(rpad(name, 14))  IS KS $(round(100*r.is_ks, digits=1))%  OoS KS $(round(100*r.oos_ks, digits=1))%  Kurt $(round(r.sim_kurt, digits=2))  ACF-MAE $(round(r.acf_mae, digits=4))  per-path IS $(round(r.acf_pp_is, digits=4))  per-path OoS $(round(r.acf_pp_oos, digits=4))  LR_uc01 $(round(r.LRuc01, digits=2))  LR_uc05 $(round(r.LRuc05, digits=2))");
     return r;
 end
 
@@ -256,15 +276,20 @@ open(joinpath(OUT_DIR, "GARCH_Suite.txt"), "w") do io
     println(io, "VaR            : pooled-archive α-quantile on stacked simulated OoS paths (unconditional VaR baseline, same convention as Table 3 in the paper).");
     println(io, "FIGARCH        : deferred to a follow-up code-repo pass (see revision-code-todo.md M7); requires a truncated-lag FI polynomial implementation.");
     println(io, "");
+    println(io, "ACF conventions: 'ACF-MAE|G| pooled' averages the simulated ACF curves across paths BEFORE the MAE");
+    println(io, "(population-curve estimand); 'per-path IS/OoS' averages per-path MAEs (the headline Table-2 estimand,");
+    println(io, "includes per-path ACF sampling noise). Same fits, two estimands — not comparable across conventions.");
+    println(io, "");
     println(io, rpad("Model",      14), " | ",
                 rpad("IS KS%",     7), " | ", rpad("OoS KS%",    8), " | ",
                 rpad("IS AD%",     7), " | ", rpad("OoS AD%",    8), " | ",
-                rpad("Kurt",       6), " | ", rpad("ACF-MAE|G|", 10), " | ",
+                rpad("Kurt",       6), " | ", rpad("pooled|G|",  10), " | ",
+                rpad("pp-IS|G|",   9), " | ", rpad("pp-OoS|G|",  9), " | ",
                 rpad("ACF-MAE raw",11), " | ",
                 rpad("br%01",      6), " | ", rpad("LR_uc01",    7), " | ",
                 rpad("LR_ind01",   8), " | ", rpad("br%05",      6), " | ",
                 rpad("LR_uc05",    7), " | ", rpad("LR_ind05",   8));
-    println(io, "-"^180);
+    println(io, "-"^195);
     for r in results
         println(io, rpad(r.name, 14), " | ",
                     rpad(round(100*r.is_ks, digits=1), 7), " | ",
@@ -273,6 +298,8 @@ open(joinpath(OUT_DIR, "GARCH_Suite.txt"), "w") do io
                     rpad(round(100*r.oos_ad, digits=1), 8), " | ",
                     rpad(round(r.sim_kurt, digits=2), 6), " | ",
                     rpad(round(r.acf_mae, digits=4), 10), " | ",
+                    rpad(round(r.acf_pp_is, digits=4), 9), " | ",
+                    rpad(round(r.acf_pp_oos, digits=4), 9), " | ",
                     rpad(round(r.acf_mae_raw, digits=4), 11), " | ",
                     rpad(round(100*r.br01, digits=1), 6), " | ",
                     rpad(round(r.LRuc01, digits=2), 7), " | ",
@@ -281,13 +308,13 @@ open(joinpath(OUT_DIR, "GARCH_Suite.txt"), "w") do io
                     rpad(round(r.LRuc05, digits=2), 7), " | ",
                     rpad(round(r.LRind05, digits=2), 8));
     end
-    println(io, "="^180);
+    println(io, "="^195);
 end
 
 open(joinpath(PAPER_ROBUSTNESS_DIR, "garch_suite.csv"), "w") do io
-    println(io, "model,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,sim_kurt,ACF_MAE,ACF_MAE_raw,br01_pct,LRuc01,LRind01,br05_pct,LRuc05,LRind05");
+    println(io, "model,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,sim_kurt,ACF_MAE,ACF_MAE_perpath_IS,ACF_MAE_perpath_OoS,ACF_MAE_raw,br01_pct,LRuc01,LRind01,br05_pct,LRuc05,LRind05");
     for r in results
-        println(io, "$(r.name),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(100*r.is_ad, digits=2)),$(round(100*r.oos_ad, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(r.acf_mae_raw, digits=5)),$(round(100*r.br01, digits=2)),$(round(r.LRuc01, digits=3)),$(round(r.LRind01, digits=3)),$(round(100*r.br05, digits=2)),$(round(r.LRuc05, digits=3)),$(round(r.LRind05, digits=3))");
+        println(io, "$(r.name),$(round(100*r.is_ks, digits=2)),$(round(100*r.oos_ks, digits=2)),$(round(100*r.is_ad, digits=2)),$(round(100*r.oos_ad, digits=2)),$(round(r.sim_kurt, digits=3)),$(round(r.acf_mae, digits=5)),$(round(r.acf_pp_is, digits=5)),$(round(r.acf_pp_oos, digits=5)),$(round(r.acf_mae_raw, digits=5)),$(round(100*r.br01, digits=2)),$(round(r.LRuc01, digits=3)),$(round(r.LRind01, digits=3)),$(round(100*r.br05, digits=2)),$(round(r.LRuc05, digits=3)),$(round(r.LRind05, digits=3))");
     end
 end
 

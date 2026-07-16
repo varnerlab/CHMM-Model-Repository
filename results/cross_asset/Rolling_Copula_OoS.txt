@@ -1,39 +1,47 @@
 ==============================================================================================================
-Rolling-window Student-t copula refit on six-asset SPY cross-section  (R1-Q4 / R1-RE4)
+Paired static-vs-rolling Student-t copula comparison, six-asset SPY cross-section (third-review item 2)
 ==============================================================================================================
 
 Setup:
   - Universe: SPY, NVDA, JNJ, JPM, AAPL, QQQ
-  - Per-asset CHMM-N marginals at K = 18, fitted once on IS, held fixed for rolling refits.
-  - Rolling window length: 252 days (1 trading year).
-  - Refit cadence:        63 days  (1 trading quarter).
-  - Forecast horizon:     63 days per quarter.
-  - Paths per refit:      200
-  - Seed root:            20260422
+  - Per-asset CHMM-N marginals at K = 3 (paper headline K*), fitted once on IS, held fixed in BOTH arms.
+  - Quarter partition: 10 OoS blocks of 63 days; the final 5-day partial block is included.
+  - STATIC arm: copula fit once on IS; per-quarter simulation scored on that quarter's realised matrix.
+  - ROLLING arm: copula refit each quarter on the trailing 252 days; scored on the SAME quarter target.
+  - Paths per simulation: 200.  Per-quarter seeds shared across arms (seed-level CRN).
+  - Seed root: 20260422
 
-Headline:
-  Static-IS-fit OoS off-diag MAE   : 0.2072
-  Rolling-refit OoS off-diag MAE   : mean 0.1853   median 0.1977
-  N rolling sub-windows           : 9
+Headline (paired across 10 quarters):
+  Mean per-quarter off-diag MAE, static copula   : 0.2894
+  Mean per-quarter off-diag MAE, rolling refit   : 0.2232
+  Mean paired difference (static - rolling)      : 0.0662  (sd 0.0704, se 0.0223)
+  Paired t (9 df)                        : t = 2.97,  two-sided p = 0.0157
+  95% t-interval for the difference              : [0.0158, 0.1166]
+  Quarters favouring the rolling refit           : 7 / 10
+
+Descriptive anchor (not part of the paired comparison):
+  Static full-window OoS off-diag MAE (one 572-day panel vs the single full-OoS matrix,
+  the main-text Table construction): 0.2077   nu* = 6.0
 
 Per-quarter detail:
 
-q   | win            | forecast       | ν*    | offdiag MAE  | Frob    
---------------------------------------------------------------------------------
-1   | [2265,2516]    | [2517,2579]    | 15.0  | 0.1977       | 1.3015  
-2   | [2328,2579]    | [2580,2642]    | 15.0  | 0.2045       | 1.4019  
-3   | [2391,2642]    | [2643,2705]    | 10.0  | 0.2409       | 1.5949  
-4   | [2454,2705]    | [2706,2768]    | 6.0   | 0.1332       | 0.9056  
-5   | [2517,2768]    | [2769,2831]    | 6.0   | 0.2549       | 1.791   
-6   | [2580,2831]    | [2832,2894]    | 6.0   | 0.2322       | 1.5124  
-7   | [2643,2894]    | [2895,2957]    | 5.0   | 0.1467       | 0.9741  
-8   | [2706,2957]    | [2958,3020]    | 5.0   | 0.1191       | 0.7984  
-9   | [2769,3020]    | [3021,3083]    | 6.0   | 0.1384       | 0.9535  
+q   | forecast       | days  | win            | ν*roll  | MAE static  | MAE rolling  | diff    
+------------------------------------------------------------------------------------------------
+1   | [2517,2579]    | 63    | [2265,2516]    | 15.0    | 0.2276      | 0.1946       | 0.0329  
+2   | [2580,2642]    | 63    | [2328,2579]    | 15.0    | 0.3381      | 0.2124       | 0.1257  
+3   | [2643,2705]    | 63    | [2391,2642]    | 10.0    | 0.3015      | 0.2332       | 0.0682  
+4   | [2706,2768]    | 63    | [2454,2705]    | 6.0     | 0.2893      | 0.1385       | 0.1508  
+5   | [2769,2831]    | 63    | [2517,2768]    | 6.0     | 0.24        | 0.2493       | -0.0093 
+6   | [2832,2894]    | 63    | [2580,2831]    | 6.0     | 0.233       | 0.2369       | -0.0038 
+7   | [2895,2957]    | 63    | [2643,2894]    | 5.0     | 0.2716      | 0.1454       | 0.1263  
+8   | [2958,3020]    | 63    | [2706,2957]    | 5.0     | 0.2675      | 0.1164       | 0.1511  
+9   | [3021,3083]    | 63    | [2769,3020]    | 6.0     | 0.2007      | 0.1403       | 0.0603  
+10  | [3084,3088]    | 5     | [2832,3083]    | 10.0    | 0.5246      | 0.5652       | -0.0406 
 
 Notes:
-  - The CHMM-N marginals are not refit; only the copula. This isolates the dependence-layer
-    refit benefit from the marginal refit benefit.
-  - The forecast horizon (63 days) per quarter is short, which inflates the sampling-variance
-    component of the per-quarter MAE; the headline is the mean across rolling sub-windows.
-  - The rolling refit can move ν* across the discrete grid {2,3,4,5,6,8,10,15,20,30} from
-    quarter to quarter; the per-quarter ν* values are reported above.
+  - Both arms score the identical per-quarter targets with identical marginals and horizons, so the
+    paired difference isolates the copula refit; quarter-to-quarter target difficulty cancels in d_q.
+  - The CHMM-N marginals are not refit in either arm; only the dependence layer moves.
+  - Uncertainty is across quarters (paired t over 10 blocks). Monte-Carlo path noise is secondary
+    and partially cancelled by the shared per-quarter seeds.
+  - The rolling refit can move ν* across the discrete grid {2,3,4,5,6,8,10,15,20,30} per quarter.

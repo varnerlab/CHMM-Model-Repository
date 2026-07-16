@@ -1,0 +1,37 @@
+==========================================================================================
+ACF horizon diagnostics: CHMM-N at K* = 3 on SPY IS (third-review item 8)
+==========================================================================================
+
+Setup: IS = 2516 obs, seed = 20260420 (fit), seed+1 (sim, 1000 paths),
+seed+2 (moving-block bootstrap, block length 20, 1000 replicates),
+seed+3 (i.i.d. permutation floor, 1000 shuffles). ACF estimator:
+StatsBase.autocor of |G_t| at lags 1..252, as in run_kstar3_headline.jl.
+
+Horizon-banded |G_t| ACF MAE (mean over paths of the band-mean absolute error):
+------------------------------------------------------------
+Band (lags)      CHMM-N MAE i.i.d. floor MAE
+------------------------------------------------------------
+1-5                  0.0416           0.2885
+6-20                 0.0673           0.2212
+21-63                0.0620           0.1005
+64-252               0.0410           0.0356
+1-252 (all)          0.0461           0.0627
+------------------------------------------------------------
+
+Theoretical population ACF (matrix formula, n_draw = 200000 per state):
+  rho(tau) = (m' diag(pibar) T^tau m - (pibar'm)^2) / sigma^2_|G|
+  sigma^2_|G| = 2.516827
+  rho(  1) = +0.287368
+  rho(  5) = +0.234983
+  rho( 20) = +0.112931
+  rho( 63) = +0.014442
+  rho(126) = +0.000715
+  rho(252) = +0.000002
+
+Dominant non-unit eigenvalue |lambda_2| = 0.9534  =>  half-life = 14.5 trading days
+(lambda_2^252 ~ 6.01e-06: the population ACF is ~0 at lag 252;
+long-horizon 'slow decay' credit in the flat lag-1..252 MAE comes from the model
+and the observed ACF both being near zero there, not from matched persistence.)
+
+Source: results/acf_horizon/acf_curves.csv (run_acf_horizon_diagnostics.jl)
+Figure: figs/Fig-ACF-Observed-vs-Simulated.pdf (paper repo)

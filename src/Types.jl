@@ -71,6 +71,7 @@ The `MyContinuousHiddenMarkovModel` mutable struct represents a hidden Markov mo
 - `states::Array{Int64,1}`: The states of the model
 - `transition::Dict{Int64, Categorical}`: The transition matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Categorical` distribution
 - `emission::Dict{Int64, Normal}`: The emission matrix of the model encoded as a dictionary where the `key` is the state and the `value` is a `Normal` distribution
+- `initial::Categorical`: The fitted initial-state distribution π (smoothed first-step posterior from EM)
 - `log_likelihood_history::Array{Float64,1}`: The log likelihood history of the model
 ### Constructor
 - `MyContinuousHiddenMarkovModel()`: Creates a new instance of the `MyContinuousHiddenMarkovModel` struct.
@@ -82,6 +83,7 @@ mutable struct MyContinuousHiddenMarkovModel <: AbstractMarkovModel
     transition::Dict{Int64, Categorical}
     # Emission here is a Normal distribution, not Categorical
     emission::Dict{Int64, Normal}
+    initial::Categorical
 
     # We can store the EM history if we want
     log_likelihood_history::Array{Float64,1}
@@ -103,6 +105,7 @@ extra parameter per state.
 - `states::Array{Int64,1}`: state labels
 - `transition::Dict{Int64, Categorical}`: transition distributions per state
 - `emission::Dict{Int64, LocationScale}`: scaled-and-shifted TDist per state (μ + σ * TDist(ν))
+- `initial::Categorical`: fitted initial-state distribution π (smoothed first-step posterior)
 - `log_likelihood_history::Array{Float64,1}`: EM log-likelihood trace
 """
 mutable struct MyStudentTHiddenMarkovModel <: AbstractMarkovModel
@@ -110,6 +113,7 @@ mutable struct MyStudentTHiddenMarkovModel <: AbstractMarkovModel
     states::Array{Int64,1}
     transition::Dict{Int64, Categorical}
     emission::Dict{Int64, LocationScale{Float64, Continuous, TDist{Float64}}}
+    initial::Categorical
     log_likelihood_history::Array{Float64,1}
 
     MyStudentTHiddenMarkovModel() = new();
@@ -127,6 +131,7 @@ closed-form once the forward-backward posteriors are available.
 - `states::Array{Int64,1}`: state labels
 - `transition::Dict{Int64, Categorical}`: transition distributions per state
 - `emission::Dict{Int64, Laplace}`: Laplace emissions per state
+- `initial::Categorical`: fitted initial-state distribution π (smoothed first-step posterior)
 - `log_likelihood_history::Array{Float64,1}`: EM log-likelihood trace
 """
 mutable struct MyLaplaceHiddenMarkovModel <: AbstractMarkovModel
@@ -134,6 +139,7 @@ mutable struct MyLaplaceHiddenMarkovModel <: AbstractMarkovModel
     states::Array{Int64,1}
     transition::Dict{Int64, Categorical}
     emission::Dict{Int64, Laplace}
+    initial::Categorical
     log_likelihood_history::Array{Float64,1}
 
     MyLaplaceHiddenMarkovModel() = new();
@@ -159,6 +165,7 @@ on the curved-exponential family (μ, log α, p).
 - `states::Array{Int64,1}`: state labels
 - `transition::Dict{Int64, Categorical}`: transition distributions per state
 - `emission::Dict{Int64, PGeneralizedGaussian}`: per-state GED emissions
+- `initial::Categorical`: fitted initial-state distribution π (smoothed first-step posterior)
 - `log_likelihood_history::Array{Float64,1}`: ECM log-likelihood trace
 """
 mutable struct MyGEDHiddenMarkovModel <: AbstractMarkovModel
@@ -166,6 +173,7 @@ mutable struct MyGEDHiddenMarkovModel <: AbstractMarkovModel
     states::Array{Int64,1}
     transition::Dict{Int64, Categorical}
     emission::Dict{Int64, PGeneralizedGaussian}
+    initial::Categorical
     log_likelihood_history::Array{Float64,1}
 
     MyGEDHiddenMarkovModel() = new();

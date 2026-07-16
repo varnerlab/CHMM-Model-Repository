@@ -2,60 +2,60 @@
 Effective spectral rank of the absolute-return ACF identity, shared-ν CHMM-t (headline)
 ==========================================================================================
 Setup: shared-ν Student-t CHMM-t on SPY IS, seed = 20260420, n_draw = 200000 per state for m_k.
-Identity: ρ_|G|(τ) = Σ_{k=2}^K w_k λ_k^τ,  w_k = (m' diag(π̄) v_k)(w_k' m) / σ²_|G|
-(theory.tex eq. acf_normalised; v_k right and w_k left eigenvectors of T̂).
+Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (conjugate pairs
+combined; third-review item 7). Shares are of the absolute component-magnitude
+budget B = Σ_c |contrib_c(1)|; B is not a percentage of ρ(1) itself.
 Companion to spectral_rank.txt (Gaussian CHMM-N). Fit: ecm_shared_nu (single ν across states).
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-K = 18   ν_shared = 5.796   σ²_|G| = 2.38143   ρ_|G|(1) = Σ w_k λ_k = 0.2378
-Effective rank (lag-1 ACF contribution): 
-  5 modes carry > 1% of Σ|w_k λ_k|;
-  5 modes carry ≥ 95% of cumulative |w_k λ_k|;
-  11 modes carry ≥ 99% of cumulative |w_k λ_k|.
+K = 18   ν_shared = 5.796   σ²_|G| = 2.38143   ρ_|G|(1) = Σ_c contrib_c(1) = 0.256   B = 0.2653
+cond(V) = 8.1   max reconstruction error vs direct matrix ACF (τ ≤ 252) = 4.37e-14
+Components: 11 grouped real components from 17 non-unit eigenvalues.
+Effective rank (share of the absolute component-magnitude budget B at lag 1):
+  4 components carry > 1% of B;
+  3 components carry ≥ 95% of cumulative B;
+  6 components carry ≥ 99% of cumulative B.
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-rank | |λ_k|        | |w_k|        | |w_k λ_k|  | Re(w_k λ_k^5) | Re(w_k λ_k^20) | Re(w_k λ_k^50) | cum lag-1 
+rank | kind  | |λ|      | θ        | contrib(1)   | contrib(5)   | contrib(20)  | contrib(50)  | cum share 
 --------------------------------------------------------------------------------------------------------------
-   1 | 0.9128       | 0.26781      | 0.24444    | 0.16966      | 0.043139     | 0.0027889    | 0.9045    
-   2 | 0.3089       | 0.01133      | 0.00350    | -0.00003     | 0.000000     | -0.0000000   | 0.9174    
-   3 | 0.3089       | 0.01133      | 0.00350    | -0.00003     | 0.000000     | -0.0000000   | 0.9304    
-   4 | 0.2267       | 0.01494      | 0.00339    | -0.00000     | -0.000000    | -0.0000000   | 0.9429    
-   5 | 0.2267       | 0.01494      | 0.00339    | -0.00000     | -0.000000    | -0.0000000   | 0.9554    
-   6 | 0.2187       | 0.00979      | 0.00214    | -0.00000     | -0.000000    | -0.0000000   | 0.9633    
-   7 | 0.1595       | 0.01312      | 0.00209    | -0.00000     | -0.000000    | -0.0000000   | 0.9711    
-   8 | 0.1595       | 0.01312      | 0.00209    | -0.00000     | -0.000000    | -0.0000000   | 0.9788    
-   9 | 0.0931       | 0.01200      | 0.00112    | 0.00000      | -0.000000    | 0.0000000    | 0.9830    
-  10 | 0.0931       | 0.01200      | 0.00112    | 0.00000      | -0.000000    | 0.0000000    | 0.9871    
-  11 | 0.2077       | 0.00429      | 0.00089    | -0.00000     | 0.000000     | 0.0000000    | 0.9904    
-  12 | 0.1095       | 0.00632      | 0.00069    | -0.00000     | 0.000000     | 0.0000000    | 0.9930    
-  13 | 0.0296       | 0.02317      | 0.00069    | 0.00000      | 0.000000     | 0.0000000    | 0.9955    
-  14 | 0.0296       | 0.02317      | 0.00069    | 0.00000      | 0.000000     | 0.0000000    | 0.9980    
-  15 | 0.1217       | 0.00258      | 0.00031    | 0.00000      | 0.000000     | 0.0000000    | 0.9992    
-  16 | 0.2118       | 0.00051      | 0.00011    | 0.00000      | -0.000000    | -0.0000000   | 0.9996    
-  17 | 0.2118       | 0.00051      | 0.00011    | 0.00000      | -0.000000    | -0.0000000   | 1.0000    
+   1 | real  | 0.9128   | 0.0000   | +0.24444     | +0.16966     | +0.043139    | +0.0027889   | 0.9212    
+   2 | pair  | 0.3089   | 0.1372   | +0.00630     | +0.00006     | -0.000000    | +0.0000000   | 0.9450    
+   3 | pair  | 0.2267   | 0.4123   | +0.00562     | +0.00001     | +0.000000    | +0.0000000   | 0.9661    
+   4 | pair  | 0.1595   | 1.3857   | +0.00350     | +0.00000     | -0.000000    | +0.0000000   | 0.9793    
+   5 | real  | 0.2187   | 0.0000   | -0.00214     | -0.00000     | -0.000000    | -0.0000000   | 0.9874    
+   6 | real  | 0.2077   | 0.0000   | -0.00089     | -0.00000     | +0.000000    | +0.0000000   | 0.9907    
+   7 | pair  | 0.0931   | 2.2272   | -0.00075     | -0.00000     | +0.000000    | -0.0000000   | 0.9935    
+   8 | real  | 0.1095   | 0.0000   | -0.00069     | -0.00000     | +0.000000    | +0.0000000   | 0.9962    
+   9 | pair  | 0.0296   | 2.1103   | +0.00049     | -0.00000     | -0.000000    | -0.0000000   | 0.9980    
+  10 | real  | 0.1217   | 0.0000   | +0.00031     | +0.00000     | +0.000000    | +0.0000000   | 0.9992    
+  11 | pair  | 0.2118   | 1.9026   | -0.00021     | -0.00000     | -0.000000    | -0.0000000   | 1.0000    
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-K = 3   ν_shared = 5.8076   σ²_|G| = 2.329425   ρ_|G|(1) = Σ w_k λ_k = 0.2163
-Effective rank (lag-1 ACF contribution): 
-  1 modes carry > 1% of Σ|w_k λ_k|;
-  1 modes carry ≥ 95% of cumulative |w_k λ_k|;
-  1 modes carry ≥ 99% of cumulative |w_k λ_k|.
+K = 3   ν_shared = 5.8076   σ²_|G| = 2.329425   ρ_|G|(1) = Σ_c contrib_c(1) = 0.2163   B = 0.2175
+cond(V) = 1.7   max reconstruction error vs direct matrix ACF (τ ≤ 252) = 2.06e-14
+Components: 2 grouped real components from 2 non-unit eigenvalues.
+Effective rank (share of the absolute component-magnitude budget B at lag 1):
+  1 components carry > 1% of B;
+  1 components carry ≥ 95% of cumulative B;
+  1 components carry ≥ 99% of cumulative B.
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-rank | |λ_k|        | |w_k|        | |w_k λ_k|  | Re(w_k λ_k^5) | Re(w_k λ_k^20) | Re(w_k λ_k^50) | cum lag-1 
+rank | kind  | |λ|      | θ        | contrib(1)   | contrib(5)   | contrib(20)  | contrib(50)  | cum share 
 --------------------------------------------------------------------------------------------------------------
-   1 | 0.9356       | 0.23183      | 0.21689    | 0.16617      | 0.061197     | 0.0083000    | 0.9973    
-   2 | 0.4090       | 0.00141      | 0.00058    | -0.00002     | -0.000000    | -0.0000000   | 1.0000    
+   1 | real  | 0.9356   | 0.0000   | +0.21689     | +0.16617     | +0.061197    | +0.0083000   | 0.9973    
+   2 | real  | 0.4090   | 0.0000   | -0.00058     | -0.00002     | -0.000000    | -0.0000000   | 1.0000    
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-K = 2   ν_shared = 7.192   σ²_|G| = 2.489109   ρ_|G|(1) = Σ w_k λ_k = 0.194
-Effective rank (lag-1 ACF contribution): 
-  1 modes carry > 1% of Σ|w_k λ_k|;
-  1 modes carry ≥ 95% of cumulative |w_k λ_k|;
-  1 modes carry ≥ 99% of cumulative |w_k λ_k|.
+K = 2   ν_shared = 7.192   σ²_|G| = 2.489109   ρ_|G|(1) = Σ_c contrib_c(1) = 0.194   B = 0.194
+cond(V) = 1.2   max reconstruction error vs direct matrix ACF (τ ≤ 252) = 5.15e-14
+Components: 1 grouped real components from 1 non-unit eigenvalues.
+Effective rank (share of the absolute component-magnitude budget B at lag 1):
+  1 components carry > 1% of B;
+  1 components carry ≥ 95% of cumulative B;
+  1 components carry ≥ 99% of cumulative B.
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-rank | |λ_k|        | |w_k|        | |w_k λ_k|  | Re(w_k λ_k^5) | Re(w_k λ_k^20) | Re(w_k λ_k^50) | cum lag-1 
+rank | kind  | |λ|      | θ        | contrib(1)   | contrib(5)   | contrib(20)  | contrib(50)  | cum share 
 --------------------------------------------------------------------------------------------------------------
-   1 | 0.9540       | 0.20336      | 0.19400    | 0.16066      | 0.079215     | 0.0192580    | 1.0000    
+   1 | real  | 0.9540   | 0.0000   | +0.19400     | +0.16066     | +0.079215    | +0.0192580   | 1.0000    
 
 Reading note. Same identity and effective-rank definition as the CHMM-N run; only the
-emission family (shared-ν Student-t, ν≈5.81) differs. The dominant lag-1 share is the
-cum lag-1 of mode 1: |w_1 λ_1| / Σ_k |w_k λ_k|.
+emission family (shared-ν Student-t) differs.

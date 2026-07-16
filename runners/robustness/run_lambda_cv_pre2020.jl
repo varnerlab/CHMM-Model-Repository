@@ -183,7 +183,9 @@ println();
 # ----------------------------------------------------------------------------------------- #
 # Output
 # ----------------------------------------------------------------------------------------- #
-out_path = joinpath(OUT_DIR, "lambda_cv_pre2020.txt");
+# K-suffixed so the K = 18 CV (paper Table tab:lambda_cv_pre2020) and the
+# K* = 3 re-tuning run coexist instead of overwriting each other.
+out_path = joinpath(OUT_DIR, "lambda_cv_pre2020_k$(K_MAIN).txt");
 open(out_path, "w") do io
     println(io, "="^96);
     println(io, "Held-out CV of 1/ν_k shrinkage λ on pre-2020 slice  (peer-review P1.3 / R2.W6)");

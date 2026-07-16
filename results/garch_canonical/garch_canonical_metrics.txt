@@ -1,0 +1,26 @@
+====================================================================================================
+Canonical GARCH(1,1) Table-2 row -- grid-initialised maximum-likelihood fit, full metric panel.
+====================================================================================================
+
+Fit        : grid-initialised Nelder-Mead ML (`_fit_garch11` via build(MyGARCHModel, ...)),
+             the SAME deterministic procedure as the GARCH(1,1) reference row of
+             runners/baselines/run_garch_suite.jl. Supersedes the old headline-pipeline row
+             (IS KS 27.4 / OoS KS 59.6 / |G| ACF-MAE 0.0490) retained in earlier drafts.
+Data       : SPY, IS 2516 obs, OoS 572 obs.
+Simulation : 1000 paths per window; seed 20260420 (headline convention: Random.seed!(SEED+6)
+             before the fit, per-path interleaved IS/OoS draws, as run_baselines_and_cross_asset.jl).
+Metrics    : eval_full verbatim from run_baselines_and_cross_asset.jl (KS/AD pass rate at
+             alpha = 0.05, population excess kurtosis, ACF-MAE over 252 lags on |G_t| and raw G_t,
+             Wasserstein-1, Hellinger, 99-quantile coverage); OoS mean sample-CRPS via the
+             unbiased sorted-ensemble estimator of run_kstar3_headline.jl.
+Parameters : omega = 0.137815, alpha = 0.2033, beta = 0.7732, mu = 0.198848, alpha+beta = 0.9765, logL = -5001.86
+
+----------------------------------------------------------------------------------------------------
+Window   |    KS% |    AD% |     Kurt |  KurtObs | ACF-MAE|G| | ACF-MAEraw |     W1 |   Hell |   Cov%
+----------------------------------------------------------------------------------------------------
+IS       |   27.4 |   11.3 |     7.59 |     7.68 |     0.0490 |     0.0244 |  0.247 | 0.1025 |   51.5
+OoS      |   59.6 |   57.3 |     2.70 |     5.29 |     0.0593 |     0.0435 |  0.355 | 0.1697 |   87.9
+----------------------------------------------------------------------------------------------------
+OoS mean sample-CRPS = 1.0460
+====================================================================================================
+Source: runners/baselines/run_garch_canonical_metrics.jl

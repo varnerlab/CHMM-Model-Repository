@@ -5,17 +5,22 @@
 # balanced panel. Addresses peer-review item P2.1 (R2.W1, R3.Q1): the abstract claim that
 # "the algebraic rank bound is non-binding at $K \ge 3$ on equity-return data" rests on
 # n = 1 ticker (SPY) in run_spectral_rank.jl. This script repeats the diagnostic on the
-# 30-ticker panel and reports the cross-ticker distribution of:
-#   1. The dominant non-unit eigenvalue's lag-1 ACF contribution.
-#   2. Number of modes carrying ≥ 95% / 99% of cumulative |w_k λ_k|.
+# 30-ticker panel using the grouped-component definition of spectral_common.jl (complex-
+# conjugate eigenvalue pairs combined into single real damped-oscillatory components;
+# third-review item 7) and reports the cross-ticker distribution of:
+#   1. The dominant component's share of the absolute component-magnitude budget
+#      B = Σ_c |contrib_c(1)| at lag 1.
+#   2. Number of components carrying ≥ 95% / 99% of cumulative B.
+#   3. The max reconstruction error of the spectral ACF sum vs the direct matrix formula.
 #
 # Output: results/diagnostics/spectral_rank_cross_ticker.txt
 # ========================================================================================= #
 
 using Pkg; Pkg.activate(".");
 include(joinpath(@__DIR__, "..", "..", "Include.jl"));
+include(joinpath(@__DIR__, "spectral_common.jl"));
 
-using Random, LinearAlgebra, Statistics, Printf
+using Printf
 
 const SEED      = 20260420;
 const K_MAIN    = 18;
@@ -59,67 +64,8 @@ panel_tickers = sort(keys(filtered) |> collect);
 all_R = log_growth_matrix(filtered, panel_tickers; Δt=DT, risk_free_rate=RISK_FREE);
 
 # ----------------------------------------------------------------------------------------- #
-# Per-ticker spectral mode helpers
-# ----------------------------------------------------------------------------------------- #
-function _T_pibar_m(model, K::Int; seed::Int=0, n_draw::Int=N_M_DRAW)
-    Random.seed!(seed);
-    T = zeros(K, K);
-    for i in 1:K; T[i, :] = probs(model.transition[i]); end
-    π̄ = (T^2000)[1, :];
-    m = zeros(K); M = zeros(K);
-    for k in 1:K
-        s = [rand(model.emission[k]) for _ in 1:n_draw];
-        m[k] = mean(abs.(s));
-        M[k] = mean(s.^2);
-    end
-    return T, π̄, m, M;
-end
-
-function _spectral_modes(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVector,
-                          M::AbstractVector)
-    K = length(m);
-    F = eigen(T);
-    λ = F.values;
-    V = F.vectors;
-    W = inv(V);
-    σ²_G = π̄' * M - (π̄' * m)^2;
-    idx_one = argmin(abs.(λ .- 1.0));
-    rest = setdiff(1:K, idx_one);
-    rows = NamedTuple[];
-    for k in rest
-        v_k = V[:, k];
-        w_k = W[k, :];
-        c_k = (m' * Diagonal(π̄) * v_k) * dot(w_k, m);
-        w_k_norm = c_k / σ²_G;
-        push!(rows, (
-            lambda  = λ[k],
-            abs_lam = abs(λ[k]),
-            w_k     = w_k_norm,
-        ));
-    end
-    sort!(rows, by = r -> -r.abs_lam);
-    return σ²_G, rows;
-end
-
-function _summarise(rows)
-    # τ = 1 contribution as the complex modulus |w_k λ_k|, matching both the
-    # documented definition below and run_spectral_rank.jl (the SPY diagnostic);
-    # the previous real(...) convention diverged for complex-conjugate modes.
-    contribs_t1 = [abs(r.w_k * r.lambda) for r in rows];
-    abs_t1_sum = sum(contribs_t1);
-    sorted_idx = sortperm(contribs_t1; rev=true);
-    sorted_contribs = contribs_t1[sorted_idx];
-    cum = cumsum(sorted_contribs) ./ abs_t1_sum;
-    dom_share = sorted_contribs[1] / abs_t1_sum;
-    n_for_95 = findfirst(x -> x >= 0.95, cum);
-    n_for_99 = findfirst(x -> x >= 0.99, cum);
-    n_above_1pct = count(x -> x / abs_t1_sum > 0.01, sorted_contribs);
-    return (dom_share=dom_share,
-            n_for_95=isnothing(n_for_95) ? length(rows) : n_for_95,
-            n_for_99=isnothing(n_for_99) ? length(rows) : n_for_99,
-            n_above_1pct=n_above_1pct);
-end
-
+# Per-ticker spectral helpers come from spectral_common.jl: _T_pibar_m,
+# _spectral_components (grouped conjugate pairs), _component_summary.
 # ----------------------------------------------------------------------------------------- #
 # Loop over tickers
 # ----------------------------------------------------------------------------------------- #
@@ -143,12 +89,13 @@ for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
         try
             mdl = build(MyContinuousHiddenMarkovModel,
                 (observations=R_is, number_of_states=K_MAIN, max_iter=MAX_ITER));
-            T, π̄, m, M = _T_pibar_m(mdl, K_MAIN; seed=SEED);
-            σ²_G, rows = _spectral_modes(T, π̄, m, M);
-            s = _summarise(rows);
-            panel_results[ticker] = (sector=sec, s...);
-            @printf("  %-6s [%s]  dom_share = %.3f   n95 = %d   n99 = %d   n>1%%= %d\n",
-                    ticker, sec, s.dom_share, s.n_for_95, s.n_for_99, s.n_above_1pct);
+            T, π̄, m, M = _T_pibar_m(mdl, K_MAIN; n_draw=N_M_DRAW, seed=SEED);
+            σ²_G, comps, κ_V, recon_err = _spectral_components(T, π̄, m, M);
+            s = _component_summary(comps);
+            panel_results[ticker] = (sector=sec, n_comps=length(comps),
+                                     recon_err=recon_err, s...);
+            @printf("  %-6s [%s]  dom_share = %.3f   n95 = %d   n99 = %d   n>1%%= %d   recon = %.1e\n",
+                    ticker, sec, s.dom_share, s.n_for_95, s.n_for_99, s.n_above_1pct, recon_err);
         catch e
             @warn "fit failed for $ticker: $e";
         end
@@ -177,23 +124,29 @@ println("Cross-ticker distribution (n = $(length(dom_shares)) tickers):");
 out_path = joinpath(OUT_DIR, "spectral_rank_cross_ticker.txt");
 open(out_path, "w") do io
     println(io, "="^96);
-    println(io, "Cross-ticker spectral effective-rank diagnostic  (peer-review P2.1 / R2.W1)");
+    println(io, "Cross-ticker spectral effective-rank diagnostic  (grouped components; third-review item 7)");
     println(io, "="^96);
     println(io, "Setup: CHMM-N at K = $K_MAIN, sector-balanced 30-ticker panel + SPY control,");
     println(io, "       seed = $SEED, n_draw = $N_M_DRAW per state for m_k.");
-    println(io, "Per-ticker columns: dom_share = (dominant non-unit eigenvalue's |w_k λ_k|) /");
-    println(io, "       (sum of |w_k λ_k| over all non-unit eigenvalues, lag = 1).");
-    println(io, "       n95 = number of modes carrying ≥ 95% of cumulative |w_k λ_k|.");
-    println(io, "       n>1%% = number of modes with > 1% of total |w_k λ_k|.");
+    println(io, "Complex-conjugate eigenvalue pairs are grouped into single real damped-oscillatory");
+    println(io, "components; contrib_c(1) is each component's SIGNED real lag-1 ACF contribution.");
+    println(io, "Per-ticker columns: dom_share = max_c |contrib_c(1)| / B with");
+    println(io, "       B = Σ_c |contrib_c(1)| the absolute component-magnitude budget (B is not a");
+    println(io, "       percentage of ρ(1) itself: signed contributions can cancel).");
+    println(io, "       n95/n99 = number of components carrying ≥ 95% / 99% of cumulative B.");
+    println(io, "       n>1%% = number of components with > 1% of B.");
+    println(io, "       ncomp = grouped component count (≤ K - 1); recon = max |spectral - direct|");
+    println(io, "       ACF reconstruction error over τ = 1..252.");
     println(io);
-    @printf(io, "%-6s %-26s %-10s %-6s %-6s %-7s\n",
-            "ticker", "sector", "dom_share", "n95", "n99", "n>1%");
+    @printf(io, "%-6s %-26s %-10s %-6s %-6s %-7s %-6s %-9s\n",
+            "ticker", "sector", "dom_share", "n95", "n99", "n>1%", "ncomp", "recon");
     println(io, "-"^96);
     for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["Index"])
         for ticker in sort([t for (t, r) in panel_results if r.sector == sector_name])
             r = panel_results[ticker];
-            @printf(io, "%-6s %-26s %-10.3f %-6d %-6d %-7d\n",
-                    ticker, r.sector, r.dom_share, r.n_for_95, r.n_for_99, r.n_above_1pct);
+            @printf(io, "%-6s %-26s %-10.3f %-6d %-6d %-7d %-6d %-9.1e\n",
+                    ticker, r.sector, r.dom_share, r.n_for_95, r.n_for_99, r.n_above_1pct,
+                    r.n_comps, r.recon_err);
         end
     end
     println(io);

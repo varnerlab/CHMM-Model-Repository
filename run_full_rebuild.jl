@@ -1,8 +1,9 @@
 # ========================================================================================= #
 # run_full_rebuild.jl
 #
-# HEADLINE rebuild driver: re-runs the eight headline analysis stages listed
-# below in one pass. It does NOT regenerate every artefact in the paper --
+# HEADLINE rebuild driver: re-runs the headline analysis stages listed below
+# in one pass (nine enumerated; stage 6, QuantGAN, is excluded from the default
+# stage list, leaving eight executable). It does NOT regenerate every artefact in the paper --
 # QuantGAN (excluded below), the reference Bayesian MSGARCH row (R/renv,
 # standalone), and the standalone VaR back-test, walk-forward, state-selection,
 # spectral, cross-asset-uncertainty, and robustness runners are invoked
@@ -24,7 +25,7 @@
 # Track C3 conditional-VaR variants, Track C4 leverage emission, GRU baseline) and
 # superseded one-shot runners (run_copula_profile_ci.jl, run_hsmm_ml.jl,
 # run_multiseed_headline.jl, regen_var_es_fig.jl, et al.) are archived under
-# _attic_v10/runners/. Descriptive runners cited only as standalone exploratory
+# _attic/runners/. Descriptive runners cited only as standalone exploratory
 # runs are invoked manually outside this dispatcher.
 # ========================================================================================= #
 

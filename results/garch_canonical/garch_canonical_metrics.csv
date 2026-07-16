@@ -1,0 +1,2 @@
+model,IS_KS_pct,OoS_KS_pct,IS_AD_pct,OoS_AD_pct,IS_sim_kurt,OoS_sim_kurt,IS_kurt_obs,OoS_kurt_obs,IS_ACF_MAE_absG,OoS_ACF_MAE_absG,IS_ACF_MAE_raw,OoS_ACF_MAE_raw,OoS_CRPS,IS_W1,IS_Hellinger,IS_cov_pct,OoS_cov_pct,omega,alpha,beta,mu,loglik,seed,n_paths
+GARCH(1,1) canonical,27.4,59.6,11.3,57.3,7.59,2.70,7.68,5.29,0.0490,0.0593,0.0244,0.0435,1.0460,0.247,0.1025,51.5,87.9,0.137815,0.2033,0.7732,0.198848,-5001.86,20260420,1000

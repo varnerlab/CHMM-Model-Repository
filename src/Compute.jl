@@ -129,9 +129,12 @@ function viterbi(observations::Vector{Float64},
     log_delta = zeros(N, K);
     psi = zeros(Int64, N, K);
 
-    # initialization: uniform prior
+    # initialization: fitted initial-state distribution π when the model
+    # carries one; uniform prior as the fallback (e.g. models deserialized
+    # from before the `initial` field existed).
+    π0 = isdefined(model, :initial) ? probs(model.initial) : fill(1.0 / K, K);
     for k in 1:K
-        log_delta[1, k] = log(1.0 / K) + logpdf(model.emission[k], observations[1]);
+        log_delta[1, k] = log(π0[k]) + logpdf(model.emission[k], observations[1]);
     end
 
     # recursion
@@ -272,9 +275,14 @@ A tuple containing:
 1. `T`: Transition Matrix [K x K]
 2. `μ`: Vector of Mean values for each state [K]
 3. `σ`: Vector of Std Dev values for each state [K]
-4. `π`: Initial Probability Vector [K]
+4. `π`: Initial Probability Vector [K] (held at its uniform initial value for this family, by documented convention)
 5. `ll_history`: Vector of Log-Likelihood values per iteration
 6. `gamma`: Matrix of posterior state probabilities [N x K]
+
+The returned parameters are the iterate whose observed-data log-likelihood is
+`ll_history[end]` (each iterate is evaluated before the next M-step can mutate
+it), and `gamma` is the smoothed posterior computed under exactly those
+parameters.
 """
 function baum_welch(observations::Array{Float64,1}, number_of_states::Int64; 
     max_iter::Int64=30, tol::Float64=1e-4)::Tuple{Array{Float64,2}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,1}, Array{Float64,2}}
@@ -312,10 +320,18 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
     final_gamma = zeros(N, K);
     
     # 2. EM LOOP -------------------------------------------------------------- #
+    # Evaluate-then-update ordering (third-review item 4): every iteration first
+    # evaluates the observed-data likelihood of the CURRENT parameters, then
+    # tests convergence, and only then performs an M-step. The loop runs one
+    # extra evaluation pass so that the final M-step update is itself evaluated:
+    # the returned parameters are always the ones whose likelihood is
+    # ll_history[end], and final_gamma is the posterior computed under exactly
+    # those parameters (EM on the Gaussian family is monotone, so the last
+    # evaluated iterate is also the best).
     prev_ll = -Inf;
-    
-    for _ in 1:max_iter
-        
+
+    for iter in 1:(max_iter + 1)
+
         # --- E-STEP: Compute Forward-Backward Probabilities ---
         log_B = zeros(N, K);
         for t in 1:N
@@ -324,7 +340,7 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                 log_B[t, k] = logpdf(d, observations[t]);
             end
         end
-        
+
         # Forward (Alpha)
         log_alpha = zeros(N, K);
         log_alpha[1, :] = log.(curr_π) .+ log_B[1, :];
@@ -333,7 +349,11 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                  log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
             end
         end
-        
+
+        # Likelihood of the CURRENT (pre-M-step) parameters.
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        push!(ll_history, current_ll);
+
         # Backward (Beta)
         log_beta = zeros(N, K);
         # log_beta[N, :] is implicitly 0.0 (log(1))
@@ -343,14 +363,22 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                 log_beta[t, i] = _logsumexp_vec(log_terms);
             end
         end
-        
+
         # Gamma (Posterior State Probability)
         log_gamma = log_alpha .+ log_beta;
         γ = zeros(N, K);
         for t in 1:N
             γ[t, :] = exp.(log_gamma[t, :] .- _logsumexp_vec(log_gamma[t, :]));
         end
-        
+        final_gamma = γ;
+
+        # Convergence / iteration-cap check BEFORE mutating the parameters, so
+        # the returned iterate is the one just evaluated.
+        if (abs(current_ll - prev_ll) < tol) || (iter == max_iter + 1)
+            break;
+        end
+        prev_ll = current_ll;
+
         # Xi (Posterior Transition Probability)
         expected_transitions = zeros(K, K);
         for t in 1:N-1
@@ -362,8 +390,12 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                 end
             end
         end
-        
+
         # --- M-STEP: Update Parameters ---
+        # NOTE: π intentionally stays at its uniform initial value for the
+        # Gaussian family (documented convention; the paper's CHMM-N parameter
+        # counts and BIC penalties exclude π). The t/L/GED fitters apply the
+        # γ₁ update.
 
         # Update Means and Variances
         for k in 1:K
@@ -372,11 +404,11 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                 curr_μ[k] = sum(γ[:, k] .* observations) / w_sum;
                 curr_σ[k] = sqrt(sum(γ[:, k] .* (observations .- curr_μ[k]).^2) / w_sum);
                 if (curr_σ[k] < 1e-6)
-                     curr_σ[k] = 1e-6; 
+                     curr_σ[k] = 1e-6;
                 end
             end
         end
-        
+
         # Update Transition Matrix
         for i in 1:K
             r_sum = sum(expected_transitions[i, :]);
@@ -384,19 +416,8 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
                 curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
             end
         end
-        
-        # Check Convergence
-        current_ll = _logsumexp_vec(log_alpha[N, :]);
-        push!(ll_history, current_ll);
-        
-        if (abs(current_ll - prev_ll) < tol)
-            final_gamma = γ;
-            break;
-        end
-        prev_ll = current_ll;
-        final_gamma = γ;
     end
-    
+
     # return -
     return (curr_T, curr_μ, curr_σ, curr_π, ll_history, final_gamma);
 end
@@ -435,7 +456,10 @@ diagnosed from the log-likelihood trace (see the paper's algorithms
 appendix). Setting ν_shrink_rate > 0 pulls heavy-tailed states back
 toward moderate tail weight and reduces the CHMM-t IS kurtosis overshoot.
 
-Returns (T, μ, σ, ν, π, ll_history, gamma).
+Returns (T, μ, σ, ν, π, ll_history, gamma). The returned parameters are the
+best evaluated iterate: their observed-data log-likelihood equals
+maximum(ll_history), and `gamma` is the smoothed posterior computed under
+exactly those parameters.
 """
 function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::Int64;
     max_iter::Int64=30, tol::Float64=1e-4,
@@ -499,13 +523,18 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
         return 0.5*(a + b);
     end
 
-    # Last-known-good snapshot. Restored if a subsequent iteration produces a
-    # non-finite LL (Student-t EM at large K can drive a state's σ_k to the
-    # 1e-6 floor, yielding NaN log-densities in the next E-step).
-    last_good_μ = copy(curr_μ); last_good_σ = copy(curr_σ); last_good_ν = copy(curr_ν);
-    last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+    # Best-evaluated checkpoint (third-review item 4). The hybrid surrogate ν
+    # block does not guarantee observed-data ascent, so every iterate is scored
+    # BEFORE it can be mutated and the best finite iterate (parameters, LL, γ)
+    # is what the routine returns: the returned parameters always correspond to
+    # maximum(ll_history). A non-finite forward pass (Student-t EM at large K
+    # can drive a state's σ_k to the 1e-6 floor) also restores this checkpoint.
+    best_ll = -Inf;
+    best_μ = copy(curr_μ); best_σ = copy(curr_σ); best_ν = copy(curr_ν);
+    best_T = copy(curr_T); best_π = copy(curr_π);
+    best_gamma = zeros(N, K);
 
-    for _ in 1:max_iter
+    for iter in 1:(max_iter + 1)
 
         # E-STEP: emission log-likelihoods + forward-backward.
         log_B = zeros(N, K);
@@ -519,17 +548,14 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
             log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
         end
 
-        # Early LL check: if the forward pass already went non-finite, the
-        # incoming params are degenerate. Restore last-good and stop.
-        current_ll_early = _logsumexp_vec(log_alpha[N, :]);
-        if !isfinite(current_ll_early)
-            curr_μ = last_good_μ; curr_σ = last_good_σ; curr_ν = last_good_ν;
-            curr_T = last_good_T; curr_π = last_good_π;
+        # Likelihood of the CURRENT (pre-M-step) parameters. If the forward
+        # pass went non-finite the incoming params are degenerate: fall back to
+        # the best evaluated checkpoint and stop.
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        if !isfinite(current_ll)
             break;
         end
-        # Incoming params validated. Snapshot them now, before the M-step mutates.
-        last_good_μ = copy(curr_μ); last_good_σ = copy(curr_σ); last_good_ν = copy(curr_ν);
-        last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+        push!(ll_history, current_ll);
 
         log_beta = zeros(N, K);
         for t in N-1:-1:1, i in 1:K
@@ -542,6 +568,20 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
             γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
                            _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
         end
+        final_gamma = γ;
+
+        if current_ll > best_ll
+            best_ll = current_ll;
+            best_μ = copy(curr_μ); best_σ = copy(curr_σ); best_ν = copy(curr_ν);
+            best_T = copy(curr_T); best_π = copy(curr_π);
+            best_gamma = copy(γ);
+        end
+
+        # Convergence / iteration-cap check BEFORE mutating the parameters.
+        if (abs(current_ll - prev_ll) < tol) || (iter == max_iter + 1)
+            break;
+        end
+        prev_ll = current_ll;
 
         expected_transitions = zeros(K, K);
         for t in 1:N-1
@@ -586,14 +626,14 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
                 curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
             end
         end
+    end
 
-        current_ll = current_ll_early;
-        push!(ll_history, current_ll);
-        final_gamma = γ;
-        if abs(current_ll - prev_ll) < tol
-            break;
-        end
-        prev_ll = current_ll;
+    # Return the best evaluated finite iterate (ascent is not guaranteed for
+    # the hybrid ν block, and a non-finite forward pass lands here too).
+    if isfinite(best_ll)
+        curr_μ = best_μ; curr_σ = best_σ; curr_ν = best_ν;
+        curr_T = best_T; curr_π = best_π;
+        final_gamma = best_gamma;
     end
 
     return (curr_T, curr_μ, curr_σ, curr_ν, curr_π, ll_history, final_gamma);
@@ -604,10 +644,12 @@ end
     _weighted_median(x, w) -> Float64
 
 Weighted median of observations `x` with weights `w ≥ 0`. Returns the first
-order statistic whose cumulative weight reaches half of the total, i.e. the
+order statistic whose cumulative weight reaches half of the total, i.e. a
 minimiser of the weighted L1 objective `Σ w_i |x_i - μ|`. When the half-weight
-falls exactly between two adjacent order statistics any point in the closed
-interval is optimal; we return the upper endpoint.
+falls exactly on an order statistic's cumulative boundary any point in the
+closed interval up to the next order statistic is optimal; the `cum >= half`
+condition returns the lower endpoint (e.g. the smaller of two equal-weight
+points), which is a valid minimiser.
 """
 function _weighted_median(x::AbstractVector{<:Real}, w::AbstractVector{<:Real})::Float64
     n = length(x);
@@ -635,7 +677,10 @@ with Laplace log-densities; the M-step uses weighted-median location and
 weighted mean-absolute-deviation scale, which are the weighted-MLE
 estimators of the Laplace parameters.
 
-Returns (T, μ, b, π, ll_history, gamma).
+Returns (T, μ, b, π, ll_history, gamma). The returned parameters are the
+iterate whose observed-data log-likelihood is `ll_history[end]` (each iterate
+is evaluated before the next M-step can mutate it), and `gamma` is the
+smoothed posterior computed under exactly those parameters.
 """
 function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::Int64;
     max_iter::Int64=30, tol::Float64=1e-4)
@@ -660,7 +705,10 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
     final_gamma = zeros(N, K);
     prev_ll = -Inf;
 
-    for _ in 1:max_iter
+    # Evaluate-then-update ordering (third-review item 4): see baum_welch. The
+    # returned parameters are always the iterate whose likelihood is
+    # ll_history[end], with final_gamma computed under exactly those parameters.
+    for iter in 1:(max_iter + 1)
 
         log_B = zeros(N, K);
         for t in 1:N, k in 1:K
@@ -673,6 +721,10 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
             log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
         end
 
+        # Likelihood of the CURRENT (pre-M-step) parameters.
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        push!(ll_history, current_ll);
+
         log_beta = zeros(N, K);
         for t in N-1:-1:1, i in 1:K
             log_terms = log.(curr_T[i, :]) .+ log_B[t+1, :] .+ log_beta[t+1, :];
@@ -684,6 +736,13 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
             γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
                            _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
         end
+        final_gamma = γ;
+
+        # Convergence / iteration-cap check BEFORE mutating the parameters.
+        if (abs(current_ll - prev_ll) < tol) || (iter == max_iter + 1)
+            break;
+        end
+        prev_ll = current_ll;
 
         expected_transitions = zeros(K, K);
         for t in 1:N-1
@@ -709,14 +768,6 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
                 curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
             end
         end
-
-        current_ll = _logsumexp_vec(log_alpha[N, :]);
-        push!(ll_history, current_ll);
-        final_gamma = γ;
-        if abs(current_ll - prev_ll) < tol
-            break;
-        end
-        prev_ll = current_ll;
     end
 
     return (curr_T, curr_μ, curr_b, curr_π, ll_history, final_gamma);
@@ -746,11 +797,19 @@ ECM M-step:
     CM2: α_k ← [(p_k / W_k) Σ_t γ_t(k) |o_t − μ_k|^{p_k}]^{1/p_k}   (closed form)
     CM3: p_k ← argmax_p Q_k(μ_k, α_k, p)                (golden-section on p_bounds)
 
-where W_k = Σ_t γ_t(k). CM2 is the unique zero of ∂Q_k/∂α_k. The full
-M-step is a partial-maximization sequence so EM monotonicity (the standard
-ECM result of Meng & Rubin 1993) holds on the compact bracket.
+where W_k = Σ_t γ_t(k). CM2 is the unique zero of ∂Q_k/∂α_k. CM1 and CM3
+are golden-section searches, which assume a unimodal objective on the
+bracket; the L^p location objective of CM1 is non-convex for p_k < 1, so
+the searched point need not be the CM-block maximiser there and the
+monotone-ascent guarantee of Meng & Rubin (1993) ECM does not apply in
+general. The routine therefore scores every parameter iterate on the
+observed-data likelihood before it can be mutated and returns the best
+finite iterate; convergence is diagnosed from the log-likelihood trace.
 
-Returns (T, μ, α, p, π, ll_history, gamma).
+Returns (T, μ, α, p, π, ll_history, gamma). The returned parameters are the
+best evaluated iterate: their observed-data log-likelihood equals
+maximum(ll_history), and `gamma` is the smoothed posterior computed under
+exactly those parameters.
 """
 function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
     max_iter::Int64=30, tol::Float64=1e-4,
@@ -836,11 +895,17 @@ function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
         return 0.5*(a + b);
     end
 
-    # Last-known-good snapshot, mirroring the Student-t routine.
-    last_good_μ = copy(curr_μ); last_good_α = copy(curr_α); last_good_p = copy(curr_p);
-    last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+    # Best-evaluated checkpoint, mirroring the Student-t routine (the L^p
+    # location objective is non-convex for p < 1, so observed-data ascent is
+    # not guaranteed): every iterate is scored before mutation and the best
+    # finite iterate is returned, i.e. the returned parameters correspond to
+    # maximum(ll_history). A non-finite forward pass restores it too.
+    best_ll = -Inf;
+    best_μ = copy(curr_μ); best_α = copy(curr_α); best_p = copy(curr_p);
+    best_T = copy(curr_T); best_π = copy(curr_π);
+    best_gamma = zeros(N, K);
 
-    for _ in 1:max_iter
+    for iter in 1:(max_iter + 1)
 
         # E-STEP: emission log-likelihoods + forward-backward.
         log_B = zeros(N, K);
@@ -854,14 +919,12 @@ function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
             log_alpha[t, j] = _logsumexp_vec(log_alpha[t-1, :] .+ log.(curr_T[:, j])) + log_B[t, j];
         end
 
-        current_ll_early = _logsumexp_vec(log_alpha[N, :]);
-        if !isfinite(current_ll_early)
-            curr_μ = last_good_μ; curr_α = last_good_α; curr_p = last_good_p;
-            curr_T = last_good_T; curr_π = last_good_π;
+        # Likelihood of the CURRENT (pre-M-step) parameters.
+        current_ll = _logsumexp_vec(log_alpha[N, :]);
+        if !isfinite(current_ll)
             break;
         end
-        last_good_μ = copy(curr_μ); last_good_α = copy(curr_α); last_good_p = copy(curr_p);
-        last_good_T = copy(curr_T); last_good_π = copy(curr_π);
+        push!(ll_history, current_ll);
 
         log_beta = zeros(N, K);
         for t in N-1:-1:1, i in 1:K
@@ -874,6 +937,20 @@ function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
             γ[t, :] = exp.((log_alpha[t, :] .+ log_beta[t, :]) .-
                            _logsumexp_vec(log_alpha[t, :] .+ log_beta[t, :]));
         end
+        final_gamma = γ;
+
+        if current_ll > best_ll
+            best_ll = current_ll;
+            best_μ = copy(curr_μ); best_α = copy(curr_α); best_p = copy(curr_p);
+            best_T = copy(curr_T); best_π = copy(curr_π);
+            best_gamma = copy(γ);
+        end
+
+        # Convergence / iteration-cap check BEFORE mutating the parameters.
+        if (abs(current_ll - prev_ll) < tol) || (iter == max_iter + 1)
+            break;
+        end
+        prev_ll = current_ll;
 
         expected_transitions = zeros(K, K);
         for t in 1:N-1
@@ -922,14 +999,15 @@ function baum_welch_ged(observations::Array{Float64,1}, number_of_states::Int64;
                 curr_T[i, :] = expected_transitions[i, :] ./ r_sum;
             end
         end
+    end
 
-        current_ll = current_ll_early;
-        push!(ll_history, current_ll);
-        final_gamma = γ;
-        if abs(current_ll - prev_ll) < tol
-            break;
-        end
-        prev_ll = current_ll;
+    # Return the best evaluated finite iterate (ascent is not guaranteed for
+    # the non-convex p < 1 location block, and a non-finite forward pass lands
+    # here too).
+    if isfinite(best_ll)
+        curr_μ = best_μ; curr_α = best_α; curr_p = best_p;
+        curr_T = best_T; curr_π = best_π;
+        final_gamma = best_gamma;
     end
 
     return (curr_T, curr_μ, curr_α, curr_p, curr_π, ll_history, final_gamma);

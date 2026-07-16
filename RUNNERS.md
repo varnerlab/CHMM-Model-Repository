@@ -44,6 +44,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/headline/run_chmm_t_penalised_headline.jl` | `results/chmm_t_penalised/Headline_CHMM_t_Pen.txt` | SPY $K = 18$ penalised CHMM-t headline (IS/OoS KS, kurtosis; shared-$\nu$ comparison block + Appendix penalised-t reference) |
 | `runners/headline/run_msgarch_higher_k.jl` | `results/msgarch_baselines/MSGARCH_higher_K.txt` | Body Table 2 / Appendix MS-GARCH higher-$K$ rows (extends `run_msgarch_baselines.jl`) |
 | `runners/headline/run_figures.jl` | `figs/Fig-{1..5}-*.pdf` | Body Figures 1, 2, 3, 4 |
+| `runners/headline/run_acf_horizon_diagnostics.jl` | `results/acf_horizon/{acf_horizon.txt,acf_curves.csv}`, paper `figs/Fig-ACF-Observed-vs-Simulated.pdf` | Body observed-vs-simulated \|G_t\| ACF figure + horizon-banded ACF-MAE table (lags 1-5, 6-20, 21-63, 64-252) with i.i.d. floors; theoretical population ACF via the matrix formula (third-review item 8) |
 
 ## VaR / conditional-coverage diagnostics (body §5 Empirical Study, VaR Backtest subsection)
 
@@ -54,6 +55,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/var_backtest/run_engle_manganelli_dq.jl` | `results/diagnostics/engle_manganelli_dq.txt` | Appendix `sec:engle_manganelli_dq` (DQ test backstop) |
 | `runners/var_backtest/run_quarterly_refit_conditional_var.jl` | `results/quarterly_refit_conditional_var/...` | Appendix `sec:quarterly_refit_cond_var` |
 | `runners/var_backtest/run_walkforward_conditional_var.jl` | `results/walkforward/walkforward_conditional_var.{csv,txt}` | Body Table~\ref{tab:walkforward_cond_var} (six-fold walk-forward regime-conditional VaR; Christoffersen-cc passes 19/24) |
+| `runners/var_backtest/run_msgarch_conditional_var.jl` | `results/msgarch_conditional_var/...` + paper `results/robustness/msgarch_conditional_var.csv` | MS-GARCH conditional-VaR block of the main VaR table ($K \in \{2,3,4\}$, forecast origins aligned at 573 with the CHMM harness; replaces the previously untraced 572-forecast panel) |
+| `runners/var_backtest/run_var_inference_upgrade.jl` | `results/var_inference_upgrade/var_inference_upgrade.{csv,txt}` | VaR-table inference upgrades: exact binomial UC p-values, parametric-bootstrap DQ calibration at 1% (CHMM-N $K=3$, MS-GARCH $K=4$), paired pinball-loss comparison with Newey-West t-stats. Run `run_msgarch_conditional_var.jl` first. |
 
 ## Walk-forward + cross-decade + cross-ticker robustness
 
@@ -65,12 +68,13 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_sector_panel_monthly_refit.jl` | `results/sector_panel/sector_panel_monthly_refit.{csv,txt}` | Body monthly-cadence reference ($K = 18$, OoS KS median 86.7\%, 5-of-30) + Appendix stationarity-scope panel. Heavy ($\sim 3\times$ quarterly compute) |
 | `runners/robustness/run_kurtosis_bootstrap.jl` | `results/SPY/diagnostics/kurtosis_bootstrap.txt` | Appendix `sec:kurtosis_bootstrap_ci` |
 | `runners/robustness/run_kurtosis_ci_placement.jl` | `results/kurtosis_ci_placement/...` | Appendix `sec:kurtosis_ci_placement` |
-| `runners/robustness/run_lambda_cv_pre2020.jl` | `results/diagnostics/lambda_cv_pre2020/...` | Appendix `sec:lambda_cv_pre2020` ($1/\nu_k$ penalty CV) |
+| `runners/robustness/run_lambda_cv_pre2020.jl` | `results/nu_shrinkage_sweep/lambda_cv_pre2020_k{18,3}.txt` (set `LAMBDA_CV_K`) | Appendix `sec:lambda_cv_pre2020` ($1/\nu_k$ penalty CV; K=18 backs the table, K=3 the re-tuning paragraph) |
 | `runners/robustness/run_k_selection_kfold_pre2020.jl` | `results/k_selection_validation/...` | Appendix `sec:k_selection_kfold_pre2020` (single + four-fold CV at body $K^\star = 3$) |
 | `runners/robustness/run_k_selection_kfold_h12y_pre2020.jl` | `results/k_selection_validation/h12y/...` | Six-fold rolling-origin CV (referenced in body §5.2) |
 | `runners/robustness/run_k_selection_hac.jl` | `results/k_selection_hac/...` | Appendix `sec:k_selection_hac` (HAC-corrected K selection) |
 | `runners/robustness/run_k_selection_validation_pre2020.jl` | `results/k_selection_validation/K_Selection_Validation_Pre2020.txt` (paper `k_selection_validation_pre2020.csv`) | Appendix pre-2020 single-split K-selection validation (companion to the kfold runner) |
 | `runners/robustness/run_nu_shrinkage_sweep.jl` | `results/nu_shrinkage_sweep/NU_Shrinkage_Sweep.txt` (paper `nu_shrinkage_sweep.csv`) | Appendix $1/\nu_k$ penalty $\lambda$ rate-sweep on the penalised CHMM-t |
+| `runners/robustness/run_crps_dm_kstar3.jl` | `results/crps_dm_kstar3/{crps_dm_kstar3.txt,per_day_losses.csv}` (paper `crps_dm_kstar3.csv`) | Body Table 2 CRPS inference: HAC (Newey-West) Diebold-Mariano on all 10 pairs among the five $K^\star = 3$ CHMM rows (N, penalised t, L, GED, shared-$\nu$ t), Holm-corrected |
 
 ## Spectral + theoretical diagnostics (body §4 — Spectral Mechanism)
 
@@ -101,7 +105,8 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/baselines/run_hsmm_gamma.jl` | `results/hsmm_gamma/...` | Appendix `sec:hsmm_gamma_sojourn` (Gamma-sojourn HSMM at $K = 18$) |
 | `runners/baselines/run_filtered_bootstrap_var.jl` | `results/filtered_bootstrap_var/...` | Item 6a of REVIEW_RESPONSE_PLAN.md (Hull-White-style filtered historical-simulation VaR contender for body Section 5). |
 | `runners/baselines/run_caviar_var.jl` | `results/caviar_var/...` | Item 6b of REVIEW_RESPONSE_PLAN.md (Engle-Manganelli SAV CAViaR contender for body Section 5). |
-| `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH(1,1)-$t$ row + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH) |
+| `runners/baselines/run_garch_suite.jl` | `results/garch_suite/GARCH_Suite.txt` (paper `garch_suite.csv`) | Body Table 2 GARCH-$t$ / MS-GARCH per-path ACF rows + Appendix conditional-volatility extended baselines (EGARCH, GJR, HAR-RV, MS-GARCH; reports both pooled and per-path ACF conventions) |
+| `runners/baselines/run_garch_canonical_metrics.jl` | `results/garch_canonical/garch_canonical_metrics.{txt,csv}` (paper `garch_canonical_metrics.csv`) | Body Table 2 GARCH(1,1) row: full metric panel under the canonical grid-initialised ML fit, headline per-path conventions |
 | `runners/baselines/run_ks_block_bootstrap.jl` | `results/ks_block_bootstrap/KS_Bootstrap_Recalibration.txt` (paper `ks_block_bootstrap.csv`) | Appendix `sec:ks_block_bootstrap` IS-anchored block-bootstrap KS (companion to the OoS-anchored `run_ks_block_bootstrap_oos.jl`) |
 | `runners/baselines/run_ks_block_body_kstar.jl` | `results/ks_block_bootstrap/KS_Bootstrap_Body_Kstar.txt` (paper `ks_block_body_kstar.csv`) | Body Table~\ref{tab:ks_block_body} (OoS $L = 20$ block-bootstrap KS at $K^\star = 3$ and $K = 6$) |
 
@@ -110,13 +115,15 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | Runner | Output | Paper artefact |
 |---|---|---|
 | `runners/diagnostics/run_diagnostics.jl` | `results/diagnostics/...` (catch-all) | Various appendix diagnostics |
-| `runners/diagnostics/run_vendor_stitch_check.jl` | `results/diagnostics/vendor_stitch_check.{txt,csv}` | Item 9 of REVIEW_RESPONSE_PLAN.md (Polygon vs Alpaca stitch sanity check on the OoS overlap window). |
+| `runners/diagnostics/run_paper_artifact_check.jl` | (consistency gate; no artifact) | Asserts that every registered paper-facing value appears both in its model-repo artifact and in the paper `.tex` source. Run before any paper submission. Provenance map: `results/artifacts_manifest.csv`. |
+| `runners/diagnostics/run_feed_boundary_check.jl` | `results/diagnostics/feed_boundary_check.txt` | Methods data-provenance paragraph (pre/post feed-switch diagnostic at the 2025-01-03 Polygon→Alpaca/IEX boundary). Replaces the retired vendor-stitch check, which compared stitched rows against the same Alpaca rows they were copied from and is archived in `_attic/runners/` as invalid. |
 
 ## Archived runners
 
-The following runners were moved to `_attic_v10/runners/` during the arXiv-prep
-pass because their outputs are no longer cited in the trimmed paper. They are
-preserved for full historical reproducibility of the pre-arXiv revisions.
+The following runners were moved to `_attic/runners/` during the arXiv-prep
+pass because their outputs are no longer cited in the trimmed paper, or because
+they were retired as invalid (`run_vendor_stitch_check.jl`). They are preserved
+for full historical reproducibility of the pre-arXiv revisions.
 
-See `_attic_v10/runners/README.md` for the full archive and the rationale for
+See `_attic/runners/README.md` for the full archive and the rationale for
 each move.

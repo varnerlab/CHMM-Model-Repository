@@ -78,7 +78,9 @@ HMM models implement Julia's callable-object protocol:
 
 ## Future Directions
 
-- Multi-asset portfolio simulation with dependence modeling
-- Automatic state-number selection (BIC/AIC)
-- Student-t emissions in Baum-Welch loop
 - Formal package registration and CI/CD pipeline
+- Online change-point detection / covariate-dependent transitions
+- Explicit-duration (semi-Markov) sojourn laws as the primary long-memory direction
+
+(Multi-asset dependence modeling, BIC/CAIC state selection, and Student-t /
+Laplace / GED emissions are implemented; see the sections above.)

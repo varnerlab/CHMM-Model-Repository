@@ -1,0 +1,72 @@
+==============================================================================================================
+VaR inference upgrade (third-party review items c/d)
+SPY OoS, T = 573 aligned one-step-ahead forecasts, seed = 20260420
+==============================================================================================================
+
+[1] Exact two-sided binomial unconditional-coverage p-values, X ~ Bin(573, α)
+    (minimum-likelihood two-sided p; asymptotic Kupiec chi^2_1 p alongside)
+    model                  K    α     breaches  p_exact   p_uc_asym
+    ----------------------------------------------------------------------
+    CHMM-N                 3    0.01  9         0.1993    0.2050   
+    CHMM-N                 3    0.05  36        0.1782    0.1750   
+    CHMM-N                 18   0.01  9         0.1993    0.2050   
+    CHMM-N                 18   0.05  26        0.7012    0.6060   
+    CHMM-t (λ=20.0)        3    0.01  8         0.2931    0.3690   
+    CHMM-t (λ=20.0)        3    0.05  32        0.5017    0.5280   
+    CHMM-t (λ=20.0)        18   0.01  10        0.0870    0.1050   
+    CHMM-t (λ=20.0)        18   0.05  29        0.9235    0.9470   
+    CHMM-L                 3    0.01  5         1.0000    0.7540   
+    CHMM-L                 3    0.05  26        0.7012    0.6060   
+    CHMM-L                 18   0.01  9         0.1993    0.2050   
+    CHMM-L                 18   0.05  32        0.5017    0.5280   
+    CHMM-GED               3    0.01  7         0.5258    0.6060   
+    CHMM-GED               3    0.05  31        0.6313    0.6560   
+    CHMM-GED               18   0.01  9         0.1993    0.2050   
+    CHMM-GED               18   0.05  25        0.5647    0.4750   
+    MS-GARCH               2    0.01  12        0.0174    0.0217   
+    MS-GARCH               2    0.05  32        0.5017    0.5282   
+    MS-GARCH               3    0.01  11        0.0349    0.0495   
+    MS-GARCH               3    0.05  29        0.9235    0.9466   
+    MS-GARCH               4    0.01  11        0.0349    0.0495   
+    MS-GARCH               4    0.05  30        0.7734    0.7973   
+    Filtered bootstrap     0    0.01  8         0.2931    0.3690   
+    Filtered bootstrap     0    0.05  24        0.4424    0.3600   
+    CAViaR-SAV             0    0.01  6         0.8322    0.9100   
+    CAViaR-SAV             0    0.05  25        0.5647    0.4750   
+
+[2] Finite-sample DQ calibration at α = 0.01 (parametric bootstrap, B = 500)
+    Simulate OoS paths of length 573 from the fitted null (started from the
+    filtered IS/OoS-boundary state), rerun the identical one-step-ahead VaR filter
+    + DQ statistic (q = 4 lags + intercept + VaR_t) on each path;
+    p_boot = (1 + #{DQ_b >= DQ_obs}) / (B + 1).
+    model          breaches  DQ_obs    p_asym    p_boot    null DQ q50/q90/q95/q99       
+    ------------------------------------------------------------------------------------------
+    CHMM-N K=3     9         12.266    0.0563    0.1697     2.14 / 17.39 / 21.94 / 35.87
+    MS-GARCH K=4   11        15.562    0.0163    0.0918     1.77 / 14.05 / 20.30 / 39.69
+    (asymptotic chi^2_6 quantiles for reference: q50 = 5.35, q90 = 10.64, q95 = 12.59, q99 = 16.81)
+
+[3] Paired quantile-loss (pinball) comparison on the same 573 forecast days
+    L_t(α) = (α - 1{r_t < q_t}) (r_t - q_t); Δ = mean L(model) - mean L(CHMM-N K=3);
+    HAC (Newey-West, Bartlett) t-statistic on the daily loss differential.
+    CHMM-N / MS-GARCH series from stored per-day CSVs; filtered-bootstrap and CAViaR
+    per-day series recomputed by replicating their runners (breach counts cross-checked
+    against the stored summary CSVs).
+
+    α = 0.01
+    model                mean loss    Δ vs CHMM    t_NW     p_NW     lags  
+    ----------------------------------------------------------------------
+    CHMM-N K=3           0.07239      (bench)      -        -        -     
+    MS-GARCH K=4         0.07643      +0.00405     1.48     0.1400   5     
+    Filtered bootstrap   0.07133      -0.00106     -0.21    0.8329   5     
+    CAViaR-SAV           0.07151      -0.00088     -0.47    0.6396   5     
+
+    α = 0.05
+    model                mean loss    Δ vs CHMM    t_NW     p_NW     lags  
+    ----------------------------------------------------------------------
+    CHMM-N K=3           0.23186      (bench)      -        -        -     
+    MS-GARCH K=4         0.23128      -0.00059     -0.14    0.8872   5     
+    Filtered bootstrap   0.23186      -0.00001     -0.00    0.9987   5     
+    CAViaR-SAV           0.23289      +0.00102     0.23     0.8211   5     
+
+Reading: positive Δ means the model has HIGHER (worse) average quantile loss than
+the CHMM-N K=3 benchmark at that α; |t_NW| > 1.96 indicates a significant difference.

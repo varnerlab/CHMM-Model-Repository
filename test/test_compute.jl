@@ -198,4 +198,103 @@
         tp1 = (101.0 + 99.0 + 100.0) / 3
         @test v[1] ≈ tp1 atol=1e-10
     end
+
+    # --- Returned-parameter / final-likelihood consistency (third-review item 4) --- #
+    # Recompute the observed-data log-likelihood of the RETURNED parameters with an
+    # independent forward pass and require it to match the stored trace: the last
+    # entry for the monotone Gaussian/Laplace fitters, the maximum for the hybrid
+    # Student-t/GED fitters (which return the best evaluated iterate).
+    function _forward_ll(obs, T, π, dists)
+        N = length(obs); K = length(dists)
+        lse(v) = (m = maximum(v); m == -Inf ? -Inf : m + log(sum(exp.(v .- m))))
+        log_B = [logpdf(dists[k], obs[t]) for t in 1:N, k in 1:K]
+        log_alpha = zeros(N, K)
+        log_alpha[1, :] = log.(π) .+ log_B[1, :]
+        for t in 2:N, j in 1:K
+            log_alpha[t, j] = lse(log_alpha[t-1, :] .+ log.(T[:, j])) + log_B[t, j]
+        end
+        return lse(log_alpha[N, :])
+    end
+
+    @testset "EM returned-parameter / likelihood consistency" begin
+        rng = Random.MersenneTwister(20260716)
+        obs = shuffle(rng, vcat(randn(rng, 250) .* 0.01, randn(rng, 250) .* 0.05))
+        K = 3
+
+        # Gaussian: returned params correspond to ll_history[end].
+        T, μ, σ, π_vec, ll, _ = baum_welch(obs, K; max_iter=25)
+        ll_re = _forward_ll(obs, T, π_vec, [Normal(μ[k], σ[k]) for k in 1:K])
+        @test ll_re ≈ ll[end] atol=1e-8
+        # Monotone ascent for the exact-EM Gaussian family.
+        @test all(diff(ll) .>= -1e-8)
+
+        # Laplace: returned params correspond to ll_history[end].
+        Tl, μl, bl, πl, lll, _ = baum_welch_laplace(obs, K; max_iter=25)
+        lll_re = _forward_ll(obs, Tl, πl, [Laplace(μl[k], bl[k]) for k in 1:K])
+        @test lll_re ≈ lll[end] atol=1e-8
+        @test all(diff(lll) .>= -1e-8)
+
+        # Student-t: returned params are the best evaluated iterate.
+        Tt, μt, σt, νt, πt, llt, _ = baum_welch_student_t(obs, K; max_iter=25)
+        llt_re = _forward_ll(obs, Tt, πt,
+            [LocationScale(μt[k], σt[k], TDist(νt[k])) for k in 1:K])
+        @test llt_re ≈ maximum(llt) atol=1e-8
+
+        # GED: returned params are the best evaluated iterate.
+        Tg, μg, αg, pg, πg, llg, _ = baum_welch_ged(obs, K; max_iter=25)
+        llg_re = _forward_ll(obs, Tg, πg,
+            [PGeneralizedGaussian(μg[k], αg[k], pg[k]) for k in 1:K])
+        @test llg_re ≈ maximum(llg) atol=1e-8
+    end
+
+    @testset "Transition update on a known two-state chain" begin
+        # Simulate a well-separated two-state HMM and require the fitted
+        # transition matrix (row-normalised expected counts over t = 1..T-1)
+        # to recover the truth.
+        rng = Random.MersenneTwister(7)
+        T_true = [0.95 0.05; 0.10 0.90]
+        μ_true = [-5.0, 5.0]; σ_true = [1.0, 1.0]
+        N = 4000
+        s = zeros(Int, N); s[1] = 1
+        for t in 2:N
+            s[t] = rand(rng) < T_true[s[t-1], 1] ? 1 : 2
+        end
+        obs = [μ_true[s[t]] + σ_true[s[t]] * randn(rng) for t in 1:N]
+
+        T_fit, μ_fit, _, _, _, _ = baum_welch(obs, 2; max_iter=60)
+        # Align state labels by fitted mean.
+        order = sortperm(μ_fit)
+        T_al = T_fit[order, order]
+        @test isapprox(T_al[1, 1], T_true[1, 1]; atol=0.03)
+        @test isapprox(T_al[2, 2], T_true[2, 2]; atol=0.03)
+        for i in 1:2
+            @test sum(T_al[i, :]) ≈ 1.0 atol=1e-10
+        end
+    end
+
+    @testset "GED CHMM build + simulate" begin
+        rng = Random.MersenneTwister(2468)
+        obs = shuffle(rng, vcat(randn(rng, 200) .* 0.01, randn(rng, 200) .* 0.04))
+        model_g = build(MyGEDHiddenMarkovModel,
+            (observations=obs, number_of_states=3, max_iter=15))
+        @test model_g isa MyGEDHiddenMarkovModel
+        @test length(model_g.states) == 3
+        R_g = simulate_returns(model_g, 100)
+        @test length(R_g) == 100
+        @test all(isfinite, R_g)
+    end
+
+    @testset "Fitted initial distribution stored and used by viterbi" begin
+        rng = Random.MersenneTwister(1357)
+        obs = shuffle(rng, vcat(randn(rng, 200) .* 0.01, randn(rng, 200) .* 0.04))
+        for (mt,) in ((MyContinuousHiddenMarkovModel,), (MyStudentTHiddenMarkovModel,),
+                      (MyLaplaceHiddenMarkovModel,), (MyGEDHiddenMarkovModel,))
+            m = build(mt, (observations=obs, number_of_states=3, max_iter=10))
+            @test isdefined(m, :initial)
+            @test sum(probs(m.initial)) ≈ 1.0 atol=1e-10
+            path = viterbi(obs, m)
+            @test length(path) == length(obs)
+            @test all(s -> 1 <= s <= 3, path)
+        end
+    end
 end
