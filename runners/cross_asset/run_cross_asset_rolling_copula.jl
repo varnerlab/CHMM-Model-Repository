@@ -24,7 +24,13 @@
 #   quarter on the trailing WINDOW = 252 days ending the session before the quarter
 #   starts. Each quarter's simulated panel is scored against that quarter's realised
 #   correlation matrix.
-# - All four arms share the per-quarter simulation seed (seed-level CRN).
+# - All four arms use the STRICT common-random-number simulate interface
+#   (simulate(model, T, n_paths, crn_seed) in src/CrossAsset.jl) with the same per-quarter
+#   crn_seed: base normals and per-asset marginal draws are identical across all four arms,
+#   and the Student-t chi-square mixing draws come from their own component stream that the
+#   Gaussian arms never touch. Seed-level resets alone (the fifth-review finding) are only a
+#   paired-seed design: _sample_t_copula consumes an extra chi-square stream that shifts
+#   every draw after it, so Gaussian and Student-t arms would not see identical marginals.
 # - Inference: paired per-quarter loss differences over the COMPLETE blocks for four
 #   contrasts - the refit effect within each family and the family effect within each
 #   refit status - each with a paired t interval and sign counts. With only nine complete
@@ -139,7 +145,9 @@ println("  static Student-t nu* = $(copula_static_t.nu)");
 
 # Descriptive full-window anchors (NOT part of the paired comparison): one n_oos-day panel
 # per family against the single full-OoS correlation matrix, the main-text Table
-# construction.
+# construction. These deliberately keep the legacy three-argument simulate + global-seed
+# convention so they reconcile against the main-text table; they enter no cross-family
+# contrast.
 Random.seed!(SEED);
 sim_full_t = simulate(copula_static_t, n_oos, N_PATHS);
 cor_full_t = correlation_reproduction(R_oos, sim_full_t);
@@ -170,15 +178,14 @@ for (qi, (q_start, q_end)) in enumerate(quarter_bounds)
     copula_roll_g = build(MyGaussianCopulaModel,
         (returns = R_window, tickers = ASSETS, marginals = chmms));
 
-    # Seed-level CRN: every arm's simulation starts from the same per-quarter seed.
-    Random.seed!(SEED + 2000 + qi);
-    mae_st = correlation_reproduction(R_quarter, simulate(copula_static_t, n_days, N_PATHS)).offdiag_mae;
-    Random.seed!(SEED + 2000 + qi);
-    mae_rt = correlation_reproduction(R_quarter, simulate(copula_roll_t, n_days, N_PATHS)).offdiag_mae;
-    Random.seed!(SEED + 2000 + qi);
-    mae_sg = correlation_reproduction(R_quarter, simulate(copula_static_g, n_days, N_PATHS)).offdiag_mae;
-    Random.seed!(SEED + 2000 + qi);
-    mae_rg = correlation_reproduction(R_quarter, simulate(copula_roll_g, n_days, N_PATHS)).offdiag_mae;
+    # Strict CRN: all four arms draw through the four-argument simulate interface with the
+    # same per-quarter crn_seed, so base normals and marginal paths are identical across
+    # arms (the t arms' chi-square mixing stream is separate and untouched by the Gaussian).
+    crn = SEED + 2000 + qi;
+    mae_st = correlation_reproduction(R_quarter, simulate(copula_static_t, n_days, N_PATHS, crn)).offdiag_mae;
+    mae_rt = correlation_reproduction(R_quarter, simulate(copula_roll_t, n_days, N_PATHS, crn)).offdiag_mae;
+    mae_sg = correlation_reproduction(R_quarter, simulate(copula_static_g, n_days, N_PATHS, crn)).offdiag_mae;
+    mae_rg = correlation_reproduction(R_quarter, simulate(copula_roll_g, n_days, N_PATHS, crn)).offdiag_mae;
 
     push!(rows, (
         qi = qi,
@@ -231,7 +238,7 @@ arm_means = (
 out_path = joinpath(OUT_DIR, "Rolling_Copula_OoS.txt");
 open(out_path, "w") do io
     println(io, "="^110);
-    println(io, "2x2 family/refit cross-asset copula experiment, six-asset SPY cross-section (fourth-review item 6)");
+    println(io, "2x2 family/refit cross-asset copula experiment, six-asset SPY cross-section");
     println(io, "="^110);
     println(io, "");
     println(io, "Setup:");
@@ -241,7 +248,10 @@ open(out_path, "w") do io
     println(io, "  - Quarter partition: $n_q OoS blocks of $STEP days; the final $(rows[end].n_days)-day partial block is scored and");
     println(io, "    reported but EXCLUDED from paired inference (rank-deficient 5-observation correlation target).");
     println(io, "  - ROLLING arms: copula refit each quarter on the trailing $WINDOW days; scored on the SAME quarter target.");
-    println(io, "  - Paths per simulation: $N_PATHS.  Per-quarter seeds shared across all four arms (seed-level CRN).");
+    println(io, "  - Paths per simulation: $N_PATHS.  STRICT common random numbers across all four arms via the");
+    println(io, "    four-argument simulate(model, T, n_paths, crn_seed) interface: identical base normals and");
+    println(io, "    identical per-asset marginal draws per quarter; the Student-t chi-square mixing stream is");
+    println(io, "    separate, so it does not shift the draws the arms share.");
     println(io, "  - Seed root: $SEED");
     println(io, "");
     println(io, "Arm means over the $n_c complete quarters (off-diagonal MAE, lower is better):");
@@ -285,9 +295,11 @@ open(out_path, "w") do io
     end
     println(io, "");
     println(io, "Notes:");
-    println(io, "  - All four arms score the identical per-quarter targets with identical marginals, horizons, and");
-    println(io, "    per-quarter seeds, so paired differences isolate the design factor (refit or family) and");
-    println(io, "    quarter-to-quarter target difficulty cancels in d_q.");
+    println(io, "  - All four arms score the identical per-quarter targets with identical marginals, horizons,");
+    println(io, "    base normals, and marginal draws (strict CRN), so paired differences isolate the design");
+    println(io, "    factor (refit or family) and quarter-to-quarter target difficulty cancels in d_q.");
+    println(io, "  - The full-window anchors keep the legacy three-argument simulate + global-seed convention");
+    println(io, "    so they reconcile with the main-text table; they enter no cross-family contrast.");
     println(io, "  - The CHMM-N marginals are not refit in any arm; only the dependence layer moves.");
     println(io, "  - The refit and family effects are measured on the SAME quarter-level estimand, so their");
     println(io, "    magnitudes are directly comparable (this was not true of the earlier full-window family");

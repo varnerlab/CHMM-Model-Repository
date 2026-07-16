@@ -1,35 +1,62 @@
-Stationary block bootstrap CIs on excess kurtosis (peer-review item 9 / R3 W7-RE4)
+Stationary block bootstrap displays on excess kurtosis + tail-robust inference
 Source data: SPY IS (T = 2516) and SPY OoS (T = 572) excess log growth
 Bootstrap construction: Politis-Romano 1994, mean block length L, 5000 replicates per L.
 ========================================================================================
 
-Observed excess kurtosis: IS = 7.686   OoS = 5.323   IS - OoS = 2.364
+SCOPE. The observed top-5% Hill estimate on this series is ~3.15 < 4, so the
+population fourth moment is plausibly infinite. In that regime raw excess kurtosis
+has no stable population value and the n-out-of-n percentile bootstrap is not a
+calibrated interval for it. Sections [D1]-[D2] below are therefore DESCRIPTIVE
+sensitivity displays. Section [I] is the inferential statement: winsorized excess
+kurtosis at trim q (tails clamped at the q / 1-q empirical quantiles, thresholds
+recomputed inside every resample) has finite moments of all orders for any tail
+index, and the stationary block bootstrap is standard for such smooth marginal
+functionals under mixing.
 
-Bootstrap distributions:
-L     | IS median | IS 95% CI         | OoS median | OoS 95% CI         | Pr(IS > OoS)
+Observed raw excess kurtosis: IS = 7.686   OoS = 5.323   IS - OoS = 2.364
+
+[D1] Raw excess kurtosis bootstrap distributions (DESCRIPTIVE):
+L     | IS median | IS 95% band       | OoS median | OoS 95% band       | Pr(IS > OoS)
 ----------------------------------------------------------------------------------------
 5     |     7.212 | [2.985, 12.833]   |      5.068 | [1.089, 8.975]   | 0.748
 10    |     7.337 | [2.491, 12.591]   |      4.911 | [0.987, 8.662]   | 0.756
 20    |     7.302 | [2.167, 12.400]   |      4.906 | [0.903, 8.260]   | 0.739
 50    |     7.183 | [1.924, 12.418]   |      4.985 | [0.957, 7.697]   | 0.733
 
-Bootstrap distribution of the DIFFERENCE (IS - OoS excess kurtosis) - the
-inferential object. The difference CI, not the overlap of the two marginal CIs,
-is what tests whether the windows differ:
-L     | diff median | percentile 95% CI   | basic 95% CI        | covers 0?
+[D2] Raw difference (IS - OoS) resampling bands (DESCRIPTIVE - see SCOPE; these are
+sensitivity displays of resampling spread, not calibrated 95% confidence intervals):
+L     | diff median | percentile 95% band | basic 95% band      | covers 0?
 ----------------------------------------------------------------------------------------
 5     |       2.490 | [-4.044,  9.536]   | [-4.809,  8.771]   | yes
 10    |       2.660 | [-4.244,  9.673]   | [-4.946,  8.971]   | yes
 20    |       2.428 | [-4.238,  9.553]   | [-4.826,  8.965]   | yes
 50    |       2.334 | [-4.269,  9.649]   | [-4.922,  8.996]   | yes
 
-Reading:
-  - At L = 10 the percentile 95% CI for the IS - OoS difference is [-4.244, 9.673],
-    which covers zero: the data do not exclude equal IS and OoS excess kurtosis
-    at the 5% level under this bootstrap. This is a non-rejection, not evidence
-    of equality.
+[I] Winsorized excess kurtosis (INFERENTIAL target; trim q per tail):
+  q = 0.01  observed winsorized: IS = 1.449   OoS = 1.017   IS - OoS = 0.432
+  L     | IS 95% CI         | OoS 95% CI        | diff percentile 95% CI | covers 0?
+  ------------------------------------------------------------------------------------
+  5     | [1.019, 2.321]   | [0.210, 2.737]   | [-1.324,  1.616]      | yes
+  10    | [0.964, 2.555]   | [0.134, 2.646]   | [-1.262,  1.827]      | yes
+  20    | [0.896, 2.901]   | [0.099, 2.528]   | [-1.204,  2.096]      | yes
+  50    | [0.804, 3.108]   | [0.098, 2.466]   | [-1.190,  2.314]      | yes
 
-  - Pr(IS > OoS) at L = 10: 0.756. This is a DESCRIPTIVE bootstrap probability -
+  q = 0.05  observed winsorized: IS = -0.255   OoS = -0.505   IS - OoS = 0.250
+  L     | IS 95% CI         | OoS 95% CI        | diff percentile 95% CI | covers 0?
+  ------------------------------------------------------------------------------------
+  5     | [-0.385, -0.088]   | [-0.694, -0.167]   | [-0.112,  0.500]      | yes
+  10    | [-0.401, -0.082]   | [-0.716, -0.130]   | [-0.146,  0.511]      | yes
+  20    | [-0.410, -0.068]   | [-0.712, -0.149]   | [-0.142,  0.528]      | yes
+  50    | [-0.439, -0.041]   | [-0.697, -0.150]   | [-0.147,  0.530]      | yes
+
+Reading:
+  - Inference (winsorized q = 0.01, L = 10): the 95% percentile CI for the IS - OoS
+    difference is [-1.262, 1.827], which covers zero: the data do not exclude equal
+    IS and OoS winsorized excess kurtosis at the 5% level. Non-rejection, not
+    equality.
+  - The raw-kurtosis displays [D1]-[D2] are descriptive only; under the paper's own
+    heavy-tail diagnosis (Hill < 4) they cannot be read as calibrated 95% intervals.
+  - Pr(IS > OoS) at L = 10 (raw): 0.756. This is a DESCRIPTIVE bootstrap probability -
     the fraction of independent resample pairs in which the IS draw exceeds the
     OoS draw. It is NOT a p-value: each window is resampled around its own
-    observed kurtosis, so no equal-kurtosis null is imposed (fourth-review item 3).
+    observed kurtosis, so no equal-kurtosis null is imposed.

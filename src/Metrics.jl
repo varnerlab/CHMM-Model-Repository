@@ -349,7 +349,7 @@ ROC-AUC via Mann-Whitney U statistic with tie handling.
 function _auc(scores::AbstractVector, y::AbstractVector)
     pos = findall(==(1), y); neg = findall(==(0), y);
     np = length(pos); nn = length(neg);
-    np == 0 || nn == 0 && return 0.5;
+    (np == 0 || nn == 0) && return 0.5;
     r = tiedrank(scores);
     sum_rank_pos = sum(r[pos]);
     u = sum_rank_pos - np * (np + 1) / 2.0;

@@ -1,59 +1,156 @@
 ================================================================================================
-Cross-ticker spectral effective-rank diagnostic  (grouped components; third-review item 7)
+Cross-ticker spectral effective-rank diagnostic  (grouped components; K = 3 and K = 18)
 ================================================================================================
-Setup: CHMM-N at K = 18, sector-balanced 30-ticker panel + SPY control,
-       seed = 20260420, n_draw = 200000 per state for m_k.
+Setup: CHMM-N at K in [3, 18], sector-balanced 30-ticker panel + SPY control,
+       seed = 20260420, n_draw = 200000 per state for m_k, IS window.
 Complex-conjugate eigenvalue pairs are grouped into single real damped-oscillatory
-components; contrib_c(1) is each component's SIGNED real lag-1 ACF contribution.
-Per-ticker columns: dom_share = max_c |contrib_c(1)| / B with
-       B = Σ_c |contrib_c(1)| the absolute component-magnitude budget (B is not a
-       percentage of ρ(1) itself: signed contributions can cancel).
-       n95/n99 = number of components carrying ≥ 95% / 99% of cumulative B.
-       n>1%% = number of components with > 1% of B.
-       ncomp = grouped component count (≤ K - 1); recon = max |spectral - direct|
-       ACF reconstruction error over τ = 1..252.
-
-ticker sector                     dom_share  n95    n99    n>1%    ncomp  recon    
-------------------------------------------------------------------------------------------------
-AAPL   Information Technology     0.661      5      8      7       12     1.0e-14  
-MSFT   Information Technology     0.774      7      10     9       11     1.9e-15  
-NVDA   Information Technology     0.575      7      10     8       12     1.7e-13  
-JNJ    Health Care                0.741      3      7      4       10     2.5e-14  
-LLY    Health Care                0.865      5      9      6       11     1.4e-14  
-UNH    Health Care                0.666      4      7      5       10     1.3e-14  
-BAC    Financials                 0.808      5      8      8       12     5.0e-14  
-JPM    Financials                 0.641      3      7      5       11     1.5e-14  
-WFC    Financials                 0.898      3      7      5       11     1.8e-14  
-AMZN   Consumer Discretionary     0.849      5      8      7       11     9.9e-14  
-HD     Consumer Discretionary     0.771      4      8      6       12     5.9e-14  
-MCD    Consumer Discretionary     0.876      4      9      5       11     6.4e-15  
-DIS    Communication Services     0.484      3      6      3       10     1.5e-13  
-NFLX   Communication Services     0.849      4      8      5       12     4.2e-14  
-VZ     Communication Services     0.805      4      6      5       11     8.9e-14  
-BA     Industrials                0.912      3      7      3       12     1.9e-14  
-CAT    Industrials                0.861      5      8      6       12     5.5e-14  
-HON    Industrials                0.771      3      6      4       12     3.0e-14  
-KO     Consumer Staples           0.927      3      6      4       9      1.6e-14  
-PG     Consumer Staples           0.843      4      8      5       12     3.9e-14  
-WMT    Consumer Staples           0.592      4      7      5       12     1.7e-14  
-COP    Energy                     0.565      3      9      5       13     1.6e-14  
-CVX    Energy                     0.886      2      5      3       11     4.8e-14  
-XOM    Energy                     0.680      4      8      5       12     5.2e-14  
-DUK    Utilities                  0.666      4      7      6       11     6.0e-14  
-NEE    Utilities                  0.893      3      7      3       12     1.2e-14  
-SO     Utilities                  0.851      4      6      5       11     1.4e-14  
-APD    Materials                  0.785      4      7      6       11     5.2e-14  
-FCX    Materials                  0.726      6      9      7       12     2.9e-15  
-NEM    Materials                  0.333      7      11     11      12     2.0e-14  
-SPY    Index                      0.939      2      8      3       12     5.8e-14  
+components; contrib_c(τ) is each component's SIGNED real ACF contribution.
+Two ranking norms per ticker:
+  lag-1 norm      dom/n95      on B  = Σ_c |contrib_c(1)|
+  horizon-aware   domI/n95I    on B∫ = Σ_c Σ_{τ=1..252} |contrib_c(τ)|
+(B is not a percentage of ρ(1) itself: signed contributions can cancel.)
+recon = max |spectral - direct| ACF reconstruction error over τ = 1..252.
 
 ------------------------------------------------------------------------------------------------
-Cross-ticker distribution (n = 31 tickers)
+K = 3 per-ticker table
 ------------------------------------------------------------------------------------------------
-  dominant lag-1 share : median 0.785  Q1 0.666  Q3 0.863  min 0.333
-  n_for_95             : median 4.0  Q1 3.0  Q3 5.0  max 7
-  n_for_99             : median 8.0  Q1 7.0  Q3 8.0  max 11
+ticker sector                     dom_share  dom_int    n95    n95_int ncomp  recon    
+------------------------------------------------------------------------------------------------
+AAPL   Information Technology     0.828      0.974      2      1       2      7.6e-14  
+MSFT   Information Technology     0.764      0.902      2      2       2      1.3e-13  
+NVDA   Information Technology     0.725      0.968      2      1       2      6.5e-14  
+JNJ    Health Care                0.862      0.917      2      2       2      3.3e-14  
+LLY    Health Care                0.719      0.910      2      2       2      5.6e-14  
+UNH    Health Care                0.825      0.876      2      2       2      9.8e-15  
+BAC    Financials                 0.772      0.963      2      1       2      3.3e-13  
+JPM    Financials                 0.836      0.941      2      2       2      7.0e-14  
+WFC    Financials                 0.769      0.870      2      2       2      1.8e-14  
+AMZN   Consumer Discretionary     0.965      0.992      1      1       2      1.0e-13  
+HD     Consumer Discretionary     0.943      0.970      2      1       2      1.7e-13  
+MCD    Consumer Discretionary     0.967      0.984      1      1       2      7.1e-14  
+DIS    Communication Services     0.573      0.850      2      2       2      5.4e-14  
+NFLX   Communication Services     0.974      0.988      1      1       2      8.3e-14  
+VZ     Communication Services     0.970      0.979      1      1       2      1.2e-13  
+BA     Industrials                0.931      0.967      2      1       2      5.3e-14  
+CAT    Industrials                0.993      0.997      1      1       2      1.3e-13  
+HON    Industrials                0.854      0.921      2      2       2      1.1e-13  
+KO     Consumer Staples           0.999      1.000      1      1       2      1.8e-13  
+PG     Consumer Staples           0.983      0.989      1      1       2      1.2e-13  
+WMT    Consumer Staples           0.635      0.786      2      2       2      2.2e-14  
+COP    Energy                     0.782      0.856      2      2       2      1.0e-13  
+CVX    Energy                     0.693      0.821      2      2       2      1.6e-13  
+XOM    Energy                     0.676      0.850      2      2       2      4.4e-14  
+DUK    Utilities                  0.837      0.921      2      2       2      2.0e-13  
+NEE    Utilities                  0.944      0.985      2      1       2      5.3e-15  
+SO     Utilities                  0.889      0.982      2      1       2      1.9e-14  
+APD    Materials                  0.679      0.589      2      2       2      7.4e-14  
+FCX    Materials                  0.952      0.993      1      1       2      1.9e-13  
+NEM    Materials                  0.939      0.988      2      1       2      6.1e-14  
+SPY    Index                      0.968      0.989      1      1       2      4.5e-14  
 
-Reading: if median dom_share is ≥ 0.90, the rank-non-binding claim of
-Section 3 (theory.tex) is supported across the cross-ticker panel rather than
-on SPY alone, addressing peer-review item P2.1 / R2.W1.
+K = 3 cross-ticker distribution (n = 31 tickers):
+  dominant lag-1 share    : median 0.854  Q1 0.767  Q3 0.959  min 0.573
+  dominant horizon share  : median 0.967  Q1 0.889  Q3 0.986  min 0.589
+  n_for_95 (lag-1)        : median 2.0  Q1 1.0  Q3 2.0  max 2
+  n_for_95 (horizon)      : median 1.0  Q1 1.0  Q3 2.0  max 2
+
+------------------------------------------------------------------------------------------------
+K = 18 per-ticker table
+------------------------------------------------------------------------------------------------
+ticker sector                     dom_share  dom_int    n95    n95_int ncomp  recon    
+------------------------------------------------------------------------------------------------
+AAPL   Information Technology     0.661      0.890      5      3       12     1.0e-14  
+MSFT   Information Technology     0.774      0.909      7      4       11     1.9e-15  
+NVDA   Information Technology     0.575      0.956      7      1       12     1.7e-13  
+JNJ    Health Care                0.741      0.900      3      2       10     2.5e-14  
+LLY    Health Care                0.865      0.907      5      4       11     1.4e-14  
+UNH    Health Care                0.666      0.726      4      3       10     1.3e-14  
+BAC    Financials                 0.808      0.957      5      1       12     5.0e-14  
+JPM    Financials                 0.641      0.780      3      2       11     1.5e-14  
+WFC    Financials                 0.898      0.986      3      1       11     1.8e-14  
+AMZN   Consumer Discretionary     0.849      0.961      5      1       11     9.9e-14  
+HD     Consumer Discretionary     0.771      0.887      4      2       12     5.9e-14  
+MCD    Consumer Discretionary     0.876      0.964      4      1       11     6.4e-15  
+DIS    Communication Services     0.484      0.782      3      2       10     1.5e-13  
+NFLX   Communication Services     0.849      0.910      4      2       12     4.2e-14  
+VZ     Communication Services     0.805      0.858      4      3       11     8.9e-14  
+BA     Industrials                0.912      0.973      3      1       12     1.9e-14  
+CAT    Industrials                0.861      0.943      5      2       12     5.5e-14  
+HON    Industrials                0.771      0.947      3      2       12     3.0e-14  
+KO     Consumer Staples           0.927      0.976      3      1       9      1.6e-14  
+PG     Consumer Staples           0.843      0.921      4      3       12     3.9e-14  
+WMT    Consumer Staples           0.592      0.700      4      4       12     1.7e-14  
+COP    Energy                     0.565      0.796      3      2       13     1.6e-14  
+CVX    Energy                     0.886      0.945      2      2       11     4.8e-14  
+XOM    Energy                     0.680      0.935      4      2       12     5.2e-14  
+DUK    Utilities                  0.666      0.945      4      2       11     6.0e-14  
+NEE    Utilities                  0.893      0.981      3      1       12     1.2e-14  
+SO     Utilities                  0.851      0.980      4      1       11     1.4e-14  
+APD    Materials                  0.785      0.907      4      2       11     5.2e-14  
+FCX    Materials                  0.726      0.953      6      1       12     2.9e-15  
+NEM    Materials                  0.333      0.375      7      8       12     2.0e-14  
+SPY    Index                      0.939      0.992      2      1       12     5.8e-14  
+
+K = 18 cross-ticker distribution (n = 31 tickers):
+  dominant lag-1 share    : median 0.785  Q1 0.666  Q3 0.863  min 0.333
+  dominant horizon share  : median 0.935  Q1 0.889  Q3 0.959  min 0.375
+  n_for_95 (lag-1)        : median 4.0  Q1 3.0  Q3 5.0  max 7
+  n_for_95 (horizon)      : median 2.0  Q1 1.0  Q3 2.5  max 8
+
+------------------------------------------------------------------------------------------------
+Does the K = 18 mode budget buy ACF fit over K = 3?  (model-vs-sample |G| ACF MAE, IS window)
+------------------------------------------------------------------------------------------------
+Per ticker: MAE between the fitted population ACF and the observed IS sample ACF,
+near band lags 1-63 and far band 64-252; 'zero' is the i.i.d. reference curve ρ = 0.
+
+ticker sector                     n_K3      n_K18     n_zero    f_K3      f_K18     f_zero   
+------------------------------------------------------------------------------------------------
+AAPL   Information Technology     0.0373    0.0634    0.0766    0.0286    0.0290    0.0290   
+MSFT   Information Technology     0.0463    0.0608    0.0691    0.0257    0.0257    0.0257   
+NVDA   Information Technology     0.0489    0.0420    0.0744    0.0369    0.0367    0.0371   
+JNJ    Health Care                0.0410    0.0446    0.0556    0.0201    0.0201    0.0201   
+LLY    Health Care                0.0328    0.0377    0.0414    0.0204    0.0204    0.0204   
+UNH    Health Care                0.0608    0.0776    0.0831    0.0178    0.0178    0.0178   
+BAC    Financials                 0.0450    0.0688    0.0901    0.0184    0.0186    0.0186   
+JPM    Financials                 0.0757    0.0835    0.1152    0.0245    0.0245    0.0245   
+WFC    Financials                 0.1127    0.1144    0.1571    0.0622    0.0622    0.0622   
+AMZN   Consumer Discretionary     0.0543    0.0630    0.0810    0.0249    0.0249    0.0249   
+HD     Consumer Discretionary     0.0661    0.0697    0.0807    0.0172    0.0172    0.0172   
+MCD    Consumer Discretionary     0.0747    0.0756    0.0928    0.0177    0.0177    0.0177   
+DIS    Communication Services     0.0875    0.1036    0.1188    0.0478    0.0478    0.0478   
+NFLX   Communication Services     0.0430    0.0452    0.0532    0.0208    0.0208    0.0208   
+VZ     Communication Services     0.0347    0.0382    0.0427    0.0158    0.0158    0.0158   
+BA     Industrials                0.0750    0.0935    0.1807    0.0502    0.0512    0.0517   
+CAT    Industrials                0.0501    0.0550    0.0631    0.0167    0.0167    0.0167   
+HON    Industrials                0.0530    0.0996    0.1303    0.0331    0.0338    0.0339   
+KO     Consumer Staples           0.0875    0.0945    0.1101    0.0224    0.0224    0.0224   
+PG     Consumer Staples           0.0538    0.0630    0.0714    0.0165    0.0165    0.0165   
+WMT    Consumer Staples           0.0311    0.0344    0.0393    0.0196    0.0196    0.0196   
+COP    Energy                     0.0226    0.0489    0.1130    0.0248    0.0272    0.0280   
+CVX    Energy                     0.0608    0.0747    0.1245    0.0249    0.0253    0.0254   
+XOM    Energy                     0.0772    0.1315    0.1651    0.0806    0.0838    0.0839   
+DUK    Utilities                  0.0621    0.0801    0.1147    0.0206    0.0208    0.0208   
+NEE    Utilities                  0.0630    0.0705    0.1017    0.0305    0.0305    0.0305   
+SO     Utilities                  0.0721    0.0985    0.1362    0.0172    0.0175    0.0175   
+APD    Materials                  0.0541    0.0598    0.0718    0.0249    0.0249    0.0249   
+FCX    Materials                  0.0843    0.0964    0.1230    0.0344    0.0345    0.0345   
+NEM    Materials                  0.0562    0.0676    0.0700    0.0219    0.0219    0.0219   
+SPY    Index                      0.0529    0.0778    0.1438    0.0312    0.0325    0.0327   
+
+Cross-ticker medians (n = 31):
+  near band 1-63   : K3 0.0543   K18 0.0697   zero 0.0901   Δ(K3 - K18) median -0.0092  Q1 -0.0182  Q3 -0.0042
+  far band 64-252  : K3 0.0245   K18 0.0245   zero 0.0245   Δ(K3 - K18) median -0.0000  Q1 -0.0002  Q3 -0.0000
+  tickers where K18 beats K3 on the near band: 1 / 31
+
+Reading:
+  - The K = 18 share tables describe how concentrated the fitted budget is when 17
+    modes are available; a median dominant share below 0.90 means the fitted K = 18
+    chains spread their ACF budget over several modes at the typical ticker, so the
+    K = 18 cross-section alone does NOT establish that a two-mode (K = 3) budget is
+    sufficient.
+  - The binding-ness question is settled by the ACF-fit block: if the median
+    Δ(K3 - K18) near-band MAE is small relative to the zero-curve margin, the extra
+    K = 18 modes buy little ACF fit at the typical ticker and the mode budget is not
+    the binding constraint at K = 3; a materially positive Δ says it is binding.
+  - This is an IS model-vs-sample comparison across the fitted panel; it is not an
+    out-of-sample forecast comparison.

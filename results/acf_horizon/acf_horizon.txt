@@ -1,5 +1,5 @@
 ==========================================================================================
-ACF horizon diagnostics: CHMM-N at K* = 3 on SPY IS (third-review item 8)
+ACF horizon diagnostics: CHMM-N at K* = 3 on SPY IS
 ==========================================================================================
 
 Setup: IS = 2516 obs, seed = 20260420 (fit), seed+1 (sim, 1000 paths),
@@ -8,11 +8,13 @@ seed+3 (i.i.d. permutation floor, 1000 shuffles). ACF estimator:
 StatsBase.autocor of |G_t| at lags 1..252, as in run_kstar3_headline.jl.
 
 Observed-ACF bootstrap band validity: the L = 20 moving-block bootstrap
-severs dependence across block boundaries, so its percentile band is a valid
-uncertainty statement only for lags <= 20. The band is reported (CSV) and
-plotted (figure) only over that range; entries beyond lag 20 are NaN.
-No long-lag claim is made from this band; the horizon comparison below rests on
-the banded MAE table alone.
+severs dependence across block boundaries, and the contamination is gradual —
+at lag h roughly h/L of resampled pairs cross a boundary, and at h = L every
+pair does — so the percentile band is displayed only over the conservative
+low-lag range lags <= 5 (well inside the block length). Entries beyond lag
+5 are NaN in the CSV and omitted from the figure. No claim at any longer
+lag is made from this band; the horizon comparison below rests on the banded
+MAE table alone.
 
 Horizon-banded |G_t| ACF MAE (mean over paths of the band-mean absolute error):
 ------------------------------------------------------------

@@ -54,6 +54,20 @@
         @test out_g != out_t
     end
 
+    @testset "headline 2x2 runner uses the strict-CRN simulate interface" begin
+        # (2026-07-16 fifth review, finding 2: the strict-CRN primitive was
+        # tested but the headline quarter-level 2x2 runner still called the
+        # three-argument method, so Gaussian and Student-t arms did not share
+        # marginal draws. Guard the runner's call sites at the source level.)
+        runner = read(joinpath(@__DIR__, "..", "runners", "cross_asset",
+                               "run_cross_asset_rolling_copula.jl"), String)
+        for arm in ("copula_static_t", "copula_roll_t", "copula_static_g", "copula_roll_g")
+            @test occursin("simulate($(arm), n_days, N_PATHS, crn)", runner)
+            # no quarter arm may fall back to the three-argument method
+            @test !occursin("simulate($(arm), n_days, N_PATHS)", runner)
+        end
+    end
+
     @testset "different CRN seeds give different draws" begin
         for model in (gauss_cop, t_cop)
             @test simulate(model, T_sim, n_paths, crn_seed) !=

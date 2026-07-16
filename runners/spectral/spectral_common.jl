@@ -50,7 +50,13 @@ Each component is a NamedTuple with fields
 - `abs_lam`   : |λ| of the component (shared by both members of a pair)
 - `theta`     : oscillation angle (0.0 for real modes)
 - `contrib`   : NamedTuple of SIGNED real contributions at each lag in `lags`
-- `mag_t1`    : |contrib(1)|, the ranking key
+- `mag_t1`    : |contrib(1)|, the lag-1 ranking key
+- `int_abs`   : Σ_{τ=1..recon_maxlag} |contrib(τ)|, the horizon-aware ranking
+                key (integrated absolute contribution over the reported lag
+                band; fifth-review finding 1: a component small at lag 1 can
+                matter at later lags if its eigenvalue is larger or its phase
+                differs, so a lag-1 budget alone is not an effective-rank
+                diagnostic for the full curve)
 
 `recon_err` is max_{τ ≤ recon_maxlag} |Σ_c contrib_c(τ) − ρ_direct(τ)| with
 ρ_direct from the matrix-power formula; it validates the eigendecomposition
@@ -83,6 +89,7 @@ function _spectral_components(T::AbstractMatrix, π̄::AbstractVector, m::Abstra
     imag_tol = 1e-10;
     used = Set{Int}();
     components = NamedTuple[];
+    _int_abs(f) = sum(abs(f(τ)) for τ in 1:recon_maxlag);
     for k in rest
         k in used && continue;
         if abs(imag(λ[k])) <= imag_tol
@@ -91,6 +98,7 @@ function _spectral_components(T::AbstractMatrix, π̄::AbstractVector, m::Abstra
                 Tuple(real(a[k]) * real(λ[k])^τ for τ in lags));
             push!(components, (kind=:real, abs_lam=abs(λ[k]), theta=0.0,
                                contrib=contrib, mag_t1=abs(contrib[1]),
+                               int_abs=_int_abs(τ -> real(a[k]) * real(λ[k])^τ),
                                members=(k,)));
         else
             # Find the conjugate partner among unused non-unit eigenvalues.
@@ -103,6 +111,7 @@ function _spectral_components(T::AbstractMatrix, π̄::AbstractVector, m::Abstra
                     Tuple(real(a[k] * λ[k]^τ) for τ in lags));
                 push!(components, (kind=:real, abs_lam=abs(λ[k]), theta=angle(λ[k]),
                                    contrib=contrib, mag_t1=abs(contrib[1]),
+                                   int_abs=_int_abs(τ -> real(a[k] * λ[k]^τ)),
                                    members=(k,)));
             else
                 jj = rest[j];
@@ -111,6 +120,7 @@ function _spectral_components(T::AbstractMatrix, π̄::AbstractVector, m::Abstra
                     Tuple(real(a[k] * λ[k]^τ + a[jj] * λ[jj]^τ) for τ in lags));
                 push!(components, (kind=:pair, abs_lam=abs(λ[k]), theta=abs(angle(λ[k])),
                                    contrib=contrib, mag_t1=abs(contrib[1]),
+                                   int_abs=_int_abs(τ -> real(a[k] * λ[k]^τ + a[jj] * λ[jj]^τ)),
                                    members=(k, jj)));
             end
         end
@@ -135,6 +145,8 @@ end
 
 Budget shares over the grouped components: dom_share, n95, n99, n>1%, the
 absolute budget B = Σ|contrib(1)|, and the signed ρ(1) = Σ contrib(1).
+Horizon-aware counterparts (`dom_share_int`, `n_for_95_int`) rank by
+`int_abs` = Σ_{τ ≤ 252} |contrib(τ)| instead of the lag-1 magnitude.
 """
 function _component_summary(components)
     mags = [c.mag_t1 for c in components];
@@ -144,10 +156,38 @@ function _component_summary(components)
     cum = cumsum(sorted) ./ B;
     n95 = findfirst(>=(0.95), cum);
     n99 = findfirst(>=(0.99), cum);
+    ints = sort([c.int_abs for c in components]; rev=true);
+    B_int = sum(ints);
+    cum_int = cumsum(ints) ./ B_int;
+    n95_int = findfirst(>=(0.95), cum_int);
     return (dom_share = sorted[1] / B,
             n_for_95 = isnothing(n95) ? length(mags) : n95,
             n_for_99 = isnothing(n99) ? length(mags) : n99,
             n_above_1pct = count(x -> x / B > 0.01, sorted),
             budget = B,
-            rho1 = rho1);
+            rho1 = rho1,
+            dom_share_int = ints[1] / B_int,
+            n_for_95_int = isnothing(n95_int) ? length(ints) : n95_int,
+            budget_int = B_int);
+end
+
+"""
+    _theoretical_acf(T, π̄, m, M, maxlag) -> Vector{Float64}
+
+Fitted population |G| ACF from the direct matrix formula
+ρ(τ) = (m' diag(π̄) T^τ m − (π̄'m)²) / σ²_|G| for τ = 1..maxlag, with
+σ²_|G| = π̄'M − (π̄'m)² (m_k = E[|G| | s=k], M_k = E[G² | s=k]).
+"""
+function _theoretical_acf(T::AbstractMatrix, π̄::AbstractVector, m::AbstractVector,
+                          M::AbstractVector, maxlag::Int)
+    σ²_G = π̄' * M - (π̄' * m)^2;
+    μ_G  = π̄' * m;
+    K = length(m);
+    ρ = zeros(maxlag);
+    Tτ = Matrix{Float64}(I, K, K);
+    for τ in 1:maxlag
+        Tτ *= T;
+        ρ[τ] = (m' * Diagonal(π̄) * Tτ * m - μ_G^2) / σ²_G;
+    end
+    return ρ;
 end

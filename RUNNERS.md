@@ -66,7 +66,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/robustness/run_cross_decade_validation.jl` | `results/cross_decade_validation/...` | Appendix `sec:cross_decade_validation` (CRSP 1994-2006 IS / OoS) |
 | `runners/robustness/run_sector_panel_quarterly_refit.jl` | `results/sector_panel/sector_panel_quarterly_refit.{csv,txt}` | Appendix `sec:cross_ticker_quarterly_refit` |
 | `runners/robustness/run_sector_panel_monthly_refit.jl` | `results/sector_panel/sector_panel_monthly_refit.{csv,txt}` | Body monthly-cadence reference ($K = 18$, OoS KS median 86.7\%, 5-of-30) + Appendix stationarity-scope panel. Heavy ($\sim 3\times$ quarterly compute) |
-| `runners/robustness/run_kurtosis_bootstrap.jl` | `results/SPY/diagnostics/kurtosis_bootstrap.txt` | Appendix `sec:kurtosis_bootstrap_ci` |
+| `runners/robustness/run_kurtosis_bootstrap.jl` | `results/diagnostics/kurtosis_bootstrap.txt` | Appendix `sec:kurtosis_bootstrap_ci` (raw bands descriptive; winsorized difference CI is the inferential object) |
 | `runners/robustness/run_kurtosis_ci_placement.jl` | `results/kurtosis_ci_placement/...` | Appendix `sec:kurtosis_ci_placement` |
 | `runners/robustness/run_lambda_cv_pre2020.jl` | `results/nu_shrinkage_sweep/lambda_cv_pre2020_k{18,3}.txt` (set `LAMBDA_CV_K`) | Appendix `sec:lambda_cv_pre2020` ($1/\nu_k$ penalty CV; K=18 backs the table, K=3 the re-tuning paragraph) |
 | `runners/robustness/run_k_selection_kfold_pre2020.jl` | `results/k_selection_validation/...` | Appendix `sec:k_selection_kfold_pre2020` (single + four-fold CV at body $K^\star = 3$) |
@@ -81,7 +81,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | Runner | Output | Paper artefact |
 |---|---|---|
 | `runners/spectral/run_spectral_rank.jl` | `results/diagnostics/spectral_rank.txt` | Body Table 1 + Appendix `sec:spectral_rank` (SPY effective rank diagnostic) |
-| `runners/spectral/run_spectral_rank_cross_ticker.jl` | `results/diagnostics/spectral_rank_cross_ticker.txt` | Appendix `sec:spectral_rank_xticker` (cross-ticker dominant-mode share) |
+| `runners/spectral/run_spectral_rank_cross_ticker.jl` | `results/diagnostics/spectral_rank_cross_ticker.txt` | Appendix `sec:spectral_rank_xticker` (K = 3 and K = 18, lag-1 + horizon-aware norms, model-vs-sample ACF MAE binding-ness check) |
 | `runners/spectral/run_t_singular_values.jl` | `results/diagnostics/t_singular_values.txt` | Supplementary transition-matrix singular-value diagnostic (per emission family) |
 
 ## Cross-asset extras
@@ -92,7 +92,7 @@ e.g. `julia --project=. runners/headline/run_all_analysis.jl`.
 | `runners/cross_asset/run_non_us_asset.jl` | `results/non_us_asset/...` | Appendix `sec:non_us_asset_supp` (GLD / SLV stress test) |
 | `runners/cross_asset/run_non_us_asset_quarterly_refit.jl` | `results/non_us_asset/Non_US_Asset_QuarterlyRefit.{txt,csv}` | Item 11 of REVIEW_RESPONSE_PLAN.md (GLD quarterly-refit follow-up). Configurable via `GLD_REFIT_K`, `GLD_REFIT_FAMILY` env vars. |
 | `runners/cross_asset/run_full_tcopula_mle.jl` | `results/copula_profile_ci/full_tcopula_mle.txt` (paper `full_tcopula_mle.csv`) | Body Table 4 one-shot joint $(\Sigma, \nu)$ MLE confirming the two-step $\nu^\star = 6$ |
-| `runners/cross_asset/run_cross_asset_rolling_copula.jl` | `results/cross_asset/Rolling_Copula_OoS.txt` (paper `rolling_copula_oos.csv`) | Appendix `tab:rolling_copula` 2x2 family/refit experiment: {static, rolling} x {Gaussian, Student-t} on identical quarter targets; refit effect 0.263 -> 0.185 (t), 0.260 -> 0.178 (G); family effect 0.003-0.007; partial block excluded from paired inference |
+| `runners/cross_asset/run_cross_asset_rolling_copula.jl` | `results/cross_asset/Rolling_Copula_OoS.txt` (paper `rolling_copula_oos.csv`) | Appendix `tab:rolling_copula` 2x2 family/refit experiment: {static, rolling} x {Gaussian, Student-t} on identical quarter targets; strict CRN across all four arms; refit effect 0.264 -> 0.186 (t), 0.261 -> 0.179 (G); family effect 0.003-0.007 slightly favouring Gaussian; partial block excluded from paired inference |
 
 ## Auxiliary baselines (Appendix B — extended baselines)
 

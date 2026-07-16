@@ -14,7 +14,7 @@ The framework compares the CHMM against a broad panel of alternatives:
 8. **Bootstrap, stationary-block bootstrap, Gaussian / Laplace i.i.d.** — non-parametric and parametric null generators
 9. **Single Index Model, Gaussian copula, Student-t copula, truncated C-vine** — cross-asset dependence generators
 
-At moderate $K$, the CHMM reproduces the three symmetric Cont (2001) stylized facts of financial returns (heavy tails, negligible linear autocorrelation, persistent volatility clustering) without an explicit jump mechanism. CHMM-GED's per-state $\hat p_k$ partitions bimodally into a Gaussian-bulk / Laplace-tail structure that replicates across seeds and tickers. The Student-$t$ copula with $\nu^\ast = 6$ reproduces cross-asset IS dependence; on OoS it is statistically indistinguishable from the Gaussian copula. A regime-conditional Value-at-Risk that propagates the one-step-ahead state forecast through the predictive mixture passes Christoffersen-cc cleanly across emission families.
+At moderate $K$, the CHMM substantially improves the heavy-tailed marginal fit over the Gaussian baseline, leaves the raw growth rate serially uncorrelated, and reduces the absolute-growth-rate ACF error relative to i.i.d. baselines at lags 1–63; it does not reproduce the long-horizon (lags 64–252) slow decay, where it sits slightly above the i.i.d. floor. CHMM-GED's per-state $\hat p_k$ partitions bimodally into a Gaussian-bulk / Laplace-tail structure that replicates across seeds and tickers. The Student-$t$ copula with $\nu^\ast = 6$ reproduces cross-asset IS dependence; on OoS, a paired 2×2 family/refit experiment under strict common random numbers finds a small family effect (0.003–0.007 off-diagonal MAE, slightly favouring the Gaussian copula) an order of magnitude below the quarterly-refit effect (0.077–0.082). A regime-conditional Value-at-Risk that propagates the one-step-ahead state forecast through the predictive mixture is not rejected by Christoffersen-cc at the 5% level on the main OoS window across emission families; the strict-tail (1%) tier is exploratory (a finite-sample calibration shows the asymptotic DQ reference anticonservative at T = 573). Full claim scoping lives in the paper; where this summary and the paper differ, the paper governs.
 
 ## Authors
 
@@ -24,11 +24,11 @@ At moderate $K$, the CHMM reproduces the three symmetric Cont (2001) stylized fa
 
 ## Academic Citation
 
-Alswaidan A, Jin C, Varner JD. *Continuous Hidden Markov Models for Equity Returns: Heavy-Tail Emission Families and Regime-Conditional Value-at-Risk.* Working paper, Cornell University, 2026.
+Alswaidan A, Jin C, Varner JD. *Continuous-Emission Hidden Markov Models for Equity Returns: Heavy-Tail Emission Families and Regime-Conditional Value-at-Risk.* Working paper, Cornell University, 2026.
 
 ```bibtex
 @article{alswaidan2026chmm,
-  title   = {Continuous Hidden Markov Models for Equity Returns:
+  title   = {Continuous-Emission Hidden Markov Models for Equity Returns:
              Heavy-Tail Emission Families and Regime-Conditional
              {Value-at-Risk}},
   author  = {Alswaidan, Abdulrahman and Jin, Cade and Varner, Jeffrey D.},
@@ -170,7 +170,7 @@ Returns convention: annualized excess log returns, $G_t = (1/\Delta t)\ln(P_t / 
 ```
 .
 |-- Include.jl                            # Entry point (sets paths, loads src/)
-|-- run_full_rebuild.jl                   # End-to-end rebuild of every paper artefact
+|-- run_full_rebuild.jl                   # Headline-stage rebuild (per-table runners: RUNNERS.md + results/artifacts_manifest.csv)
 |-- build_new_train_oos.jl                # (re)build IS / OoS JLD2 splits from raw OHLC bundles (optional; pre-built splits ship in data/)
 |-- runners/                              # All experiment scripts, grouped by paper section
 |   |-- headline/                         # Body §5 (Empirical Study) pipeline

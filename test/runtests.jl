@@ -14,6 +14,7 @@ include(joinpath(@__DIR__, "..", "Include.jl"))
     include("test_spectral.jl")
     include("test_artifacts.jl")
     include("test_crossasset.jl")
+    include("test_metrics.jl")
     include("test_visualize.jl")
     include("test_msgarch_reference.jl")
 end

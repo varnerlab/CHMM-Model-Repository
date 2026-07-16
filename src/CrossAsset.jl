@@ -548,8 +548,10 @@ procedure as the three-argument method, but every random component is drawn
 after a deterministic per-path, per-component reseed derived from `crn_seed`,
 so the Gaussian and Student-t copulas can be compared on identical base
 normals and identical marginal draws (the chi-square mixing draws of the
-Student-t come from their own component stream). The three-argument methods
-are unchanged and remain the ones used by the headline runners.
+Student-t come from their own component stream). The headline 2x2 family/refit
+runner (runners/cross_asset/run_cross_asset_rolling_copula.jl) uses this
+interface for all four quarter-level arms; the three-argument methods remain
+for single-family constructions where cross-family CRN is not needed.
 """
 function simulate(model::MyGaussianCopulaModel, T_sim::Int, n_paths::Int, crn_seed::Int)::Array{Float64,3}
     d = length(model.tickers);

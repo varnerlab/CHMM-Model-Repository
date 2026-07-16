@@ -158,8 +158,12 @@ own kurtosis on the Gaussian-Laplace axis, structurally analogous to how
 MyStudentTHiddenMarkovModel lets each state pick its own ν_k.
 
 ECM: closed-form scale update given (μ, p); 1D bracketed updates for μ
-and p. Identifiability of finite GED mixtures follows from Yakowitz-Spragins
-on the curved-exponential family (μ, log α, p).
+and p. Identifiability caveat (matching the paper's supplementary scope
+statement): the Gassiat et al. nonparametric HMM identifiability route
+requires the K per-state emission densities to be linearly independent,
+which is not proven here for the varying-shape GED family; the fitted-
+matrix full-rank check in the paper is an empirical diagnostic, not a
+population identifiability proof.
 
 ### Required fields
 - `states::Array{Int64,1}`: state labels

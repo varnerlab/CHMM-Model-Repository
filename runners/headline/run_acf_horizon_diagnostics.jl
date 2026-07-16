@@ -7,12 +7,13 @@
 #
 #   1. the observed IS |G_t| sample ACF (lags 1..252) with a moving-block-bootstrap
 #      95% confidence band (block length L = 20, 1000 replicates — the paper's L = 20
-#      block convention). The band is reported ONLY for lags <= L: concatenating
-#      independently sampled L-day blocks severs dependence across block boundaries,
-#      so the resampled ACF distribution is mechanically forced toward zero beyond
-#      the block length and the percentile band is not a valid uncertainty statement
-#      there (fourth-review item 1). Beyond lag L the CSV records NaN and the figure
-#      omits the band;
+#      block convention). The band is reported ONLY for lags <= BAND_MAX = 5, well
+#      inside the block length: block-boundary contamination is gradual, not a sharp
+#      cutoff at L — at lag h roughly h/L of resampled pairs cross an independently
+#      concatenated block boundary, and at h = L every pair does — so a conservative
+#      low-lag display range is required (fifth-review finding 3, superseding the
+#      fourth-review lags <= L convention). Beyond lag BAND_MAX the CSV records NaN
+#      and the figure omits the band;
 #   2. a simulated-ACF band: the per-path sample ACF over 1000 IS-length simulated
 #      paths (median and 5-95% envelope), same estimator as run_kstar3_headline.jl
 #      (StatsBase.autocor of |path| at lags 1..252);
@@ -159,12 +160,15 @@ for b in 1:N_BOOT
 end
 obs_ci_lo = [quantile(acf_boot[t, :], 0.025) for t in 1:L_MAX];
 obs_ci_hi = [quantile(acf_boot[t, :], 0.975) for t in 1:L_MAX];
-# Validity restriction (fourth-review item 1): the L-block bootstrap cannot support
-# uncertainty statements at lags beyond the block length — independently concatenated
-# blocks carry no dependence past L, so the band mechanically collapses toward the
-# i.i.d. width there. Record NaN beyond lag L so no downstream consumer can plot or
-# cite the band outside its validity range.
-for t in (BLOCK_LEN + 1):L_MAX
+# Validity restriction (fifth-review finding 3, superseding the fourth-review lags <= L
+# convention): block-boundary contamination is GRADUAL, not a sharp cutoff at L. At
+# lag h, roughly h/L of the resampled lag-h pairs cross an independently-concatenated
+# block boundary; at h = L every pair does. The band is therefore displayed only over
+# a conservative low-lag range h <= BAND_MAX << L, where the contaminated fraction is
+# small. Record NaN beyond BAND_MAX so no downstream consumer can plot or cite the
+# band outside that range.
+const BAND_MAX = 5;
+for t in (BAND_MAX + 1):L_MAX
     obs_ci_lo[t] = NaN;
     obs_ci_hi[t] = NaN;
 end
@@ -200,7 +204,7 @@ println("\n[6/6] Writing artefacts...")
 
 open(joinpath(OUT_DIR, "acf_horizon.txt"), "w") do io
     println(io, "="^90);
-    println(io, "ACF horizon diagnostics: CHMM-N at K* = $K_STAR on $TICKER IS (third-review item 8)");
+    println(io, "ACF horizon diagnostics: CHMM-N at K* = $K_STAR on $TICKER IS");
     println(io, "="^90);
     println(io);
     println(io, "Setup: IS = $n_is obs, seed = $SEED (fit), seed+1 (sim, $N_PATHS paths),");
@@ -209,11 +213,13 @@ open(joinpath(OUT_DIR, "acf_horizon.txt"), "w") do io
     println(io, "StatsBase.autocor of |G_t| at lags 1..$L_MAX, as in run_kstar3_headline.jl.");
     println(io);
     println(io, "Observed-ACF bootstrap band validity: the L = $BLOCK_LEN moving-block bootstrap");
-    println(io, "severs dependence across block boundaries, so its percentile band is a valid");
-    println(io, "uncertainty statement only for lags <= $BLOCK_LEN. The band is reported (CSV) and");
-    println(io, "plotted (figure) only over that range; entries beyond lag $BLOCK_LEN are NaN.");
-    println(io, "No long-lag claim is made from this band; the horizon comparison below rests on");
-    println(io, "the banded MAE table alone.");
+    println(io, "severs dependence across block boundaries, and the contamination is gradual —");
+    println(io, "at lag h roughly h/L of resampled pairs cross a boundary, and at h = L every");
+    println(io, "pair does — so the percentile band is displayed only over the conservative");
+    println(io, "low-lag range lags <= $BAND_MAX (well inside the block length). Entries beyond lag");
+    println(io, "$BAND_MAX are NaN in the CSV and omitted from the figure. No claim at any longer");
+    println(io, "lag is made from this band; the horizon comparison below rests on the banded");
+    println(io, "MAE table alone.");
     println(io);
     println(io, "Horizon-banded |G_t| ACF MAE (mean over paths of the band-mean absolute error):");
     println(io, "-"^60);
@@ -265,9 +271,9 @@ p = plot(xlabel="Lag (trading days, log scale)", ylabel="ACF of |Gₜ|",
 # Observed moving-block-bootstrap 95% band — plotted only over its validity range
 # (lags <= BLOCK_LEN); beyond the block length the band is not a valid uncertainty
 # statement and is omitted.
-plot!(p, 1:BLOCK_LEN, obs_ci_lo[1:BLOCK_LEN], fillrange=obs_ci_hi[1:BLOCK_LEN],
+plot!(p, 1:BAND_MAX, obs_ci_lo[1:BAND_MAX], fillrange=obs_ci_hi[1:BAND_MAX],
     alpha=0.25, color=_OBS_C, lw=0,
-    label="Observed 95% CI (block bootstrap, ℓ = $BLOCK_LEN; valid to lag $BLOCK_LEN)");
+    label="Observed 95% CI (block bootstrap, ℓ = $BLOCK_LEN; shown to lag $BAND_MAX)");
 # Simulated 5-95% envelope + median
 plot!(p, τ, sim_lo, fillrange=sim_hi, alpha=0.20, color=_MEAN_C, lw=0,
     label="CHMM-N 5–95th pctl ($N_PATHS paths)");

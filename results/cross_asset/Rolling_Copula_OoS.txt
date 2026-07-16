@@ -1,5 +1,5 @@
 ==============================================================================================================
-2x2 family/refit cross-asset copula experiment, six-asset SPY cross-section (fourth-review item 6)
+2x2 family/refit cross-asset copula experiment, six-asset SPY cross-section
 ==============================================================================================================
 
 Setup:
@@ -9,30 +9,33 @@ Setup:
   - Quarter partition: 10 OoS blocks of 63 days; the final 5-day partial block is scored and
     reported but EXCLUDED from paired inference (rank-deficient 5-observation correlation target).
   - ROLLING arms: copula refit each quarter on the trailing 252 days; scored on the SAME quarter target.
-  - Paths per simulation: 200.  Per-quarter seeds shared across all four arms (seed-level CRN).
+  - Paths per simulation: 200.  STRICT common random numbers across all four arms via the
+    four-argument simulate(model, T, n_paths, crn_seed) interface: identical base normals and
+    identical per-asset marginal draws per quarter; the Student-t chi-square mixing stream is
+    separate, so it does not shift the draws the arms share.
   - Seed root: 20260422
 
 Arm means over the 9 complete quarters (off-diagonal MAE, lower is better):
                        Gaussian    Student-t
-  static             0.2601      0.2633
-  rolling refit      0.1779      0.1852
+  static             0.2607      0.2637
+  rolling refit      0.1792      0.1863
 
 Paired contrasts over the 9 complete quarters (suggestive, not confirmatory: n = 9 time
 blocks, overlapping 252-day estimation windows across consecutive refits, no dependence
 correction; the per-quarter table below is the primary evidence):
 
   refit effect, Student-t (static - rolling):
-    mean diff 0.078  (sd 0.0632, se 0.0211)   paired t(8) = 3.7, two-sided p = 0.006
-    95% t-interval [0.0294, 0.1266]   blocks with diff > 0: 7 / 9
+    mean diff 0.0774  (sd 0.0642, se 0.0214)   paired t(8) = 3.62, two-sided p = 0.0068
+    95% t-interval [0.0281, 0.1268]   blocks with diff > 0: 7 / 9
   refit effect, Gaussian (static - rolling):
-    mean diff 0.0822  (sd 0.0647, se 0.0216)   paired t(8) = 3.81, two-sided p = 0.0052
-    95% t-interval [0.0324, 0.1319]   blocks with diff > 0: 8 / 9
+    mean diff 0.0815  (sd 0.0674, se 0.0225)   paired t(8) = 3.63, two-sided p = 0.0067
+    95% t-interval [0.0298, 0.1333]   blocks with diff > 0: 8 / 9
   family effect, static (t - Gaussian):
-    mean diff 0.0032  (sd 0.005, se 0.0017)   paired t(8) = 1.9, two-sided p = 0.0936
-    95% t-interval [-0.0007, 0.007]   blocks with diff > 0: 7 / 9
+    mean diff 0.003  (sd 0.0023, se 0.0008)   paired t(8) = 3.86, two-sided p = 0.0048
+    95% t-interval [0.0012, 0.0048]   blocks with diff > 0: 7 / 9
   family effect, rolling (t - Gaussian):
-    mean diff 0.0073  (sd 0.0073, se 0.0024)   paired t(8) = 3.01, two-sided p = 0.0169
-    95% t-interval [0.0017, 0.0129]   blocks with diff > 0: 6 / 9
+    mean diff 0.0071  (sd 0.0048, se 0.0016)   paired t(8) = 4.42, two-sided p = 0.0022
+    95% t-interval [0.0034, 0.0108]   blocks with diff > 0: 9 / 9
 
 Descriptive full-window anchors (main-text Table construction; not part of the paired comparison):
   Student-t : off-diag MAE 0.2077   (nu* = 6.0)
@@ -42,21 +45,23 @@ Per-quarter detail (partial block marked *):
 
 q   | forecast       | days  | win            | ν*roll  | t static  | t roll  | G static  | G roll 
 ----------------------------------------------------------------------------------------------------
-1   | [2517,2579]    | 63    | [2265,2516]    | 15.0    | 0.2276    | 0.1946  | 0.22      | 0.1959 
-2   | [2580,2642]    | 63    | [2328,2579]    | 15.0    | 0.3381    | 0.2124  | 0.3421    | 0.2133 
-3   | [2643,2705]    | 63    | [2391,2642]    | 10.0    | 0.3015    | 0.2332  | 0.2995    | 0.2364 
-4   | [2706,2768]    | 63    | [2454,2705]    | 6.0     | 0.2893    | 0.1385  | 0.284     | 0.1238 
-5   | [2769,2831]    | 63    | [2517,2768]    | 6.0     | 0.24      | 0.2493  | 0.2386    | 0.243  
-6   | [2832,2894]    | 63    | [2580,2831]    | 6.0     | 0.233     | 0.2369  | 0.2373    | 0.2255 
-7   | [2895,2957]    | 63    | [2643,2894]    | 5.0     | 0.2716    | 0.1454  | 0.2653    | 0.1299 
-8   | [2958,3020]    | 63    | [2706,2957]    | 5.0     | 0.2675    | 0.1164  | 0.2638    | 0.1052 
-9   | [3021,3083]    | 63    | [2769,3020]    | 6.0     | 0.2007    | 0.1403  | 0.1902    | 0.1283 
-10* | [3084,3088]    | 5     | [2832,3083]    | 10.0    | 0.5246    | 0.5652  | 0.4861    | 0.5427 
+1   | [2517,2579]    | 63    | [2265,2516]    | 15.0    | 0.2206    | 0.1978  | 0.2173    | 0.1967 
+2   | [2580,2642]    | 63    | [2328,2579]    | 15.0    | 0.3409    | 0.2125  | 0.337     | 0.2092 
+3   | [2643,2705]    | 63    | [2391,2642]    | 10.0    | 0.3091    | 0.237   | 0.3029    | 0.2361 
+4   | [2706,2768]    | 63    | [2454,2705]    | 6.0     | 0.2845    | 0.1363  | 0.2849    | 0.1253 
+5   | [2769,2831]    | 63    | [2517,2768]    | 6.0     | 0.2426    | 0.2492  | 0.2375    | 0.2427 
+6   | [2832,2894]    | 63    | [2580,2831]    | 6.0     | 0.2348    | 0.2362  | 0.2354    | 0.2312 
+7   | [2895,2957]    | 63    | [2643,2894]    | 5.0     | 0.2731    | 0.1426  | 0.2708    | 0.1307 
+8   | [2958,3020]    | 63    | [2706,2957]    | 5.0     | 0.2728    | 0.121   | 0.2703    | 0.1076 
+9   | [3021,3083]    | 63    | [2769,3020]    | 6.0     | 0.1947    | 0.144   | 0.19      | 0.1331 
+10* | [3084,3088]    | 5     | [2832,3083]    | 10.0    | 0.513     | 0.556   | 0.4968    | 0.5574 
 
 Notes:
-  - All four arms score the identical per-quarter targets with identical marginals, horizons, and
-    per-quarter seeds, so paired differences isolate the design factor (refit or family) and
-    quarter-to-quarter target difficulty cancels in d_q.
+  - All four arms score the identical per-quarter targets with identical marginals, horizons,
+    base normals, and marginal draws (strict CRN), so paired differences isolate the design
+    factor (refit or family) and quarter-to-quarter target difficulty cancels in d_q.
+  - The full-window anchors keep the legacy three-argument simulate + global-seed convention
+    so they reconcile with the main-text table; they enter no cross-family contrast.
   - The CHMM-N marginals are not refit in any arm; only the dependence layer moves.
   - The refit and family effects are measured on the SAME quarter-level estimand, so their
     magnitudes are directly comparable (this was not true of the earlier full-window family
