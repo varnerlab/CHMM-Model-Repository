@@ -88,8 +88,17 @@ const CHECKS = [
     ("spectral_acf_k18_is",   "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0551"),
     ("spectral_acf_k3_oos",   "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0441"),
     ("spectral_oos_zero",     "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0354"),
-    ("ceiling_m2_near",       "results/diagnostics/mode_capacity_ceiling.txt",             "sections/sensitivity_appendix.tex", "0.0169"),
-    ("ceiling_m17_near",      "results/diagnostics/mode_capacity_ceiling.txt",             "sections/sensitivity_appendix.tex", "0.0132"),
+    ("expdiag_m2_near",       "results/diagnostics/exp_mode_diagnostic.txt",               "sections/sensitivity_appendix.tex", "0.0169"),
+    ("expdiag_m17_near",      "results/diagnostics/exp_mode_diagnostic.txt",               "sections/sensitivity_appendix.tex", "0.0124"),
+    ("expdiag_m17_far",       "results/diagnostics/exp_mode_diagnostic.txt",               "sections/sensitivity_appendix.tex", "0.0155"),
+    ("expdiag_paired_near",   "results/diagnostics/exp_mode_diagnostic.txt",               "sections/sensitivity_appendix.tex", "0.0045"),
+    ("acfcap_k3_near",        "results/diagnostics/hmm_acf_capacity.txt",                  "sections/results.tex",              "0.0162"),
+    ("acfcap_k18_near",       "results/diagnostics/hmm_acf_capacity.txt",                  "sections/sensitivity_appendix.tex", "0.0140"),
+    ("acfcap_paired_near",    "results/diagnostics/hmm_acf_capacity.txt",                  "sections/results.tex",              "+0.0019"),
+    ("acfcap_kurt_sample",    "results/diagnostics/hmm_acf_capacity.txt",                  "sections/sensitivity_appendix.tex", "8.86"),
+    ("acfcap_spy_lam",        "results/diagnostics/hmm_acf_capacity.txt",                  "sections/sensitivity_appendix.tex", "0.9889"),
+    ("xticker_far_k3",        "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0245"),
+    ("xticker_far_k18",       "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0224"),
     ("xticker_refit_median",  "results/sector_panel/sector_panel_quarterly_refit.txt",     "sections/sensitivity_appendix.tex", "84.6"),
     ("acf_halflife",          "results/acf_horizon/acf_horizon.txt",                       "sections/results.tex",              "14.5"),
     ("acf_band_1_5",          "results/acf_horizon/acf_horizon.txt",                       "",                                  "0.0416"),
@@ -166,14 +175,24 @@ const KEYED = [
         r"difference is \[(-?[\d.]+),", 2, "-1.26", "sections/sensitivity_appendix.tex"),
     ("wins_kurt_diff_hi", "results/diagnostics/kurtosis_bootstrap.txt",
         r"difference is \[-?[\d.]+, ([\d.]+)\]", 2, "1.83", "sections/sensitivity_appendix.tex"),
-    # HSMM main-table row (exact truncated-discrete Pareto ML fit); the KS rates
+    # HSMM main-table row (censored multistart local-EM fit); the KS rates
     # are stored as fractions and printed as percentages (scale = 100).
     ("hsmm_k3_ks_is", "results/hsmm_ml/hsmm_ml_metrics.csv",
-        r"\n3,([\d.]+),", 1, "76.1", "sections/results.tex", 100.0),
+        r"\n3,([\d.]+),", 1, "76.0", "sections/results.tex", 100.0),
     ("hsmm_k3_ks_oos", "results/hsmm_ml/hsmm_ml_metrics.csv",
-        r"\n3,[\d.]+,([\d.]+),", 1, "67.7", "sections/results.tex", 100.0),
+        r"\n3,[\d.]+,([\d.]+),", 1, "68.7", "sections/results.tex", 100.0),
     ("hsmm_k3_acf", "results/hsmm_ml/hsmm_ml_metrics.csv",
         r"\n3,[\d.]+,[\d.]+,[\d.]+,[\d.]+,([\d.]+),", 4, "0.0394", "sections/results.tex"),
+    # HSMM sensitivity grid: D_max = 100 / 400 clustering figures quoted in the appendix.
+    ("hsmm_sens_d100_acf", "results/hsmm_ml/hsmm_ml_sensitivity.csv",
+        r"\n3,100,0\.05,[-\d.]+,[-\d.]+,\d+,[^,]+,[\d.]+,[\d.]+,([\d.]+)", 4, "0.0451", "sections/sensitivity_appendix.tex"),
+    ("hsmm_sens_d400_ks", "results/hsmm_ml/hsmm_ml_sensitivity.csv",
+        r"\n3,400,0\.05,[-\d.]+,[-\d.]+,\d+,[^,]+,([\d.]+),", 1, "60.9", "sections/sensitivity_appendix.tex", 100.0),
+    # Gamma-sojourn sensitivity rows (censored core, MoM duration block).
+    ("hsmm_gamma_k3_acf", "results/hsmm_gamma/hsmm_gamma_metrics.csv",
+        r"\n3,[\d.]+,[\d.]+,[\d.]+,[\d.]+,([\d.]+),", 4, "0.0531", "sections/sensitivity_appendix.tex"),
+    ("hsmm_gamma_k18_ks_is", "results/hsmm_gamma/hsmm_gamma_metrics.csv",
+        r"\n18,([\d.]+),", 1, "87.2", "sections/sensitivity_appendix.tex", 100.0),
 ];
 
 println();

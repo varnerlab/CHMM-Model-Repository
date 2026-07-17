@@ -1,0 +1,41 @@
+================================================================================================
+Unrestricted exponential-mode approximation diagnostic of the observed IS sample |G| ACF
+================================================================================================
+EXPLORATORY DESCRIPTIVE DIAGNOSTIC — NOT an HMM capacity bound. The fitted class spans
+every shape a K-state HMM ACF component can take (positive/negative real decay and
+damped-oscillatory pairs at 2-mode cost, free-sign coefficients), so it CONTAINS all
+K-state HMM ACF curves at budget m = K - 1; but (a) most curves in the class are not
+HMM-realizable, and (b) the fit is a greedy heuristic (budget-aware matching pursuit
+over a 3600-component dictionary, exact LLS refit, 5 local lambda-refinement
+sweeps) with no global certificate. Realizable attainability is measured separately by
+run_hmm_acf_capacity.jl. Lags 1-252; near band 1-63, far band 64-252.
+
+Cross-ticker medians of the diagnostic fit MAE (n = 31 tickers):
+------------------------------------------------------------------------
+m    | near band (lags 1-63)  | far band (lags 64-252)
+------------------------------------------------------------------------
+1    | 0.0196                 | 0.0176                
+2    | 0.0169                 | 0.0164                
+4    | 0.0156                 | 0.0160                
+8    | 0.0142                 | 0.0159                
+17   | 0.0124                 | 0.0155                
+
+SPY detail:
+  m = 1   near 0.0210  far 0.0220   components: pos:0.9785:0:0.27840
+  m = 2   near 0.0176  far 0.0200   components: pos:0.9849:0:0.18753|pos:0.9055:0:0.16599
+  m = 4   near 0.0173  far 0.0197   components: pos:0.9866:0:0.17616|pos:0.9055:0:0.23189|pos:0.9987:0:-0.00512|pos:0.5734:0:-0.16836
+  m = 8   near 0.0150  far 0.0196   components: pos:0.9866:0:0.16469|pos:0.9055:0:0.31410|pos:0.9984:0:-0.00291|osc:0.9593:2.6180:-0.00357:0.02784|osc:0.7880:0.2618:0.01306:-0.24526|pos:0.3410:0:-0.35288
+  m = 17  near 0.0117  far 0.0195   components: pos:0.9866:0:0.16233|pos:0.9055:0:0.33585|pos:0.9984:0:-0.00246|osc:0.9681:2.6180:0.00051:0.02169|osc:0.7880:0.2618:-0.00723:-0.37902|osc:0.7775:1.0472:-0.11801:-0.01927|osc:0.9415:0.5236:-0.03634:-0.01556|osc:0.9652:1.5708:-0.02503:0.01382|osc:0.9940:0.2618:0.00264:0.00369|osc:0.7898:1.5708:0.08608:-0.00539
+
+m = 2 minus m = 17 diagnostic gap:
+  near band: paired per-ticker median of differences = 0.0045  (difference of separate medians = 0.0044)
+  far band : paired per-ticker median of differences = 0.0006  (difference of separate medians = 0.0009)
+
+Dictionary-resolution sensitivity (m in {2, 17}, all tickers, band MAEs):
+  n_lam = 200  : median |delta MAE| = 0.00001, max = 0.00079
+  n_lam = 800  : median |delta MAE| = 0.00001, max = 0.00016
+
+Reading: small m = 2 vs m = 17 gaps say only that a few unconstrained exponential
+modes track this sample curve nearly as well as many; they do NOT establish that the
+HMM feasible set at K = 3 attains these errors, nor identify which constraint binds a
+likelihood fit. See run_hmm_acf_capacity.jl for the realizable (valid-HMM) comparison.

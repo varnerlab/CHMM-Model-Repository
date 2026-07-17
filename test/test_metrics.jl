@@ -37,10 +37,13 @@ end
     @test ℓ(α̂) > ℓ(α_old) + 1e-3
 end
 
-@testset "hsmm_ml runner uses the library truncated-Pareto ML update" begin
+@testset "hsmm core uses the library censored truncated-Pareto ML update" begin
+    core = read(joinpath(@__DIR__, "..", "runners", "baselines", "hsmm_core.jl"), String)
+    @test occursin("fit_truncated_pareto_alpha(w[s, :], D", core)
+    @test occursin("censored_counts", core)
+    @test !occursin("1.0 / max(log_d_mean", core)
     runner = read(joinpath(@__DIR__, "..", "runners", "baselines", "run_hsmm_ml.jl"), String)
-    @test occursin("fit_truncated_pareto_alpha(expected_counts, D)", runner)
-    @test !occursin("1.0 / max(log_d_mean", runner)
+    @test occursin("hsmm_core.jl", runner)
 end
 
 @testset "Metrics utilities" begin

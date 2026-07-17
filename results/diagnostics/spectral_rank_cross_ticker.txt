@@ -5,7 +5,8 @@ Setup: CHMM-N at K in [3, 18], 30-ticker sector panel + SPY control.
 Fits: baum_welch_multistart, tol = 0.0001, max_iter = 4000; starts per K:
       K = 3 -> 3 starts, K = 18 -> 5 starts (canonical quantile + jittered).
 Emission moments are analytic (folded normal); stationary vector by checked left-
-eigenvector solve. Held-out criterion (pre-specified): near-band (lags 1-63) MAE of
+eigenvector solve. Held-out criterion (declared; the OoS window was used in earlier
+analyses of this paper, so not confirmatory): near-band (lags 1-63) MAE of
 the fitted population |G| ACF against the OUT-OF-SAMPLE window's sample ACF.
 
 ------------------------------------------------------------------------------------------------
@@ -78,8 +79,9 @@ Far band (lags 64-252) medians:
 Reading (scope):
   - These are converged multistart LIKELIHOOD fits, so the comparison shows what ML
     fitting delivers at each state count, on the fit window and on a held-out window.
-  - It does NOT by itself bound what any m-mode combination could achieve; the
-    attainable-accuracy ceiling is measured by run_mode_capacity_ceiling.jl, and the
-    two artifacts should be read together.
+  - It does NOT by itself bound what the K-state class could achieve on the ACF axis;
+    realizable attainability is measured by run_hmm_acf_capacity.jl (valid-HMM,
+    ACF-targeted), with run_exp_mode_diagnostic.jl as an exploratory out-of-class
+    curve-fit reference; the artifacts should be read together.
   - The ticker count is descriptive (no cross-sectional dependence correction; the
     panel shares market-wide factors, and SPY is included).

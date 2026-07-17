@@ -1,0 +1,43 @@
+================================================================================================
+Realizable ACF-targeted HMM capacity: valid K-state Gaussian-emission HMMs optimized so
+their population |G| ACF matches the observed IS sample ACF (SSE over lags 1-252),
+multistart finite-difference Adam; every reported error is ATTAINED by a valid HMM.
+================================================================================================
+
+Starts per K: Dict(18 => 8, 3 => 20) (start 1 = sticky quantile, start 2 = likelihood-fit seed,
+rest = random persistence-diverse); Adam cap 4000 iterations, early stop on
+300-iteration stall. The likelihood-seeded start guarantees attained SSE <= the
+likelihood fit's own population-ACF SSE on the same target curve.
+
+Cross-ticker medians of model-vs-sample |G| ACF MAE (n = 31 tickers),
+every error ATTAINED by a valid K-state HMM:
+------------------------------------------------------------------------------
+row                          | near 1-63  | far 64-252
+------------------------------------------------------------------------------
+ACF-targeted HMM  K = 3       | 0.0162     | 0.0162    
+ACF-targeted HMM  K = 18      | 0.0140     | 0.0154    
+
+Comparison rows (likelihood-fit medians; unrestricted exponential diagnostic) live in
+their own artifacts: spectral_rank_cross_ticker.txt and exp_mode_diagnostic.txt.
+
+SPY detail:
+  K = 3   near 0.0161  far 0.0194  sse 0.12762  |lambda|: 0.9889, 0.9480
+  K = 18  near 0.0156  far 0.0142  sse 0.08069  |lambda|: 0.9945, 0.9945, 0.9752, 0.9752, 0.9649
+
+Paired per-ticker ACF-targeted gap K=3 minus K=18 (median of differences):
+  near band: +0.0019
+  far band : +0.0008
+Marginal disclosure (the ACF-targeted optimum need not fit the marginal; scale-free):
+  K = 3 : median model excess kurtosis 0.32 vs sample median 8.86 (SPY -0.14 vs 7.69); median min stationary mass 6.9e-02
+  K = 18: median model excess kurtosis 11.00 vs sample median 8.86 (SPY 66.63 vs 7.69); median min stationary mass 3.9e-05
+
+
+Optimizer evidence: 25 / 62 best-start fits early-stopped (rest hit the iteration cap);
+per-ticker per-start diagnostics in the CSV.
+
+Reading rule (declared before the run): the estimation criterion, not the state
+budget, is implicated on a band exactly when (a) ACF-targeted K = 3 error is
+materially below the likelihood-fit error at both K, and (b) ACF-targeted K = 3
+and K = 18 are close. If (b) fails, the state budget itself binds. These fits are
+multistart heuristic optima: attained errors are upper bounds on the class's best
+error (attainability certificates), not certified global minima.

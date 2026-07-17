@@ -515,28 +515,75 @@ function truncated_pareto_logpmf(α::Float64, D::Int)
 end
 
 """
-    fit_truncated_pareto_alpha(expected_counts, D; bounds=(0.05, 8.0)) -> Float64
+    truncated_pareto_logsf(α, D) -> Vector{Float64}
+
+Log survival function of the truncated discrete Pareto duration law:
+log S_α(d) = log P(D ≥ d) = log Σ_{d'=d}^{D} p_α(d'), for d = 1..D, computed by
+reverse pairwise log-sum-exp accumulation of `truncated_pareto_logpmf`.
+S_α(1) = 1 exactly; S_α(D) = p_α(D).
+"""
+function truncated_pareto_logsf(α::Float64, D::Int)
+    lp = truncated_pareto_logpmf(α, D);
+    ls = similar(lp);
+    ls[D] = lp[D];
+    for d in (D-1):-1:1
+        a, b = lp[d], ls[d+1];
+        ls[d] = a > b ? a + log1p(exp(b - a)) : b + log1p(exp(a - b));
+    end
+    ls[1] = min(ls[1], 0.0);   # clamp the exact-1 head against roundoff
+    return ls;
+end
+
+"""
+    fit_truncated_pareto_alpha(expected_counts, D; censored_counts=nothing,
+                               bounds=(0.05, 8.0)) -> Float64
 
 Exact M-step for the truncated discrete Pareto duration parameter from expected
-duration counts w_d: maximizes the expected complete-data log-likelihood
+COMPLETED duration counts w_d and (optionally) expected right-CENSORED terminal
+counts c_d: maximizes the expected complete-data log-likelihood
 
-    ℓ(α) = Σ_d w_d · log p_α(d) = -(α+1) Σ_d w_d log d − (Σ_d w_d) · log Z_D(α),
+    ℓ(α) = Σ_d w_d · log p_α(d) + Σ_d c_d · log S_α(d),
 
-whose score equation is E_w[log d] = E_α[log d] under the NORMALIZED truncated
-pmf. ℓ is concave in α (one-parameter exponential family with natural
+with S_α(d) = P(D ≥ d) the truncated-law survival function. Without censoring
+the objective is concave in α (one-parameter exponential family with natural
 parameter -(α+1) and sufficient statistic log d), so a golden-section search
 over `bounds` finds the maximizer. (2026-07-16 sixth review, finding 4: the
 previous update α = 1 / E_w[log d] is the continuous UNTRUNCATED Pareto
 formula and does not optimize the declared truncated discrete likelihood, so
 the EM carrying it was not an exact ML update.)
+
+With `censored_counts` the survival term is a difference of convex functions,
+so concavity is no longer guaranteed; the search then runs a coarse 64-point
+log-spaced grid scan over `bounds` first and refines by golden section on the
+bracket around the grid argmax (seventh review, finding 3: the HSMM terminal
+segment is right-censored, so the duration M-step must include the censored
+survival term).
 """
 function fit_truncated_pareto_alpha(expected_counts::Vector{Float64}, D::Int;
+                                    censored_counts::Union{Nothing,Vector{Float64}}=nothing,
                                     bounds::Tuple{Float64,Float64}=(0.05, 8.0))
-    s = sum(expected_counts);
+    s = sum(expected_counts) + (censored_counts === nothing ? 0.0 : sum(censored_counts));
     if s <= 1e-9; return 1.5; end
-    ℓ(α) = sum(expected_counts[d] * truncated_pareto_logpmf(α, D)[d] for d in 1:D);
+    ℓ = if censored_counts === nothing
+        α -> sum(expected_counts[d] * truncated_pareto_logpmf(α, D)[d] for d in 1:D);
+    else
+        function (α)
+            lp = truncated_pareto_logpmf(α, D);
+            ls = truncated_pareto_logsf(α, D);
+            return sum(expected_counts[d] * lp[d] + censored_counts[d] * ls[d] for d in 1:D);
+        end
+    end
+    lo, hi = bounds;
+    if censored_counts !== nothing
+        # Non-concave case: bracket the golden section around a coarse grid argmax.
+        grid = exp.(range(log(lo), log(hi), length=64));
+        vals = ℓ.(grid);
+        i★ = argmax(vals);
+        lo = grid[max(i★ - 1, 1)];
+        hi = grid[min(i★ + 1, length(grid))];
+    end
     gr = (sqrt(5.0) - 1.0) / 2.0;
-    a, b = bounds;
+    a, b = lo, hi;
     c = b - gr * (b - a); d = a + gr * (b - a);
     fc = ℓ(c); fd = ℓ(d);
     for _ in 1:200

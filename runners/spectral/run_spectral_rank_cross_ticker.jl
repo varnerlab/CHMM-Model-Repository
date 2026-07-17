@@ -18,13 +18,17 @@
 #     the horizon-aware norm B∫ = Σ_c Σ_{τ=1..252} |contrib_c(τ)|.
 #   - ACF criterion: per ticker, MAE between the fitted population |G| ACF and the sample
 #     |G| ACF, near band (lags 1-63) and far band (64-252), on BOTH the IS window (fit
-#     window; descriptive) and the HELD-OUT OoS window (pre-specified criterion:
-#     near-band OoS MAE). The zero curve (i.i.d.) is the reference on each window.
+#     window; descriptive) and the HELD-OUT OoS window (declared out-of-sample criterion:
+#     near-band OoS MAE; held out from fitting, though the window has been used in earlier
+#     analyses of this paper, so the comparison is not confirmatory). The zero curve
+#     (i.i.d.) is the reference on each window.
 #
 # What this does and does not identify: both state counts are likelihood fits, so the
-# comparison shows what ML fitting delivers at each capacity; the attainable-accuracy
-# question ("could ANY m-mode combination do better?") is answered separately by
-# runners/spectral/run_mode_capacity_ceiling.jl.
+# comparison shows what ML fitting delivers at each capacity; what a valid K-state HMM
+# CAN attain on the ACF axis is measured separately by the realizable ACF-targeted
+# experiment (runners/spectral/run_hmm_acf_capacity.jl), with the unrestricted
+# exponential curve fit (runners/spectral/run_exp_mode_diagnostic.jl) as an exploratory
+# out-of-class reference.
 #
 # Output: results/diagnostics/spectral_rank_cross_ticker.txt
 #         results/diagnostics/spectral_rank_cross_ticker_fits.csv (per-ticker optimizer table)
@@ -205,7 +209,8 @@ open(out_path, "w") do io
     println(io, "Fits: baum_welch_multistart, tol = $TOL, max_iter = $MAX_ITER; starts per K:");
     println(io, "      K = 3 -> $(N_STARTS[3]) starts, K = 18 -> $(N_STARTS[18]) starts (canonical quantile + jittered).");
     println(io, "Emission moments are analytic (folded normal); stationary vector by checked left-");
-    println(io, "eigenvector solve. Held-out criterion (pre-specified): near-band (lags 1-63) MAE of");
+    println(io, "eigenvector solve. Held-out criterion (declared; the OoS window was used in earlier");
+    println(io, "analyses of this paper, so not confirmatory): near-band (lags 1-63) MAE of");
     println(io, "the fitted population |G| ACF against the OUT-OF-SAMPLE window's sample ACF.");
     println(io);
     println(io, "-"^96);
@@ -267,9 +272,10 @@ open(out_path, "w") do io
     println(io, "Reading (scope):");
     println(io, "  - These are converged multistart LIKELIHOOD fits, so the comparison shows what ML");
     println(io, "    fitting delivers at each state count, on the fit window and on a held-out window.");
-    println(io, "  - It does NOT by itself bound what any m-mode combination could achieve; the");
-    println(io, "    attainable-accuracy ceiling is measured by run_mode_capacity_ceiling.jl, and the");
-    println(io, "    two artifacts should be read together.");
+    println(io, "  - It does NOT by itself bound what the K-state class could achieve on the ACF axis;");
+    println(io, "    realizable attainability is measured by run_hmm_acf_capacity.jl (valid-HMM,");
+    println(io, "    ACF-targeted), with run_exp_mode_diagnostic.jl as an exploratory out-of-class");
+    println(io, "    curve-fit reference; the artifacts should be read together.");
     println(io, "  - The ticker count is descriptive (no cross-sectional dependence correction; the");
     println(io, "    panel shares market-wide factors, and SPY is included).");
 end

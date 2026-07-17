@@ -6,6 +6,55 @@ runner comments cite review items by round and number ("third-review item 7",
 what changed. The manuscript itself describes the current methodology without
 this history.
 
+## Seventh-review response (2026-07)
+
+- **Capacity-ceiling claim retracted and replaced** (finding 1): the sixth
+  round's `run_mode_capacity_ceiling.jl` fit free-sign positive-real
+  exponentials by greedy OMP and presented the result as an HMM capacity
+  bound. It is not one: the curve class is neither a superset of HMM ACFs
+  (which include signed and damped-oscillatory modes) nor globally optimized,
+  and a relaxation gap does not measure the feasible-set gap. The runner was
+  replaced by two separated instruments: (a) `run_exp_mode_diagnostic.jl`,
+  an explicitly exploratory unrestricted approximation diagnostic whose
+  dictionary now spans every HMM component shape (positive/negative real +
+  damped-oscillatory pairs at 2-mode budget cost), with paired per-ticker
+  median gaps, persisted coefficients and fitted curves, and
+  dictionary-resolution sensitivity; and (b) `run_hmm_acf_capacity.jl`, a
+  realizable experiment that optimizes ACTUAL valid K-state Gaussian HMMs
+  (softmax-stochastic transition rows, exact stationary law, analytic
+  folded-normal moments) against the sample ACF by multistart
+  finite-difference Adam — every reported error is attained by a valid HMM
+  (attainability certificate; one start is seeded at the likelihood fit).
+  Optimizer core in `acf_capacity_common.jl` / `exp_mode_common.jl`, both
+  unit-tested (recovery, parametrization roundtrip, budget accounting).
+  All "binding constraint" / "best attainable" / "ceiling" manuscript claims
+  were rewritten from the realizable artifact.
+- **HSMM right-censored terminal segment** (findings 2-4): the ML HSMM's
+  likelihood conditioned every segmentation on a sojourn boundary exactly at
+  T while its simulator right-truncated an ongoing final sojourn. The EM core
+  (extracted to `hsmm_core.jl`) now marginalizes the terminal segment through
+  the duration survival function (start-forward restructure, censored
+  posterior eta_c, boundary-correct gamma), the duration M-step includes the
+  expected censored counts (library `fit_truncated_pareto_alpha` gains
+  `censored_counts` + `truncated_pareto_logsf`; grid-bracketed golden section
+  since censoring breaks concavity), and the headline fits are multistart
+  local-EM estimates (5 starts at K = 3, 3 at K = 18) with per-start
+  diagnostics. A K = 3 sensitivity grid over D_max in {100, 200, 400} x
+  alpha lower bound in {0.02, 0.05, 0.2} quantifies the boundary/truncation
+  dependence of the fitted duration law. Brute-force tiny-window enumeration
+  tests pin the censored E-step exactly (likelihood both recursion
+  directions, occupancy, transitions, completed + censored duration counts).
+  `run_hsmm_gamma.jl` was rewritten as a thin driver over the shared core
+  (pluggable duration M-step; its Gamma moment update is disclosed as
+  completed-counts-only), removing another private EM copy.
+- **Wording/scoping** (findings 5-8, 10): "pre-specified" for the held-out
+  ACF criterion replaced with declared-criterion language; the absolute
+  "not used for any spectral or ACF claim" sentence scoped to the subsection;
+  "any of the likelihood fits" corrected to median errors; K = 2 and K-sweep
+  "confirms" language reframed as fitted-outcome evidence with the lambda =
+  0.942 half-life (~11.6 days) stated; paper README title/BibTeX synced to
+  "Continuous-Emission"; vendor-stitch history note reworded ahistorically.
+
 ## Sixth-review response (2026-07)
 
 - **Converged multistart spectral panel** (findings 1-2): the previous
@@ -16,22 +65,25 @@ this history.
   cross-start LL spread); the cross-ticker runner now fits to tol = 1e-4 with
   max_iter = 4000, 3 starts at K = 3 and 5 at K = 18, saves a per-ticker
   optimizer-evidence CSV, and adds a held-out OoS ACF criterion.
-- **Mode-capacity ceiling** (finding 1): new
-  `run_mode_capacity_ceiling.jl` measures the best attainable m-mode geometric
-  approximation of the observed sample ACF (OMP over a 400-atom half-life
-  dictionary + LLS refit + local refinement). Result: the m = 2 ceiling is
-  within ~0.004 MAE of the m = 17 ceiling in both bands and ~3x better than
-  what likelihood fits deliver, identifying the ML objective, not the mode
-  budget, as the binding constraint; the paper claim was rewritten
-  accordingly, and the categorical "requires a different duration law, not a
-  larger state count" was corrected to the asymptotic-vs-finite-horizon form.
+- **Mode-capacity ceiling** (finding 1) — SUPERSEDED by the seventh-review
+  response: `run_mode_capacity_ceiling.jl` measured the best positive-real
+  free-coefficient m-mode approximation of the sample ACF and presented it as
+  an attainability ceiling identifying the ML objective as the binding
+  constraint. The seventh review showed this inference invalid (the curve
+  class is not a superset of HMM ACFs and the greedy fit carries no global
+  certificate); the runner was replaced by `run_exp_mode_diagnostic.jl` +
+  `run_hmm_acf_capacity.jl` above. The asymptotic-vs-finite-horizon
+  duration-law correction from this round stands.
 - **ML HSMM duration update** (findings 4-5): the truncated discrete Pareto
   M-step previously used the continuous untruncated formula
   alpha = 1/E_w[log d]; replaced with the exact concave-likelihood maximizer
   `fit_truncated_pareto_alpha` (library, tested), the EM driver now follows
   the evaluate-before-update contract, the runner moved from `_attic/` back
   to `runners/baselines/`, the artifact was regenerated, and the manifest +
-  keyed checks now cover the main-table HSMM row.
+  keyed checks now cover the main-table HSMM row. (Seventh review: the
+  terminal-segment convention was subsequently corrected to right-censored,
+  the fit made multistart, and the EM core extracted to `hsmm_core.jl`;
+  this round's artifact numbers are superseded.)
 - **Numerics/statistics polish** (findings 6-8): stationary distributions by
   checked left-eigenvector solve (uniqueness, non-negativity, residual
   asserts) instead of fixed matrix powers; analytic folded-normal moments in
