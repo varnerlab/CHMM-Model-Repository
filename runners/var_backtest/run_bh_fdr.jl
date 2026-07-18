@@ -73,7 +73,7 @@ end
 txt_path = joinpath(OUT_DIR, "bh_fdr.txt");
 open(txt_path, "w") do io
     println(io, "="^100);
-    println(io, "Benjamini-Hochberg FDR adjustment for the VaR back-test panels (2026-07 review, finding 3)");
+    println(io, "Benjamini-Hochberg FDR adjustment for the VaR back-test panels (see CHANGELOG.md)");
     println(io, "="^100);
     println(io);
     println(io, "Each panel is one BH family; q-values by the step-up procedure; FDR level q = $Q_LEVEL.");

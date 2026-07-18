@@ -174,13 +174,14 @@ end
 
 """
     _adam_minimize(f, θ0; lr=0.05, n_iter=4000, patience=300, rel_tol=1e-9, h=1e-6)
-        -> (θ_best, f_best, n_used, converged)
+        -> (θ_best, f_best, n_used, stop_reason)
 
 Adam (β₁ = 0.9, β₂ = 0.999) on finite-difference gradients, learning rate halved
 every 1,000 iterations; returns the best-evaluated iterate (never the raw last
-step). `converged` is true when the best value has not improved by a relative
-`rel_tol` for `patience` consecutive iterations (early stop); false means the
-iteration cap was reached.
+step). `stop_reason` is `:stall` when the best value has not improved by a
+relative `rel_tol` for `patience` consecutive iterations (objective-stall early
+stop — NOT a first-order stationarity certificate), or `:iter_cap` when the
+iteration budget was exhausted.
 """
 function _adam_minimize(f, θ0::Vector{Float64}; lr::Float64=0.05, n_iter::Int=4000,
                         patience::Int=300, rel_tol::Float64=1e-9, h::Float64=1e-6)
@@ -189,7 +190,7 @@ function _adam_minimize(f, θ0::Vector{Float64}; lr::Float64=0.05, n_iter::Int=4
     mvec = zeros(n); vvec = zeros(n); g = zeros(n);
     β1, β2, ϵ = 0.9, 0.999, 1e-8;
     f_best = f(θ); θ_best = copy(θ);
-    stall = 0; it_used = 0; converged = false;
+    stall = 0; it_used = 0; stop_reason = :iter_cap;
     for it in 1:n_iter
         it_used = it;
         _fd_gradient!(g, f, θ; h=h);
@@ -210,12 +211,12 @@ function _adam_minimize(f, θ0::Vector{Float64}; lr::Float64=0.05, n_iter::Int=4
             end
             stall += 1;
             if stall >= patience
-                converged = true;
+                stop_reason = :stall;
                 break;
             end
         end
     end
-    return θ_best, f_best, it_used, converged;
+    return θ_best, f_best, it_used, stop_reason;
 end
 
 """
@@ -239,8 +240,12 @@ diagnostics (start, sse_init, sse_final, n_iter, converged).
 """
 function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
                      R::Union{Nothing,Vector{Float64}}=nothing,
-                     ml_seed::Union{Nothing,NamedTuple}=nothing, n_iter::Int=4000)
-    f = θ -> _acf_objective(θ, ρ̂, K);
+                     ml_seed::Union{Nothing,NamedTuple}=nothing, n_iter::Int=4000,
+                     objective=nothing)
+    # `objective` overrides the default pure-ACF SSE (used by the Pareto-frontier
+    # runner for weighted ACF+marginal objectives); band MAEs and the fitted
+    # population ACF are always reported against ρ̂ regardless of the objective.
+    f = objective === nothing ? (θ -> _acf_objective(θ, ρ̂, K)) : objective;
 
     if R !== nothing
         n = length(R); perm = sortperm(R);
@@ -276,8 +281,8 @@ function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
     best_θ = nothing; best_sse = Inf; best_start = 0;
     for (si, θ0) in enumerate(starts)
         sse0 = f(θ0);
-        θb, fb, nit, conv = _adam_minimize(f, θ0; n_iter=n_iter);
-        push!(diags, (start=si, sse_init=sse0, sse_final=fb, n_iter=nit, converged=conv));
+        θb, fb, nit, stop = _adam_minimize(f, θ0; n_iter=n_iter);
+        push!(diags, (start=si, sse_init=sse0, sse_final=fb, n_iter=nit, stop_reason=stop));
         if fb < best_sse
             best_sse = fb; best_θ = θb; best_start = si;
         end
@@ -293,6 +298,149 @@ function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
     lam = sort(abs.(eigvals(T)); rev=true)[2:end];
     return (T=T, π̄=π̄, μ=μ, σ=σ, sse=best_sse, near_mae=near, far_mae=far,
             best_start=best_start, n_starts=length(starts),
-            converged=diags[best_start].converged, n_iter=diags[best_start].n_iter,
+            stop_reason=diags[best_start].stop_reason, n_iter=diags[best_start].n_iter,
             diagnostics=diags, abs_lams=lam, rho=ρ);
+end
+
+# --------------------------------------------------------------------------------------- #
+# Marginal-fit helpers for the Pareto-frontier experiment (weighted ACF + marginal
+# objectives). All operate on the STATIONARY mixture implied by (π̄, μ, σ); the
+# log-likelihood is a marginal-density fit measure and deliberately ignores dependence.
+# --------------------------------------------------------------------------------------- #
+
+"""
+    _mixture_cdf(x, π̄, μ, σ) -> Float64
+
+CDF of the stationary Gaussian mixture Σ_k π̄_k Φ((x − μ_k)/σ_k).
+"""
+function _mixture_cdf(x::Float64, π̄::AbstractVector{Float64}, μ::AbstractVector{Float64},
+                      σ::AbstractVector{Float64})
+    s = 0.0;
+    @inbounds for k in eachindex(μ)
+        s += π̄[k] * cdf(Normal(), (x - μ[k]) / σ[k]);
+    end
+    return s;
+end
+
+"""
+    _marginal_cvm(π̄, μ, σ, xq) -> Float64
+
+Cramér–von Mises-type distance between the stationary mixture CDF and the empirical
+CDF, evaluated on the empirical-quantile grid `xq` (x-values at probabilities
+(i − 0.5)/n for i = 1..n): (1/n) Σ_i (F_θ(xq_i) − (i − 0.5)/n)².
+"""
+function _marginal_cvm(π̄::AbstractVector{Float64}, μ::AbstractVector{Float64},
+                       σ::AbstractVector{Float64}, xq::Vector{Float64})
+    n = length(xq);
+    s = 0.0;
+    @inbounds for i in 1:n
+        F = _mixture_cdf(xq[i], π̄, μ, σ);
+        p = (i - 0.5) / n;
+        s += (F - p)^2;
+    end
+    return s / n;
+end
+
+"""
+    _mixture_quantile(π̄, μ, σ, q) -> Float64
+
+Quantile of the stationary mixture by bisection (60 iterations).
+"""
+function _mixture_quantile(π̄::AbstractVector{Float64}, μ::AbstractVector{Float64},
+                           σ::AbstractVector{Float64}, q::Float64)
+    lo = minimum(μ .- 12 .* σ); hi = maximum(μ .+ 12 .* σ);
+    for _ in 1:60
+        mid = (lo + hi) / 2;
+        if _mixture_cdf(mid, π̄, μ, σ) < q
+            lo = mid;
+        else
+            hi = mid;
+        end
+    end
+    return (lo + hi) / 2;
+end
+
+"""
+    _mixture_loglik_perobs(π̄, μ, σ, R) -> Float64
+
+Mean log stationary-mixture density over the sample (marginal-density fit; ignores
+serial dependence).
+"""
+function _mixture_loglik_perobs(π̄::AbstractVector{Float64}, μ::AbstractVector{Float64},
+                                σ::AbstractVector{Float64}, R::Vector{Float64})
+    s = 0.0;
+    @inbounds for x in R
+        d = 0.0;
+        for k in eachindex(μ)
+            z = (x - μ[k]) / σ[k];
+            d += π̄[k] * exp(-0.5 * z * z) / (σ[k] * sqrt(2π));
+        end
+        s += log(max(d, 1e-300));
+    end
+    return s / length(R);
+end
+
+"""
+    _joint_objective(θ, ρ̂, xq, λ_scaled, K) -> Float64
+
+Weighted objective J = ACF_SSE + λ_scaled · CvM. `λ_scaled = Inf` selects the
+pure-marginal arm (CvM only; the |G|-variance degeneracy guard is then skipped,
+since a marginal-only fit may legitimately collapse the ACF).
+"""
+function _joint_objective(θ::Vector{Float64}, ρ̂::Vector{Float64}, xq::Vector{Float64},
+                          λ_scaled::Float64, K::Int)
+    all(isfinite, θ) || return 1e6;
+    T, μ, σ = _unpack_acf_params(θ, K);
+    all(isfinite, T) || return 1e6;
+    π̄ = _stationary_pi_unchecked(T);
+    all(isfinite, π̄) || return 1e6;
+    cvm = _marginal_cvm(π̄, μ, σ, xq);
+    isfinite(cvm) || return 1e6;
+    if isinf(λ_scaled)
+        return cvm;
+    end
+    m, M = _folded_moments(μ, σ);
+    μG = dot(π̄, m);
+    σ²G = dot(π̄, M) - μG^2;
+    (isfinite(σ²G) && σ²G > 1e-14 * max(dot(π̄, M), eps())) || return 1e6;
+    ρ = _population_acf(T, π̄, m, M, length(ρ̂));
+    sse = sum(abs2, ρ .- ρ̂);
+    return isfinite(sse) ? sse + λ_scaled * cvm : 1e6;
+end
+
+"""
+    _nondominated(points) -> Vector{Int}
+
+Indices of the nondominated points (both coordinates to be minimized): point i is
+dominated when some j has both coordinates ≤ i's with at least one strictly smaller.
+"""
+function _nondominated(points::Vector{Tuple{Float64,Float64}})
+    keep = Int[];
+    for (i, p) in enumerate(points)
+        dominated = false;
+        for (j, q) in enumerate(points)
+            j == i && continue;
+            if q[1] <= p[1] && q[2] <= p[2] && (q[1] < p[1] || q[2] < p[2])
+                dominated = true;
+                break;
+            end
+        end
+        dominated || push!(keep, i);
+    end
+    return keep;
+end
+
+"""
+    _model_excess_kurtosis(π̄, μ, σ) -> Float64
+
+Exact excess kurtosis of the stationary Gaussian mixture from state raw moments.
+"""
+function _model_excess_kurtosis(π̄, μ, σ)
+    m1 = sum(π̄[k] * μ[k] for k in eachindex(μ));
+    m2 = sum(π̄[k] * (μ[k]^2 + σ[k]^2) for k in eachindex(μ));
+    m3 = sum(π̄[k] * (μ[k]^3 + 3μ[k]*σ[k]^2) for k in eachindex(μ));
+    m4 = sum(π̄[k] * (μ[k]^4 + 6μ[k]^2*σ[k]^2 + 3σ[k]^4) for k in eachindex(μ));
+    c2 = m2 - m1^2;
+    c4 = m4 - 4m1*m3 + 6m1^2*m2 - 3m1^4;
+    return c4 / c2^2 - 3.0;
 end

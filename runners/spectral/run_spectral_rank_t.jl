@@ -21,7 +21,7 @@ using Printf
 using Distributions
 
 const SEED      = 20260420;
-const MAX_ITER  = 4000;   # converged fits (sixth review, finding 2); tol 1e-4
+const MAX_ITER  = 4000;   # converged fits (see CHANGELOG.md); tol 1e-4
 const DT        = 1/252;
 const RISK_FREE = 0.0;
 const N_M_DRAW  = 200_000;  # samples per state for m_k / M_k
@@ -50,7 +50,7 @@ println("  IS = $(length(R_is)) days");
 
 # ----------------------------------------------------------------------------------------- #
 # Shared-ν ECM via the library fitter (third private copy removed, 2026-07-16
-# sixth-review sweep; the library baum_welch_student_t_shared_nu carries the
+# an earlier consolidation sweep (see CHANGELOG.md); the library baum_welch_student_t_shared_nu carries the
 # evaluate-before-update / best-evaluated-iterate contract and ll_history).
 function ecm_shared_nu(obs::AbstractVector, K::Int;
         max_iter::Int=MAX_ITER, tol::Float64=1e-4,
@@ -133,7 +133,7 @@ open(out_path, "w") do io
     println(io, "="^90);
     println(io, "Setup: shared-ν Student-t CHMM-t on SPY IS, seed = $SEED, n_draw = $N_M_DRAW per state for m_k.");
     println(io, "Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (conjugate pairs");
-    println(io, "combined; third-review item 7). Shares are of the absolute component-magnitude");
+    println(io, "combined; see CHANGELOG.md). Shares are of the absolute component-magnitude");
     println(io, "budget B = Σ_c |contrib_c(1)|; B is not a percentage of ρ(1) itself.");
     println(io, "Companion to spectral_rank.txt (Gaussian CHMM-N). Fit: ecm_shared_nu (single ν across states).");
     _print_panel(io, results_18);

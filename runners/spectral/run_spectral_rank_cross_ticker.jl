@@ -3,7 +3,7 @@
 #
 # Cross-ticker spectral effective-rank diagnostic at K = 3 AND K = 18 across the 30-ticker
 # sector-balanced panel (+ SPY control), with CONVERGED MULTISTART fits and a HELD-OUT
-# out-of-sample ACF criterion (2026-07-16 sixth review, findings 1-2: the previous version
+# out-of-sample ACF criterion (see CHANGELOG.md: the previous version
 # compared a converged K = 3 fit against K = 18 fits capped at 60 iterations — final
 # likelihood increments thousands of times the tolerance — from one deterministic start,
 # scored in-sample only).

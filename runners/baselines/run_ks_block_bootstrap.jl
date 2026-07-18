@@ -126,7 +126,7 @@ for L in BLOCK_LENGTHS
     null_stats = Vector{Float64}(undef, B_BOOT);
     for b in 1:B_BOOT
         # Two-sample null: two INDEPENDENT stationary-block resamples per replicate,
-        # mimicking the actual observed-vs-simulated comparison (fourth-review item 4).
+        # mimicking the actual observed-vs-simulated comparison (see CHANGELOG.md).
         boot_a = stationary_block_bootstrap(R_is, n_is, L);
         boot_b = stationary_block_bootstrap(R_is, n_is, L);
         null_stats[b] = ks_statistic(boot_a, boot_b);

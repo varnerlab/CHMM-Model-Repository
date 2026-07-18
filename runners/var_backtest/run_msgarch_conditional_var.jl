@@ -1,7 +1,7 @@
 # =========================================================================== #
 # run_msgarch_conditional_var.jl
 #
-# Third-party-review item (a)/(b): traced, forecast-origin-aligned MS-GARCH
+# Traced (see CHANGELOG.md):, forecast-origin-aligned MS-GARCH
 # conditional-VaR block for the paper's main VaR table. The previous paper
 # artefact results/robustness/msgarch_conditional_var.csv had no runner in
 # this repository and was computed on 572 OoS forecasts (it omitted the

@@ -11,8 +11,8 @@
 #      inside the block length: block-boundary contamination is gradual, not a sharp
 #      cutoff at L — at lag h roughly h/L of resampled pairs cross an independently
 #      concatenated block boundary, and at h = L every pair does — so a conservative
-#      low-lag display range is required (fifth-review finding 3, superseding the
-#      fourth-review lags <= L convention). Beyond lag BAND_MAX the CSV records NaN
+#      low-lag display range is required (see CHANGELOG.md, superseding the
+#      earlier lags <= L convention). Beyond lag BAND_MAX the CSV records NaN
 #      and the figure omits the band;
 #   2. a simulated-ACF band: the per-path sample ACF over 1000 IS-length simulated
 #      paths (median and 5-95% envelope), same estimator as run_kstar3_headline.jl
@@ -160,7 +160,7 @@ for b in 1:N_BOOT
 end
 obs_ci_lo = [quantile(acf_boot[t, :], 0.025) for t in 1:L_MAX];
 obs_ci_hi = [quantile(acf_boot[t, :], 0.975) for t in 1:L_MAX];
-# Validity restriction (fifth-review finding 3, superseding the fourth-review lags <= L
+# Validity restriction (see CHANGELOG.md, superseding the earlier lags <= L
 # convention): block-boundary contamination is GRADUAL, not a sharp cutoff at L. At
 # lag h, roughly h/L of the resampled lag-h pairs cross an independently-concatenated
 # block boundary; at h = L every pair does. The band is therefore displayed only over

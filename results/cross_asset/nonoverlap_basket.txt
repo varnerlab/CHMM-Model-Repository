@@ -1,5 +1,5 @@
 ================================================================================================
-Non-overlapping six-name basket, copula composition at K = 3  (T1q / 2026-07 review)
+Non-overlapping six-name basket, copula composition at K = 3  (T1q; see CHANGELOG.md)
 ================================================================================================
 
 Universe: MSFT, UNH, BAC, CAT, PG, XOM  (one from each of six selected GICS sectors, no ETFs, no cross-holdings)

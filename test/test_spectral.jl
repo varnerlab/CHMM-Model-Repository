@@ -132,3 +132,86 @@ end
     @test startswith(s, "osc:")
     @test length(split(split(s, "|")[1], ":")) == 5
 end
+
+@testset "Frontier marginal helpers and nondominated set" begin
+    π̄ = [0.5, 0.3, 0.2]; μ = [-0.5, 0.2, 1.0]; σ = [0.6, 1.0, 2.0]
+    # quantile inverts the mixture CDF
+    for q in (0.01, 0.25, 0.5, 0.9, 0.99)
+        x = _mixture_quantile(π̄, μ, σ, q)
+        @test abs(_mixture_cdf(x, π̄, μ, σ) - q) < 1e-9
+    end
+    # CvM of the mixture against its own quantile grid is ~0
+    n = 400
+    xq = [_mixture_quantile(π̄, μ, σ, (i - 0.5) / n) for i in 1:n]
+    @test _marginal_cvm(π̄, μ, σ, xq) < 1e-12
+    # λ = 0 joint objective equals the pure ACF objective; λ = Inf is CvM only
+    rng = MersenneTwister(3)
+    Λ = 2.0 .* Matrix(1.0I, 3, 3) .+ randn(rng, 3, 3)
+    T0 = exp.(Λ .- maximum(Λ, dims=2)); T0 ./= sum(T0, dims=2)
+    θ = _pack_acf_params(T0, μ, σ)
+    ρ̂ = fill(0.05, 252)
+    @test _joint_objective(θ, ρ̂, xq, 0.0, 3) ≈ _acf_objective(θ, ρ̂, 3) atol=1e-12
+    @test _joint_objective(θ, ρ̂, xq, Inf, 3) ≈
+          _marginal_cvm(_stationary_pi_unchecked(T0), μ, σ, xq) atol=1e-12
+    # nondominated set on a hand-built configuration (minimize both coordinates)
+    pts = [(1.0, 5.0), (2.0, 4.0), (3.0, 3.0), (2.5, 4.5), (1.5, 6.0)]
+    nd = _nondominated(pts)
+    @test (1 in nd) && (2 in nd) && (3 in nd)
+    # 4 = (2.5, 4.5) is dominated by 2 = (2.0, 4.0); 5 = (1.5, 6.0) by 1 = (1.0, 5.0).
+    @test !(4 in nd) && !(5 in nd)
+end
+
+@testset "ACF-capacity certificates reload and verify" begin
+    cert_dir = joinpath(@__DIR__, "..", "results", "hmm_acf_capacity")
+    files = filter(f -> endswith(f, ".jld2"), readdir(cert_dir))
+    @test length(files) == 62                       # 31 tickers x K in {3, 18}
+    csv = readlines(joinpath(@__DIR__, "..", "results", "diagnostics", "hmm_acf_capacity.csv"))
+    rows = Dict{Tuple{String,Int},Vector{SubString{String}}}()
+    for ln in csv[2:end]
+        p = split(ln, ",")
+        rows[(String(p[1]), parse(Int, p[3]))] = p
+    end
+    for fl in files
+        d = JLD2.load(joinpath(cert_dir, fl))
+        T = d["T"]; π̄ = d["pi"]; μ = d["mu"]; σ = d["sigma"]
+        @test all(abs.(sum(T, dims=2) .- 1.0) .< 1e-10)   # valid stochastic matrix
+        @test all(T .> 0.0)
+        @test all(σ .> 0.0)
+        @test maximum(abs.(vec(π̄' * T) .- π̄)) < 1e-8      # stationarity
+        m, M = _folded_moments(μ, σ)
+        ρ = _population_acf(T, π̄, m, M, length(d["rho_fit"]))
+        @test maximum(abs.(ρ .- d["rho_fit"])) < 1e-10     # stored curve reproduces
+        @test sum(abs2, ρ .- d["rho_target"]) ≈ d["sse"] rtol = 1e-8
+        p = rows[(d["ticker"], d["K"])]
+        @test parse(Float64, p[8]) ≈ d["sse"] atol = 5e-7
+        @test parse(Float64, p[9]) ≈ d["near_mae"] atol = 5e-7
+        # attainability bookkeeping: winner no worse than any start's initial
+        # value, including the likelihood-seeded start
+        @test all(d["sse"] <= dg.sse_init + 1e-12 for dg in d["diagnostics"])
+        @test d["sse"] <= d["sse_mlseed"] + 1e-12
+    end
+end
+
+@testset "Frontier certificates reload and verify" begin
+    frt_dir = joinpath(@__DIR__, "..", "results", "hmm_acf_frontier")
+    files = filter(f -> endswith(f, ".jld2"), readdir(frt_dir))
+    @test length(files) == 31
+    for fl in files
+        d = JLD2.load(joinpath(frt_dir, fl))
+        ρ̂ = d["rho_target"]; xq = d["xq"]
+        arms = filter(k -> startswith(k, "arm_"), collect(keys(d)))
+        @test length(arms) == 9                     # 8 lambda arms + pure-marginal
+        for a in arms
+            w = d[a]
+            T = w["T"]; π̄ = w["pi"]; μ = w["mu"]; σ = w["sigma"]
+            @test all(abs.(sum(T, dims=2) .- 1.0) .< 1e-10)
+            @test all(T .> 0.0)
+            @test maximum(abs.(vec(π̄' * T) .- π̄)) < 1e-8
+            m, M = _folded_moments(μ, σ)
+            ρ = _population_acf(T, π̄, m, M, length(ρ̂))
+            @test maximum(abs.(ρ .- w["rho_fit"])) < 1e-10
+            @test mean(abs.(ρ[1:63] .- ρ̂[1:63])) ≈ w["near"] atol = 1e-10
+            @test _marginal_cvm(π̄, μ, σ, xq) ≈ w["cvm"] rtol = 1e-8
+        end
+    end
+end

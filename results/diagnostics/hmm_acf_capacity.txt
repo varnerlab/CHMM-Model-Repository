@@ -31,13 +31,23 @@ Marginal disclosure (the ACF-targeted optimum need not fit the marginal; scale-f
   K = 3 : median model excess kurtosis 0.32 vs sample median 8.86 (SPY -0.14 vs 7.69); median min stationary mass 6.9e-02
   K = 18: median model excess kurtosis 11.00 vs sample median 8.86 (SPY 66.63 vs 7.69); median min stationary mass 3.9e-05
 
-
-Optimizer evidence: 25 / 62 best-start fits early-stopped (rest hit the iteration cap);
-per-ticker per-start diagnostics in the CSV.
+Optimizer evidence (stop reason of the winning start; 'stall' = objective-stall
+early stop, NOT a first-order stationarity certificate; 'iter_cap' = budget
+exhausted):
+  K = 3 : 25 / 31 stalled, 6 / 31 hit the iteration cap
+  K = 18: 0 / 31 stalled, 31 / 31 hit the iteration cap
+Summary metrics live in this CSV; the full per-model certificates (T, pi, mu,
+sigma, fitted and target ACF curves, every start's diagnostics, and the
+single-start likelihood-seed SSE) are the JLD2 files in results/hmm_acf_capacity/,
+each re-verified by the test suite (row sums, stationarity, recomputed ACF).
 
 Reading rule (declared before the run): the estimation criterion, not the state
 budget, is implicated on a band exactly when (a) ACF-targeted K = 3 error is
 materially below the likelihood-fit error at both K, and (b) ACF-targeted K = 3
 and K = 18 are close. If (b) fails, the state budget itself binds. These fits are
 multistart heuristic optima: attained errors are upper bounds on the class's best
-error (attainability certificates), not certified global minima.
+error (attainability certificates), not certified global minima. The K = 3 vs
+K = 18 comparison is ACHIEVED ACCURACY under this declared optimizer, not a
+class-level equivalence statement: the K = 18 fits stop at the iteration cap
+and their stationary laws are near-degenerate, so K = 18 is the looser
+certificate and no practical-equivalence margin is claimed.

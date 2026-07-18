@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_hmm_acf_capacity.jl
 #
-# Realizable ACF-targeted HMM capacity experiment (2026-07-16 seventh review, finding 1).
+# Realizable ACF-targeted HMM capacity experiment (see CHANGELOG.md).
 #
 # Motivation: the free-exponential diagnostic in run_exp_mode_diagnostic.jl fits
 # sum_k a_k lambda_k^tau with free-sign coefficients over positive-real atoms — a curve
@@ -40,7 +40,7 @@ include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 include(joinpath(@__DIR__, "spectral_common.jl"));
 include(joinpath(@__DIR__, "acf_capacity_common.jl"));
 
-using Printf, LinearAlgebra, Statistics, Random
+using Printf, LinearAlgebra, Statistics, Random, JLD2
 
 const SEED      = 20260420;
 const DT        = 1/252;
@@ -55,7 +55,9 @@ const ML_SEED_TOL      = 1e-4;
 const SUMMARY_ONLY = "--summary-only" in ARGS;   # rebuild the txt from the CSV, no refits
 
 const OUT_DIR = joinpath(_ROOT, "results", "diagnostics");
+const CERT_DIR = joinpath(_ROOT, "results", "hmm_acf_capacity");   # per-model certificates
 mkpath(OUT_DIR);
+mkpath(CERT_DIR);
 
 const SECTOR_PANEL = [
     ("Information Technology",   ["AAPL", "MSFT", "NVDA"]),
@@ -74,17 +76,6 @@ function _sample_acf_abs(x::AbstractVector, maxlag::Int)
     a = abs.(x); n = length(a); μ = mean(a);
     v = sum((a .- μ).^2);
     return [sum((a[1:n-τ] .- μ) .* (a[1+τ:n] .- μ)) / v for τ in 1:maxlag];
-end
-
-# Scale-free marginal disclosure: model excess kurtosis of G from state raw moments.
-function _model_excess_kurtosis(π̄, μ, σ)
-    m1 = sum(π̄[k] * μ[k] for k in eachindex(μ));
-    m2 = sum(π̄[k] * (μ[k]^2 + σ[k]^2) for k in eachindex(μ));
-    m3 = sum(π̄[k] * (μ[k]^3 + 3μ[k]*σ[k]^2) for k in eachindex(μ));
-    m4 = sum(π̄[k] * (μ[k]^4 + 6μ[k]^2*σ[k]^2 + 3σ[k]^4) for k in eachindex(μ));
-    c2 = m2 - m1^2;
-    c4 = m4 - 4m1*m3 + 6m1^2*m2 - 3m1^4;
-    return c4 / c2^2 - 3.0;
 end
 
 # ----------------------------------------------------------------------------------------- #
@@ -131,28 +122,41 @@ for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
             m_opt, M_opt = _folded_moments(fit.μ, fit.σ);
             μG = dot(fit.π̄, m_opt); σ²G = dot(fit.π̄, M_opt) - μG^2;
             cv_model = sqrt(max(σ²G, 0.0)) / μG;
-            # The ML-seed start's final SSE certifies the seeded-start guarantee.
+            # The ML-seed start's final SSE certifies the seeded-start guarantee
+            # (seed = the fresh single-start Baum-Welch fit above, NOT the published
+            # converged multistart likelihood fit).
             sse_mlseed = fit.diagnostics[2].sse_final;
             results[ticker][K] = (fit=fit, kurt_model=kurt_model, kurt_sample=kurt_sample,
                                   cv_model=cv_model, cv_sample=cv_sample,
                                   sse_mlseed=sse_mlseed);
+            # Full reproducibility certificate: winning model, fitted curve, target
+            # curve, and every start's diagnostics.
+            save(joinpath(CERT_DIR, "capacity_$(ticker)_K$(K).jld2"), Dict(
+                "ticker" => ticker, "K" => K, "seed" => SEED + 100*idx + K,
+                "T" => fit.T, "pi" => fit.π̄, "mu" => fit.μ, "sigma" => fit.σ,
+                "rho_fit" => fit.rho, "rho_target" => ρ̂,
+                "sse" => fit.sse, "near_mae" => fit.near_mae, "far_mae" => fit.far_mae,
+                "best_start" => fit.best_start, "n_starts" => fit.n_starts,
+                "diagnostics" => fit.diagnostics, "sse_mlseed" => sse_mlseed,
+                "kurt_model" => kurt_model, "kurt_sample" => kurt_sample,
+            ));
             @printf("  %-6s K=%-2d  near %.4f  far %.4f  sse %.5f  (best start %d/%d, %s)\n",
                     ticker, K, fit.near_mae, fit.far_mae, fit.sse,
-                    fit.best_start, fit.n_starts, fit.converged ? "early-stop" : "iter-cap");
+                    fit.best_start, fit.n_starts, String(fit.stop_reason));
         end
     end
 end
 
 open(joinpath(OUT_DIR, "hmm_acf_capacity.csv"), "w") do io
-    println(io, "ticker,sector,K,n_starts,best_start,converged,n_iter,sse,near_mae,far_mae," *
-                "kurt_model,kurt_sample,cv_abs_model,cv_abs_sample,pi_min,abs_lams");
+    println(io, "ticker,sector,K,n_starts,best_start,stop_reason,n_iter,sse,near_mae,far_mae," *
+                "kurt_model,kurt_sample,cv_abs_model,cv_abs_sample,pi_min,abs_lams,sse_mlseed");
     for t in sort(collect(keys(results))), K in K_LIST
         r = results[t][K]; fit = r.fit;
         lam_str = join([@sprintf("%.4f", l) for l in fit.abs_lams[1:min(5, end)]], ";");
-        @printf(io, "%s,%s,%d,%d,%d,%s,%d,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%.4f,%.6f,%s\n",
-                t, sectors[t], K, fit.n_starts, fit.best_start, fit.converged, fit.n_iter,
+        @printf(io, "%s,%s,%d,%d,%d,%s,%d,%.6f,%.6f,%.6f,%.4f,%.4f,%.4f,%.4f,%.6f,%s,%.6f\n",
+                t, sectors[t], K, fit.n_starts, fit.best_start, String(fit.stop_reason), fit.n_iter,
                 fit.sse, fit.near_mae, fit.far_mae, r.kurt_model, r.kurt_sample,
-                r.cv_model, r.cv_sample, minimum(fit.π̄), lam_str);
+                r.cv_model, r.cv_sample, minimum(fit.π̄), lam_str, r.sse_mlseed);
     end
 end
 
@@ -171,7 +175,7 @@ rows = NamedTuple[];
 for ln in readlines(csv_path)[2:end]
     f = split(ln, ",");
     push!(rows, (ticker=String(f[1]), K=parse(Int, f[3]), n_starts=parse(Int, f[4]),
-                 best_start=parse(Int, f[5]), converged=f[6] == "true",
+                 best_start=parse(Int, f[5]), stop_reason=String(f[6]),
                  sse=parse(Float64, f[8]), near=parse(Float64, f[9]),
                  far=parse(Float64, f[10]), kurt_model=parse(Float64, f[11]),
                  kurt_sample=parse(Float64, f[12]), pi_min=parse(Float64, f[15]),
@@ -227,17 +231,30 @@ open(out_path, "w") do io
                 K, medr(K, :kurt_model), medr(K, :kurt_sample), spy.kurt_model, spy.kurt_sample, medr(K, :pi_min));
     end
     println(io);
-    n_conv = count(r.converged for r in rows);
-    @printf(io, "\nOptimizer evidence: %d / %d best-start fits early-stopped (rest hit the iteration cap);\n",
-            n_conv, length(rows));
-    println(io, "per-ticker per-start diagnostics in the CSV.");
+    println(io, "Optimizer evidence (stop reason of the winning start; 'stall' = objective-stall");
+    println(io, "early stop, NOT a first-order stationarity certificate; 'iter_cap' = budget");
+    println(io, "exhausted):");
+    for K in K_LIST
+        rk = filter(r -> r.K == K, rows);
+        n_stall = count(r -> r.stop_reason == "stall", rk);
+        @printf(io, "  K = %-2d: %d / %d stalled, %d / %d hit the iteration cap\n",
+                K, n_stall, length(rk), length(rk) - n_stall, length(rk));
+    end
+    println(io, "Summary metrics live in this CSV; the full per-model certificates (T, pi, mu,");
+    println(io, "sigma, fitted and target ACF curves, every start's diagnostics, and the");
+    println(io, "single-start likelihood-seed SSE) are the JLD2 files in results/hmm_acf_capacity/,");
+    println(io, "each re-verified by the test suite (row sums, stationarity, recomputed ACF).");
     println(io);
     println(io, "Reading rule (declared before the run): the estimation criterion, not the state");
     println(io, "budget, is implicated on a band exactly when (a) ACF-targeted K = 3 error is");
     println(io, "materially below the likelihood-fit error at both K, and (b) ACF-targeted K = 3");
     println(io, "and K = 18 are close. If (b) fails, the state budget itself binds. These fits are");
     println(io, "multistart heuristic optima: attained errors are upper bounds on the class's best");
-    println(io, "error (attainability certificates), not certified global minima.");
+    println(io, "error (attainability certificates), not certified global minima. The K = 3 vs");
+    println(io, "K = 18 comparison is ACHIEVED ACCURACY under this declared optimizer, not a");
+    println(io, "class-level equivalence statement: the K = 18 fits stop at the iteration cap");
+    println(io, "and their stationary laws are near-degenerate, so K = 18 is the looser");
+    println(io, "certificate and no practical-equivalence margin is claimed.");
 end
 println();
 println("[done] Wrote $out_path");

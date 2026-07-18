@@ -23,7 +23,7 @@ using Random, LinearAlgebra, Statistics
     _stationary_pi(T) -> Vector{Float64}
 
 Stationary distribution of a row-stochastic transition matrix by a constrained
-left-eigenvector linear solve (2026-07-16 sixth review, finding 7: fixed
+left-eigenvector linear solve (see CHANGELOG.md: fixed
 matrix powers such as `(T^2000)[1, :]` carry no residual check and can retain
 starting-row dependence for highly persistent chains). Asserts uniqueness of
 the unit eigenvalue, non-negativity, normalization, and a small stationarity
@@ -53,8 +53,7 @@ end
 Transition matrix, stationary vector, and per-state moments
 m_k = E[|G| | s = k], M_k = E[G² | s = k] for a fitted CHMM. For Normal
 emissions the moments are closed-form (folded-normal mean; μ² + σ²), removing
-Monte-Carlo variation from the model-vs-sample comparison (sixth review,
-finding 8); non-Normal emissions fall back to `n_draw` sampled draws per
+Monte-Carlo variation from the model-vs-sample comparison (see CHANGELOG.md); non-Normal emissions fall back to `n_draw` sampled draws per
 state under `seed`.
 """
 function _T_pibar_m(model, K::Int; n_draw::Int, seed::Int=0)
@@ -93,7 +92,7 @@ Each component is a NamedTuple with fields
 - `mag_t1`    : |contrib(1)|, the lag-1 ranking key
 - `int_abs`   : Σ_{τ=1..recon_maxlag} |contrib(τ)|, the horizon-aware ranking
                 key (integrated absolute contribution over the reported lag
-                band; fifth-review finding 1: a component small at lag 1 can
+                band; see CHANGELOG.md: a component small at lag 1 can
                 matter at later lags if its eigenvalue is larger or its phase
                 differs, so a lag-1 budget alone is not an effective-rank
                 diagnostic for the full curve)

@@ -1,8 +1,8 @@
 # ========================================================================================= #
 # run_cross_asset_rolling_copula.jl
 #
-# 2x2 family/refit copula experiment on the six-asset SPY universe (fourth-review item 6).
-# The third-review rebuild made the static-vs-rolling Student-t comparison paired, but the
+# 2x2 family/refit copula experiment on the six-asset SPY universe (see CHANGELOG.md).
+# An earlier rebuild (see CHANGELOG.md) made the static-vs-rolling Student-t comparison paired, but the
 # paper's broader conclusion ("refitting the dependence layer, not choosing its family,
 # drives OoS dependence error") still compared a family effect measured on one full-window
 # matrix with a refit effect measured on quarter-level targets - two different estimands.
@@ -28,7 +28,7 @@
 #   (simulate(model, T, n_paths, crn_seed) in src/CrossAsset.jl) with the same per-quarter
 #   crn_seed: base normals and per-asset marginal draws are identical across all four arms,
 #   and the Student-t chi-square mixing draws come from their own component stream that the
-#   Gaussian arms never touch. Seed-level resets alone (the fifth-review finding) are only a
+#   Gaussian arms never touch. Seed-level resets alone (see CHANGELOG.md) are only a
 #   paired-seed design: _sample_t_copula consumes an extra chi-square stream that shifts
 #   every draw after it, so Gaussian and Student-t arms would not see identical marginals.
 # - Inference: paired per-quarter loss differences over the COMPLETE blocks for four
@@ -170,7 +170,7 @@ for (qi, (q_start, q_end)) in enumerate(quarter_bounds)
     R_window = R_full[win_start:win_end, :];
 
     # Rolling refits on the trailing window (Student-t seed convention unchanged from the
-    # third-review runner so the t arms reproduce; the Gaussian build is deterministic).
+    # earlier runner so the t arms reproduce (see CHANGELOG.md); the Gaussian build is deterministic).
     Random.seed!(SEED + 1000 + qi);
     copula_roll_t = build(MyStudentTCopulaModel,
         (returns = R_window, tickers = ASSETS, marginals = chmms));

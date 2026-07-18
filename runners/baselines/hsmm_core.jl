@@ -3,7 +3,7 @@
 # (state, duration) pairs), Gaussian emissions, off-diagonal transitions,
 # truncated discrete Pareto sojourns.
 #
-# Finite-window convention (2026-07-16 seventh review, finding 3): the terminal
+# Finite-window convention (see CHANGELOG.md): the terminal
 # segment is RIGHT-CENSORED. The likelihood marginalizes over an ongoing final
 # sojourn via the duration survival function S_α(d) = P(D ≥ d),
 #

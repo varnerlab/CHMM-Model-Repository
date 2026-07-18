@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_paper_artifact_check.jl
 #
-# Paper/artifact consistency gate (third-review Phase A; upgraded fourth review, item 9).
+# Paper/artifact consistency gate (see CHANGELOG.md).
 # Three layers:
 #
 #   [1] MANIFEST STATUS GATE - results/artifacts_manifest.csv is the runner-to-artifact
@@ -25,7 +25,7 @@
 # Exit code 0 iff every layer passes.
 # ========================================================================================= #
 
-using Printf
+using Printf, Statistics
 
 const _ROOT      = abspath(joinpath(@__DIR__, "..", ".."));
 const PAPER_ROOT = abspath(joinpath(_ROOT, "..", "CHMM-Paper-Repository"));
@@ -97,6 +97,9 @@ const CHECKS = [
     ("acfcap_paired_near",    "results/diagnostics/hmm_acf_capacity.txt",                  "sections/results.tex",              "+0.0019"),
     ("acfcap_kurt_sample",    "results/diagnostics/hmm_acf_capacity.txt",                  "sections/sensitivity_appendix.tex", "8.86"),
     ("acfcap_spy_lam",        "results/diagnostics/hmm_acf_capacity.txt",                  "sections/sensitivity_appendix.tex", "0.9889"),
+    ("frontier_l01_near",     "results/diagnostics/hmm_acf_frontier.txt",                  "sections/results.tex",              "0.0165"),
+    ("frontier_regret_min",   "results/diagnostics/hmm_acf_frontier.txt",                  "",                                  "1.07"),
+    ("frontier_joint_flag",   "results/diagnostics/hmm_acf_frontier.txt",                  "",                                  "JOINT ATTAINABILITY INDICATED"),
     ("xticker_far_k3",        "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0245"),
     ("xticker_far_k18",       "results/diagnostics/spectral_rank_cross_ticker.txt",        "sections/sensitivity_appendix.tex", "0.0224"),
     ("xticker_refit_median",  "results/sector_panel/sector_panel_quarterly_refit.txt",     "sections/sensitivity_appendix.tex", "84.6"),
@@ -225,6 +228,82 @@ for entry in KEYED
             rpad("expect=$expect", 14),
             "artifact: ", rpad(art_ok ? "ok" : "rounds to $formatted", 22),
             "paper: ", tex_ok ? "ok" : "value absent");
+end
+
+# ----------------------------------------------------------------------------------------- #
+# [4] Aggregate checks
+# (name, artifact path, regex whose EVERY match's capture is collected, aggregator
+#  in (:min, :max, :median, :count), digits (ignored for :count), expected paper-precision
+#  value string, tex path, tex substring that must appear — ranges and counts quoted in
+#  the paper are recomputed from the full artifact rather than pinned to one row, so a
+#  drifted range like 0.045-vs-0.046 fails mechanically.)
+# ----------------------------------------------------------------------------------------- #
+const AGG = [
+    ("hsmm_grid_acf_min", "results/hsmm_ml/hsmm_ml_sensitivity.csv",
+        r"\n3,\d+,[\d.]+,[-\d.]+,[-\d.]+,\d+,[^,]+,[\d.]+,[\d.]+,([\d.]+)",
+        :min, 3, "0.039", "sections/results.tex", "0.039"),
+    ("hsmm_grid_acf_max", "results/hsmm_ml/hsmm_ml_sensitivity.csv",
+        r"\n3,\d+,[\d.]+,[-\d.]+,[-\d.]+,\d+,[^,]+,[\d.]+,[\d.]+,([\d.]+)",
+        :max, 3, "0.046", "sections/results.tex", "0.046"),
+    ("hsmm_grid_acf_max_conclusion", "results/hsmm_ml/hsmm_ml_sensitivity.csv",
+        r"\n3,\d+,[\d.]+,[-\d.]+,[-\d.]+,\d+,[^,]+,[\d.]+,[\d.]+,([\d.]+)",
+        :max, 3, "0.046", "sections/conclusion.tex", "0.046"),
+    ("capacity_k18_all_itercap", "results/diagnostics/hmm_acf_capacity.csv",
+        r"\n\w+,[^,]+,18,\d+,\d+,(iter_cap),",
+        :count, 0, "31", "sections/sensitivity_appendix.tex", "all \$31\$"),
+    # Frontier medians quoted in the paper: lambda = 0.1 arm vs the ml_ref rows.
+    ("frontier_l01_kurt", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,([-\d.]+),",
+        :median, 1, "2.3", "sections/sensitivity_appendix.tex", "\$2.3\$ against the likelihood fit's \$7.0\$"),
+    ("frontier_mlref_kurt", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,([-\d.]+),",
+        :median, 1, "7.0", "sections/sensitivity_appendix.tex", "\$2.3\$ against the likelihood fit's \$7.0\$"),
+    ("frontier_l01_mll", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,([-\d.]+),",
+        :median, 3, "-2.608", "sections/sensitivity_appendix.tex", "-2.608"),
+    ("frontier_mlref_mll", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,([-\d.]+),",
+        :median, 3, "-2.597", "sections/sensitivity_appendix.tex", "-2.597"),
+    ("frontier_l01_q99", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,([-\d.]+),",
+        :median, 2, "0.83", "sections/sensitivity_appendix.tex", "\$0.83\$ against \$0.23\$"),
+    ("frontier_mlref_q99", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,([-\d.]+),",
+        :median, 2, "0.23", "sections/sensitivity_appendix.tex", "\$0.83\$ against \$0.23\$"),
+];
+
+println();
+println("="^96);
+println("  [4] Aggregate checks   (min/max/median/count over ALL artifact rows vs paper claim)");
+println("="^96);
+for (name, art_rel, pat, agg, digits, expect, tex_rel, tex_sub) in AGG
+    art_path = joinpath(_ROOT, art_rel);
+    art_text = isfile(art_path) ? read(art_path, String) : "";
+    caps = [m.captures[1] for m in eachmatch(pat, art_text)];
+    if isempty(caps)
+        global n_fail += 1;
+        println(rpad("FAIL", 5), rpad(name, 30), "artifact: ",
+                isempty(art_text) ? "MISSING FILE" : "regex not matched");
+        continue;
+    end
+    if agg == :count
+        raw = Float64(length(caps));
+        art_ok = raw == parse(Float64, expect);
+    else
+        vals = parse.(Float64, caps);
+        raw = agg == :min ? minimum(vals) : agg == :max ? maximum(vals) : median(vals);
+        art_ok = isapprox(round(raw, digits=digits), parse(Float64, expect);
+                          atol=10.0^(-digits)/2);
+    end
+    tex_path = joinpath(PAPER_ROOT, tex_rel);
+    tex_text = isfile(tex_path) ? read(tex_path, String) : "";
+    tex_ok = occursin(tex_sub, tex_text);
+    status = art_ok && tex_ok ? "PASS" : "FAIL";
+    status == "FAIL" && (global n_fail += 1);
+    println(rpad(status, 5), rpad(name, 30), rpad("$(agg)=$(raw)", 18),
+            rpad("expect=$expect", 14),
+            "artifact: ", rpad(art_ok ? "ok" : "mismatch", 10),
+            "paper: ", tex_ok ? "ok" : "substring absent");
 end
 
 println("-"^96);

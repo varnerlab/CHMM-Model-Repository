@@ -73,7 +73,7 @@ function _filter_predictive(y::AbstractVector, T::AbstractMatrix, μ::AbstractVe
     pred = zeros(n + 1, K);
     pred[1, :] = prior;
     for t in 1:n
-        # log-space update (2026-07 review): logpdf + logsumexp avoids tail underflow;
+        # log-space update (see CHANGELOG.md): logpdf + logsumexp avoids tail underflow;
         # prior fallback retained as a numerical safeguard for all-(-Inf) rows.
         logpost = log.(pred[t, :]) .+ [logpdf(Normal(μ[k], σ[k]), y[t]) for k in 1:K];
         Z = _logsumexp_vec(logpost);
@@ -134,7 +134,7 @@ function quarterly_refit_pass(K::Int, α::Float64)
         breaches[j] = R_oos[j] < var_α;
 
         # observe R_oos[j], update posterior, propagate one step for j+1.
-        # log-space update (2026-07 review): logpdf + logsumexp avoids tail underflow.
+        # log-space update (see CHANGELOG.md): logpdf + logsumexp avoids tail underflow.
         logpost = log.(pred_state) .+ [logpdf(Normal(fit.μ[k], fit.σ[k]), R_oos[j]) for k in 1:length(fit.μ)];
         Z = _logsumexp_vec(logpost);
         post = isfinite(Z) ? exp.(logpost .- Z) : copy(pred_state);

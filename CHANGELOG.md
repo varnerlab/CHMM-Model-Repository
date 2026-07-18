@@ -1,10 +1,55 @@
 # Changelog
 
-Development history of the review-response revisions. Some artifact headers and
-runner comments cite review items by round and number ("third-review item 7",
-"fifth-review finding 2"); this file is the canonical map from those tags to
-what changed. The manuscript itself describes the current methodology without
-this history.
+Development history of the review-response revisions. This file is the
+canonical record of what changed in each round; runner sources point here
+("see CHANGELOG.md") instead of citing review rounds inline (the older journal
+peer-review item tags such as "Peer-review item 4 (R1 Q4)" are a separate,
+stable cross-reference system and are retained). The manuscript itself
+describes the current methodology without this history.
+
+## Eighth-review response (2026-07)
+
+- **Pareto-frontier experiment** (finding 1): the seventh round's realizable
+  experiment proved a valid three-state HMM can fit the finite-band ACF in
+  isolation, but the paper claimed categorically that the marginal and ACF
+  axes COMPETE and that ML "sides with the marginal" — a mechanism one
+  unconstrained ACF solution cannot identify. New
+  `run_hmm_acf_frontier.jl` sweeps the weighted objective
+  ACF_SSE + lambda * s * CvM (stationary-mixture Cramer-von-Mises distance on
+  a 500-point empirical-quantile grid; s = SPY likelihood-fit balance scale)
+  over lambda in {0, 0.1, ..., 100} plus a pure-marginal arm, 6 starts per
+  arm, full 31-ticker panel at K = 3, with a reading rule (regret-based
+  competition/joint-attainability criteria) declared in the runner header
+  before the run. Per-arm marginal metrics: CvM, mixture log-likelihood,
+  tail-quantile errors, exact kurtosis. Full per-arm models persisted to JLD2.
+  The manuscript's mechanism prose was rewritten from the outcome.
+- **Capacity certificates** (finding 3): `run_hmm_acf_capacity.jl` previously
+  discarded the fitted models; the txt claimed per-start diagnostics lived in
+  the CSV (false). Now every (ticker, K) winner persists to
+  `results/hmm_acf_capacity/*.jld2` (T, pi, mu, sigma, fitted + target ACF
+  curves, per-start diagnostics with stop reasons, likelihood-seed SSE), the
+  misnamed `converged` flag is `stop_reason` in {stall, iter_cap} (an
+  objective-stall stop, not a stationarity certificate), and a test reloads
+  every certificate and re-verifies stochasticity, stationarity, the
+  recomputed population ACF, and the CSV row. The K = 3 vs K = 18 comparison
+  is recast as ACHIEVED accuracy under the declared optimizer (all 31 K = 18
+  winners hit the iteration cap; near-degenerate stationary laws disclosed);
+  the likelihood seed is labeled precisely as a fresh single-start
+  Baum-Welch refit, not the published converged multistart fit.
+- **Exponential diagnostic containment claims removed** (finding 5): the
+  seven-angle fixed grid does not contain every HMM ACF curve (continuous
+  angles; Jordan terms absent) and the realizable K = 3 result beat the
+  "containing" heuristic at equal budget, so the containment and headroom
+  sentences were deleted; the dictionary is described as representative
+  shapes for diagonalizable chains; artifact regenerated.
+- **Accuracy/wording** (findings 6-9): HSMM sensitivity range corrected to
+  0.039-0.046 (grid max 0.046037); "exact censored duration update" renamed
+  grid-bracketed censored update; the initial-segment (no left-censoring)
+  convention stated in the manuscript; consistency gate gained an AGGREGATE
+  layer (min/max/median/count over all artifact rows vs the paper's quoted
+  ranges, catching range drift mechanically); review-round tags in runner
+  sources replaced with CHANGELOG pointers (four artifacts whose printed
+  headers embedded tags were regenerated verbatim-identical in values).
 
 ## Seventh-review response (2026-07)
 

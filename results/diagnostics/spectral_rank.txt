@@ -4,7 +4,7 @@ Effective spectral rank of the absolute-return ACF identity  (grouped components
 Setup: CHMM-N on SPY IS, seed = 20260420, n_draw = 200000 per state for m_k.
 Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (complex-
 conjugate eigenvalue pairs combined into single damped-oscillatory components;
-third-review item 7). Shares are of the absolute component-magnitude budget
+see CHANGELOG.md). Shares are of the absolute component-magnitude budget
 B = Σ_c |contrib_c(1)|, which upper-bounds |ρ(1)| and is NOT a percentage of
 ρ(1) itself: signed contributions can cancel. Components ranked by |contrib(1)|.
 

@@ -140,7 +140,7 @@ end
 txt_path = joinpath(OUT_DIR, "nonoverlap_basket.txt");
 open(txt_path, "w") do io
     println(io, "="^96);
-    println(io, "Non-overlapping six-name basket, copula composition at K = $K  (T1q / 2026-07 review)");
+    println(io, "Non-overlapping six-name basket, copula composition at K = $K  (T1q; see CHANGELOG.md)");
     println(io, "="^96);
     println(io);
     println(io, "Universe: $(join(ASSETS, ", "))  (one from each of six selected GICS sectors, no ETFs, no cross-holdings)");

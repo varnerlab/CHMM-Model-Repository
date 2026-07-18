@@ -3,7 +3,7 @@ Effective spectral rank of the absolute-return ACF identity, shared-ν CHMM-t (h
 ==========================================================================================
 Setup: shared-ν Student-t CHMM-t on SPY IS, seed = 20260420, n_draw = 200000 per state for m_k.
 Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (conjugate pairs
-combined; third-review item 7). Shares are of the absolute component-magnitude
+combined; see CHANGELOG.md). Shares are of the absolute component-magnitude
 budget B = Σ_c |contrib_c(1)|; B is not a percentage of ρ(1) itself.
 Companion to spectral_rank.txt (Gaussian CHMM-N). Fit: ecm_shared_nu (single ν across states).
 

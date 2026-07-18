@@ -2,7 +2,7 @@
 # run_exp_mode_diagnostic.jl
 #
 # Unrestricted exponential-mode approximation DIAGNOSTIC of the observed |G| sample ACF
-# (2026-07-16 seventh review, finding 1). Supersedes run_mode_capacity_ceiling.jl, whose
+# (see CHANGELOG.md). Supersedes run_mode_capacity_ceiling.jl, whose
 # positive-real free-coefficient fit was presented as an HMM capacity bound: it is not one.
 # A K-state HMM's ACF components satisfy joint stochastic-matrix / stationary-weight /
 # emission-moment constraints that the free fit ignores, and the fit itself is a greedy
@@ -11,16 +11,20 @@
 # run_hmm_acf_capacity.jl, which optimizes actual valid HMMs.
 #
 # What this diagnostic DOES measure: how well m unconstrained exponential decay modes can
-# track the sample ACF, where the mode shapes now span every shape a K-state HMM component
-# can take —
+# track the sample ACF, over REPRESENTATIVE mode shapes —
 #     positive real     a · λ^τ                       (cost 1 mode)
 #     negative real     a · (−λ)^τ                    (cost 1 mode)
 #     damped oscillation λ^τ (a·cos θτ + b·sin θτ)    (cost 2 modes, conjugate pair)
-# with free-sign coefficients, λ in (0, 0.9995), θ over a fixed angle grid. Any K-state
-# HMM ACF is a combination of at most m = K − 1 such shapes, so the fitted CLASS contains
-# every K-state HMM ACF curve; the achieved fit remains a heuristic optimum (greedy
-# budget-aware matching pursuit + exact LLS refit + local λ refinement), reported as an
-# exploratory descriptive result, not a bound.
+# with free-sign coefficients, λ in (0, 0.9995), and θ over a FIXED seven-angle grid
+# (only λ is locally refined). These are the component shapes of diagonalizable-chain
+# HMM ACFs at representative angles; the dictionary does NOT contain every K-state HMM
+# ACF curve (oscillation angles vary continuously, and non-diagonalizable transition
+# matrices contribute polynomial-times-geometric Jordan terms that are absent here).
+# The achieved fit is a heuristic optimum (greedy budget-aware matching pursuit + exact
+# LLS refit + local λ refinement) with no optimality certificate, reported as an
+# exploratory descriptive result, not a bound in either direction — the realizable
+# valid-HMM experiment (run_hmm_acf_capacity.jl) has produced fits BELOW this
+# diagnostic's error at equal budget, which a genuine nested bound could not allow.
 #
 # Aggregation: per-m cross-ticker medians AND the paired per-ticker m=2 − m=17 gap
 # (median of differences; a difference of separate medians is also printed, labeled as
@@ -141,14 +145,18 @@ open(out_path, "w") do io
     println(io, "="^96);
     println(io, "Unrestricted exponential-mode approximation diagnostic of the observed IS sample |G| ACF");
     println(io, "="^96);
-    println(io, "EXPLORATORY DESCRIPTIVE DIAGNOSTIC — NOT an HMM capacity bound. The fitted class spans");
-    println(io, "every shape a K-state HMM ACF component can take (positive/negative real decay and");
-    println(io, "damped-oscillatory pairs at 2-mode cost, free-sign coefficients), so it CONTAINS all");
-    println(io, "K-state HMM ACF curves at budget m = K - 1; but (a) most curves in the class are not");
-    println(io, "HMM-realizable, and (b) the fit is a greedy heuristic (budget-aware matching pursuit");
-    println(io, "over a $(length(COMPS))-component dictionary, exact LLS refit, $(N_SWEEPS) local lambda-refinement");
-    println(io, "sweeps) with no global certificate. Realizable attainability is measured separately by");
-    println(io, "run_hmm_acf_capacity.jl. Lags 1-$(MAXLAG); near band 1-63, far band 64-252.");
+    println(io, "EXPLORATORY DESCRIPTIVE DIAGNOSTIC — NOT an HMM capacity bound in either direction.");
+    println(io, "The dictionary holds REPRESENTATIVE exponential mode shapes (positive/negative real");
+    println(io, "decay and damped-oscillatory pairs at 2-mode cost, free-sign coefficients) with a");
+    println(io, "FIXED seven-angle oscillation grid and lambda-only refinement: it does NOT contain");
+    println(io, "every K-state HMM ACF curve (angles vary continuously; Jordan polynomial-times-");
+    println(io, "geometric terms of non-diagonalizable chains are absent), and most curves it does");
+    println(io, "contain are not HMM-realizable. The fit is a greedy heuristic (budget-aware matching");
+    println(io, "pursuit over a $(length(COMPS))-component dictionary, exact LLS refit, $(N_SWEEPS) local lambda-");
+    println(io, "refinement sweeps) with no global certificate — the realizable valid-HMM experiment");
+    println(io, "(run_hmm_acf_capacity.jl) has produced fits below this diagnostic's error at equal");
+    println(io, "budget, which a genuine nested bound could not allow. Lags 1-$(MAXLAG); near band 1-63,");
+    println(io, "far band 64-252.");
     println(io);
     println(io, "Cross-ticker medians of the diagnostic fit MAE (n = $(length(results)) tickers):");
     println(io, "-"^72);
@@ -181,8 +189,9 @@ open(out_path, "w") do io
     println(io);
     println(io, "Reading: small m = 2 vs m = 17 gaps say only that a few unconstrained exponential");
     println(io, "modes track this sample curve nearly as well as many; they do NOT establish that the");
-    println(io, "HMM feasible set at K = 3 attains these errors, nor identify which constraint binds a");
-    println(io, "likelihood fit. See run_hmm_acf_capacity.jl for the realizable (valid-HMM) comparison.");
+    println(io, "HMM feasible set at K = 3 attains these errors, do NOT bracket realizable results,");
+    println(io, "and do NOT identify which constraint binds a likelihood fit. See");
+    println(io, "run_hmm_acf_capacity.jl for the realizable (valid-HMM) comparison.");
 end
 println();
 println("[done] Wrote $out_path");

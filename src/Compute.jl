@@ -330,7 +330,7 @@ function baum_welch(observations::Array{Float64,1}, number_of_states::Int64;
     final_gamma = zeros(N, K);
     
     # 2. EM LOOP -------------------------------------------------------------- #
-    # Evaluate-then-update ordering (third-review item 4): every iteration first
+    # Evaluate-then-update ordering (see CHANGELOG.md): every iteration first
     # evaluates the observed-data likelihood of the CURRENT parameters, then
     # tests convergence, and only then performs an M-step. The loop runs one
     # extra evaluation pass so that the final M-step update is itself evaluated:
@@ -438,7 +438,7 @@ end
                           max_iter=2000, tol=1e-4, seed=0, jitter=0.25) -> Tuple
 
 Multistart Gaussian Baum-Welch with per-start optimizer diagnostics
-(2026-07-16 sixth review, findings 1-2: the deterministic quantile start plus
+(see CHANGELOG.md: the deterministic quantile start plus
 a fixed 60-iteration cap left high-state fits unconverged with no retained
 optimizer evidence).
 
@@ -547,7 +547,7 @@ counts c_d: maximizes the expected complete-data log-likelihood
 with S_α(d) = P(D ≥ d) the truncated-law survival function. Without censoring
 the objective is concave in α (one-parameter exponential family with natural
 parameter -(α+1) and sufficient statistic log d), so a golden-section search
-over `bounds` finds the maximizer. (2026-07-16 sixth review, finding 4: the
+over `bounds` finds the maximizer. (see CHANGELOG.md: the
 previous update α = 1 / E_w[log d] is the continuous UNTRUNCATED Pareto
 formula and does not optimize the declared truncated discrete likelihood, so
 the EM carrying it was not an exact ML update.)
@@ -555,7 +555,7 @@ the EM carrying it was not an exact ML update.)
 With `censored_counts` the survival term is a difference of convex functions,
 so concavity is no longer guaranteed; the search then runs a coarse 64-point
 log-spaced grid scan over `bounds` first and refines by golden section on the
-bracket around the grid argmax (seventh review, finding 3: the HSMM terminal
+bracket around the grid argmax (see CHANGELOG.md: the HSMM terminal
 segment is right-censored, so the duration M-step must include the censored
 survival term).
 """
@@ -700,7 +700,7 @@ function baum_welch_student_t(observations::Array{Float64,1}, number_of_states::
         return 0.5*(a + b);
     end
 
-    # Best-evaluated checkpoint (third-review item 4). The hybrid surrogate ν
+    # Best-evaluated checkpoint (see CHANGELOG.md). The hybrid surrogate ν
     # block does not guarantee observed-data ascent, so every iterate is scored
     # BEFORE it can be mutated and the best finite iterate (parameters, LL, γ)
     # is what the routine returns: the returned parameters always correspond to
@@ -1076,7 +1076,7 @@ function baum_welch_laplace(observations::Array{Float64,1}, number_of_states::In
     final_gamma = zeros(N, K);
     prev_ll = -Inf;
 
-    # Evaluate-then-update ordering (third-review item 4): see baum_welch. The
+    # Evaluate-then-update ordering (see CHANGELOG.md): see baum_welch. The
     # returned parameters are always the iterate whose likelihood is
     # ll_history[end], with final_gamma computed under exactly those parameters.
     for iter in 1:(max_iter + 1)

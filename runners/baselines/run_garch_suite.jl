@@ -160,7 +160,7 @@ function acf_mae(R_obs::Vector{Float64}, sim::Matrix{Float64}; max_lag::Int=252)
     return mean(abs.(obs_acf .- sim_acf_mean));
 end
 
-# Per-path convention (third-review item 9 alignment): mean over paths of the
+# Per-path convention (see CHANGELOG.md): mean over paths of the
 # per-path |ACF(obs) - ACF(sim_path)| MAE — the SAME estimand as the headline
 # pipeline's Table-2 column (run_baselines_and_cross_asset.jl and
 # run_kstar3_headline.jl), which includes per-path ACF sampling noise. The

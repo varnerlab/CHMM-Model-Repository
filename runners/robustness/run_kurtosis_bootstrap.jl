@@ -4,7 +4,7 @@
 # Stationary block bootstrap displays on the observed IS / OoS excess kurtosis
 # on SPY, plus a tail-robust inferential target.
 #
-# Two layers (fifth-review finding 4):
+# Two layers (see CHANGELOG.md):
 #   [descriptive] Raw excess kurtosis. The paper's own Hill estimate
 #     (α̂ ≈ 3.15 < 4) says the population fourth moment is plausibly
 #     infinite, in which case raw excess kurtosis has no stable population
@@ -130,7 +130,7 @@ end
 
 # --- Descriptive bootstrap probability: fraction of (IS_b - OoS_b) > 0. ---
 # NOT a p-value: the two windows are resampled around their own observed kurtosis
-# levels, so no equal-kurtosis null is imposed (fourth-review item 3). The
+# levels, so no equal-kurtosis null is imposed (see CHANGELOG.md). The
 # inferential object is the DIFFERENCE distribution below.
 function _diff_p(b_is::Vector{Float64}, b_oos::Vector{Float64})
     return mean(b_is .> b_oos);

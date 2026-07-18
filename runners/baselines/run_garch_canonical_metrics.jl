@@ -1,7 +1,7 @@
 # ========================================================================================= #
 # run_garch_canonical_metrics.jl
 #
-# ONE canonical GARCH(1,1) row for Table 2 (third-review finding 9).
+# ONE canonical GARCH(1,1) row for Table 2 (see CHANGELOG.md).
 #
 # Background: the paper's main generator-comparison table carried a GARCH(1,1) row
 # (IS KS 27.4, OoS KS 59.6, |G| ACF-MAE 0.0490) produced by an OLD headline-pipeline fit,

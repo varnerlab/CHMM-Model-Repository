@@ -64,7 +64,7 @@ function filter_predictive(y::AbstractVector, T::AbstractMatrix, components, π_
     pred = zeros(n + 1, K);
     pred[1, :] = π_init;
     for t in 1:n
-        # log-space update (2026-07 review): logpdf + logsumexp avoids tail underflow;
+        # log-space update (see CHANGELOG.md): logpdf + logsumexp avoids tail underflow;
         # prior fallback retained as a numerical safeguard for all-(-Inf) rows.
         logpost = log.(pred[t, :]) .+ [logpdf(components[k], y[t]) for k in 1:K];
         Z = _logsumexp_vec(logpost);

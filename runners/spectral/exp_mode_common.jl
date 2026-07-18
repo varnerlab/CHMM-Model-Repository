@@ -1,9 +1,10 @@
 # ========================================================================================= #
 # exp_mode_common.jl — unrestricted exponential-mode diagnostic core (include-able).
 #
-# Mixed dictionary of exponential mode shapes spanning every K-state HMM ACF component
-# shape: positive real (cost 1), negative real (cost 1), damped-oscillatory conjugate
-# pair (cost 2). Budget-aware greedy matching pursuit with exact LLS refit and local
+# Mixed dictionary of REPRESENTATIVE exponential mode shapes: positive real (cost 1),
+# negative real (cost 1), damped-oscillatory conjugate pair at a fixed seven-angle grid
+# (cost 2). Not a superset of K-state HMM ACF curves (continuous angles and Jordan
+# terms are absent). Budget-aware greedy matching pursuit with exact LLS refit and local
 # lambda-refinement sweeps. Heuristic fit — no global certificate; see
 # run_exp_mode_diagnostic.jl for scope and run_hmm_acf_capacity.jl for the realizable
 # (valid-HMM) attainability experiment.

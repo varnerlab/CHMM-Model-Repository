@@ -1,0 +1,67 @@
+================================================================================================
+Marginal-vs-ACF Pareto frontier at K = 3: weighted-objective sweep over valid HMMs
+J_lambda = ACF_SSE + lambda * s * CvM; s = SPY-likelihood-fit balance scale (see header).
+================================================================================================
+
+Balance scale s = 2.562e+04 (SPY single-start likelihood fit: ACF_SSE 0.44496 / CvM 1.737e-05).
+All fits are multistart heuristic optima (achieved points bound the true frontier
+from above); n = 31 tickers, 6 starts per arm, K = 3.
+
+Cross-ticker medians per arm:
+------------------------------------------------------------------------------------------------
+lambda     | near 1-63  | far        | CvM        | exc.kurt   | regret-A  | regret-M 
+------------------------------------------------------------------------------------------------
+0          | 0.0162     | 0.0165     | 2.909e-02  | 0.81       | 1.00      | 4968.58  
+0.1        | 0.0165     | 0.0169     | 7.237e-06  | 2.26       | 1.01      | 1.17     
+0.3        | 0.0171     | 0.0169     | 6.688e-06  | 2.30       | 1.05      | 1.07     
+1          | 0.0177     | 0.0171     | 5.860e-06  | 2.19       | 1.11      | 1.02     
+3          | 0.0203     | 0.0186     | 5.593e-06  | 2.16       | 1.25      | 1.00     
+10         | 0.0215     | 0.0195     | 5.590e-06  | 2.27       | 1.37      | 1.00     
+30         | 0.0232     | 0.0196     | 5.590e-06  | 2.29       | 1.39      | 1.00     
+100        | 0.0333     | 0.0208     | 5.590e-06  | 2.30       | 2.06      | 1.00     
+marginal   | 0.0464     | 0.0224     | 5.590e-06  | 2.31       | 2.68      | 1.00     
+ml_ref     | 0.0499     | 0.0245     | 5.178e-05  | 6.96       | -         | -        
+
+Reading (rule declared before the run: regret of a fit on an axis = metric / best
+attained across arms per ticker; medians across tickers):
+  min over arms of max(median ACF-regret, median CvM-regret) = 1.07
+  JOINT ATTAINABILITY INDICATED: arm(s) 0.1, 0.3, 1, 3, 10, 30
+  reach both median regrets <= 1.5 - the axes do not strictly compete at K = 3;
+  a valid three-state chain can be close to both single-axis optima at once.
+
+Per-ticker nondominated arms (near-band ACF MAE vs CvM), by ticker:
+  AAPL  : 0.1, 0.3, 30, 100, marginal
+  AMZN  : 0, 0.1, 1, 3, 10, 30
+  APD   : 0.1, 0.3, 1, 3, 30, 100, marginal
+  BA    : 0, 0.1, 1, 30, 100
+  BAC   : 0, 0.1, 0.3, 1, 3, 10, 100, marginal
+  CAT   : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  COP   : 0, 0.1, 10, 100, marginal
+  CVX   : 0.1, 0.3, 30, 100, marginal
+  DIS   : 0, 0.1, 0.3, 1, 3, 30, 100, marginal
+  DUK   : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  FCX   : 0.1, 0.3, 1, 3, 10, 30, marginal
+  HD    : 0, 0.1, 0.3, 1
+  HON   : 0, 0.1, 0.3, 1, 3, 10, 100, marginal
+  JNJ   : 1, 3, 30, 100, marginal
+  JPM   : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  KO    : 0.1, 0.3, 1, 3, 10, 30, marginal
+  LLY   : 0, 1, 3, 10, 30, 100, marginal
+  MCD   : 0, 0.3, 1, 3, 10, 30, 100, marginal
+  MSFT  : 0, 0.1, 0.3, 1, 3, 10, 30
+  NEE   : 0, 30, 100, marginal
+  NEM   : 0.3, 1, 3, 10, 30, marginal
+  NFLX  : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  NVDA  : 0, 0.1, 1, 10, 30, 100, marginal
+  PG    : 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  SO    : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  SPY   : 0, 0.1, 0.3, 30, 100, marginal
+  UNH   : 0, 0.1, 0.3
+  VZ    : 0, 0.1, 0.3, 1, 3, 10, 30, 100, marginal
+  WFC   : 0, 0.1, 3, 10, 30
+  WMT   : 0.3, 3, 10, 30, 100, marginal
+  XOM   : 0, 0.1, 1
+
+Full per-arm models (T, pi, mu, sigma, fitted curves, per-start diagnostics) are
+the JLD2 files in results/hmm_acf_frontier/. The marginal log-likelihood column is
+a stationary-mixture marginal-density measure and ignores serial dependence.

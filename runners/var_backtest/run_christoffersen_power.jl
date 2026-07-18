@@ -40,7 +40,7 @@ function _christoffersen(I::Vector{Int}, alpha::Real)
     # LR_uc = -2 [(n1 log(alpha) + n0 log(1-alpha)) - (n1 log(pi_hat) + n0 log(1-pi_hat))]
     # At pi_hat == 0 or 1 the MLE terms take the 0*log(0) = 0 limit, so the
     # statistic remains well defined: e.g. zero observed breaches give
-    # LR_uc = -2 T log(1 - alpha), NOT 0 (third-review item 10: the earlier
+    # LR_uc = -2 T log(1 - alpha), NOT 0 (see CHANGELOG.md: the earlier
     # LR_uc = 0.0 short-circuit silently deleted exactly the all-quiet
     # sequences that carry evidence of under-breaching at strict tails).
     ll_null = n1 * log(alpha) + n0 * log(1 - alpha);

@@ -1,14 +1,18 @@
 ================================================================================================
 Unrestricted exponential-mode approximation diagnostic of the observed IS sample |G| ACF
 ================================================================================================
-EXPLORATORY DESCRIPTIVE DIAGNOSTIC — NOT an HMM capacity bound. The fitted class spans
-every shape a K-state HMM ACF component can take (positive/negative real decay and
-damped-oscillatory pairs at 2-mode cost, free-sign coefficients), so it CONTAINS all
-K-state HMM ACF curves at budget m = K - 1; but (a) most curves in the class are not
-HMM-realizable, and (b) the fit is a greedy heuristic (budget-aware matching pursuit
-over a 3600-component dictionary, exact LLS refit, 5 local lambda-refinement
-sweeps) with no global certificate. Realizable attainability is measured separately by
-run_hmm_acf_capacity.jl. Lags 1-252; near band 1-63, far band 64-252.
+EXPLORATORY DESCRIPTIVE DIAGNOSTIC — NOT an HMM capacity bound in either direction.
+The dictionary holds REPRESENTATIVE exponential mode shapes (positive/negative real
+decay and damped-oscillatory pairs at 2-mode cost, free-sign coefficients) with a
+FIXED seven-angle oscillation grid and lambda-only refinement: it does NOT contain
+every K-state HMM ACF curve (angles vary continuously; Jordan polynomial-times-
+geometric terms of non-diagonalizable chains are absent), and most curves it does
+contain are not HMM-realizable. The fit is a greedy heuristic (budget-aware matching
+pursuit over a 3600-component dictionary, exact LLS refit, 5 local lambda-
+refinement sweeps) with no global certificate — the realizable valid-HMM experiment
+(run_hmm_acf_capacity.jl) has produced fits below this diagnostic's error at equal
+budget, which a genuine nested bound could not allow. Lags 1-252; near band 1-63,
+far band 64-252.
 
 Cross-ticker medians of the diagnostic fit MAE (n = 31 tickers):
 ------------------------------------------------------------------------
@@ -37,5 +41,6 @@ Dictionary-resolution sensitivity (m in {2, 17}, all tickers, band MAEs):
 
 Reading: small m = 2 vs m = 17 gaps say only that a few unconstrained exponential
 modes track this sample curve nearly as well as many; they do NOT establish that the
-HMM feasible set at K = 3 attains these errors, nor identify which constraint binds a
-likelihood fit. See run_hmm_acf_capacity.jl for the realizable (valid-HMM) comparison.
+HMM feasible set at K = 3 attains these errors, do NOT bracket realizable results,
+and do NOT identify which constraint binds a likelihood fit. See
+run_hmm_acf_capacity.jl for the realizable (valid-HMM) comparison.

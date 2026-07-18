@@ -4,7 +4,7 @@
 # Effective spectral rank diagnostic for the absolute-return ACF identity (theory.tex
 # eq. acf_normalised). For CHMM-N at K = 18, 3, and 2 on SPY IS, group the non-unit
 # eigenvalues of T̂ into real damped(-oscillatory) components (complex-conjugate pairs
-# combined; third-review item 7), compute each component's signed real contribution
+# combined; see CHANGELOG.md), compute each component's signed real contribution
 #
 #   contrib_c(τ) = a_k λ_k^τ                      (real mode)
 #   contrib_c(τ) = 2 Re(a_k λ_k^τ)                (conjugate pair)
@@ -25,7 +25,7 @@ include(joinpath(@__DIR__, "spectral_common.jl"));
 using Printf
 
 const SEED      = 20260420;
-const MAX_ITER  = 4000;   # converged fits (sixth review, finding 2); tol 1e-4
+const MAX_ITER  = 4000;   # converged fits (see CHANGELOG.md); tol 1e-4
 const N_STARTS  = Dict(2 => 1, 3 => 3, 18 => 5);
 const DT        = 1/252;
 const RISK_FREE = 0.0;
@@ -116,7 +116,7 @@ open(out_path, "w") do io
     println(io, "Setup: CHMM-N on SPY IS, seed = $SEED, n_draw = $N_M_DRAW per state for m_k.");
     println(io, "Identity: ρ_|G|(τ) = Σ_c contrib_c(τ) over grouped real components (complex-");
     println(io, "conjugate eigenvalue pairs combined into single damped-oscillatory components;");
-    println(io, "third-review item 7). Shares are of the absolute component-magnitude budget");
+    println(io, "see CHANGELOG.md). Shares are of the absolute component-magnitude budget");
     println(io, "B = Σ_c |contrib_c(1)|, which upper-bounds |ρ(1)| and is NOT a percentage of");
     println(io, "ρ(1) itself: signed contributions can cancel. Components ranked by |contrib(1)|.");
     _print_panel(io, results_18);
