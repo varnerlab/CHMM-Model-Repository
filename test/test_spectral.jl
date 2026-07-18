@@ -196,13 +196,19 @@ end
     frt_dir = joinpath(@__DIR__, "..", "results", "hmm_acf_frontier")
     files = filter(f -> endswith(f, ".jld2"), readdir(frt_dir))
     @test length(files) == 31
-    # published multistart likelihood fits: ll_best per (ticker, K=3) from the
-    # spectral cross-ticker artifact (printed at 4 decimals)
-    spectral_ll = Dict{String,Float64}()
+    # published multistart likelihood fits: optimizer row per (ticker, K=3) from
+    # the spectral cross-ticker artifact (ll printed at 4 decimals; best_start
+    # and n_evals are exact integers, so they pin the optimizer trajectory, not
+    # just a near-equal likelihood)
+    spectral_row = Dict{String,NamedTuple}()
     for ln in readlines(joinpath(@__DIR__, "..", "results", "diagnostics",
                                  "spectral_rank_cross_ticker_fits.csv"))[2:end]
         p = split(ln, ",")
-        parse(Int, p[2]) == 3 && (spectral_ll[String(p[1])] = parse(Float64, p[7]))
+        parse(Int, p[2]) == 3 || continue
+        spectral_row[String(p[1])] = (best_start=parse(Int, p[3]),
+                                      n_evals=parse(Int, p[4]),
+                                      ll=parse(Float64, p[7]),
+                                      spread=parse(Float64, p[8]))
     end
     for fl in files
         d = JLD2.load(joinpath(frt_dir, fl))
@@ -241,7 +247,17 @@ end
         @test maximum(abs.(ρ .- mm["rho_fit"])) < 1e-10
         @test mean(abs.(ρ[1:63] .- ρ̂[1:63])) ≈ mm["near"] atol = 1e-10
         @test _marginal_cvm(π̄, μ, σ, xq) ≈ mm["cvm"] rtol = 1e-8
-        @test mm["ll_best"] ≈ spectral_ll[d["ticker"]] atol = 1e-3
+        # identity with the published spectral optimizer row: winning start index
+        # and its iteration count exactly, best likelihood and cross-start spread
+        # at the artifact's printed precision
+        sp = spectral_row[d["ticker"]]
+        diags = mm["diagnostics"]
+        lls = [dg.ll for dg in diags]
+        bd = diags[argmax(lls)]
+        @test mm["ll_best"] ≈ sp.ll atol = 1e-3
+        @test bd.start == sp.best_start
+        @test bd.n_evals == sp.n_evals
+        @test maximum(lls) - minimum(lls) ≈ sp.spread atol = 1e-3
     end
     # regret CSV is a pure function of the main CSV (rebuildable via --summary-only)
     diag_dir = joinpath(@__DIR__, "..", "results", "diagnostics")

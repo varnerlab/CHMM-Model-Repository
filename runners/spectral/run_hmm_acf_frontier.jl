@@ -34,10 +34,11 @@
 #   ml_ref   - the internal single-start Baum-Welch reference (cap 1,000 iterations):
 #              the seed used inside the optimizer and the source of the scale s.
 #   ml_multi - the PUBLISHED converged multistart likelihood fit: the exact fit of
-#              run_spectral_rank_cross_ticker.jl, recomputed deterministically with the
-#              same constants (3 starts at K = 3, max_iter 4,000, tol 1e-4, seed
-#              SEED + 100*idx + K on the identical data path) and evaluated on the same
-#              metrics. Paper comparisons quote ml_multi; ml_ref is internal.
+#              run_spectral_rank_cross_ticker.jl, recomputed deterministically via the
+#              SHARED configuration in ml_multistart_config.jl (3 starts at K = 3,
+#              max_iter 4,000, tol 1e-4, seed 20260420 + 100*idx + K, identical data
+#              path) and evaluated on the same metrics. Paper comparisons quote
+#              ml_multi; ml_ref is internal.
 #
 # Reading rules: the ORIGINAL rule (declared before the first run) takes cross-ticker
 # medians per arm of the per-ticker regrets (regret of a fit on an axis = metric / best
@@ -70,6 +71,7 @@ using Pkg; Pkg.activate(".");
 include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 include(joinpath(@__DIR__, "spectral_common.jl"));
 include(joinpath(@__DIR__, "acf_capacity_common.jl"));
+include(joinpath(@__DIR__, "ml_multistart_config.jl"));
 
 using Printf, LinearAlgebra, Statistics, Random, JLD2
 
@@ -88,11 +90,9 @@ const QTAILS    = [0.01, 0.05, 0.95, 0.99];
 const ML_SEED_MAX_ITER = 1000;
 const ML_SEED_TOL      = 1e-4;
 
-# Published multistart likelihood fit, mirrored from run_spectral_rank_cross_ticker.jl
-# (N_STARTS[3] = 3, MAX_ITER = 4000, TOL = 1e-4, seed = SEED + 100*idx + K).
-const ML_MULTI_N_STARTS = 3;
-const ML_MULTI_MAX_ITER = 4000;
-const ML_MULTI_TOL      = 1e-4;
+# Published multistart likelihood fit: configuration shared with
+# run_spectral_rank_cross_ticker.jl via ml_multistart_config.jl (single source
+# of truth; the two runners cannot drift apart).
 
 const OUT_DIR  = joinpath(_ROOT, "results", "diagnostics");
 const FRT_DIR  = joinpath(_ROOT, "results", "hmm_acf_frontier");
@@ -367,10 +367,8 @@ for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
         π̄m = _stationary_pi_unchecked(Tm);
         mlrefs[ticker] = _fit_metrics(Tm, π̄m, μm, σm, ρ̂, xq, R);
         # Published converged multistart likelihood fit (the paper's comparator),
-        # recomputed with the exact run_spectral_rank_cross_ticker.jl constants.
-        Tmm, μmm, σmm, _, _, _, diags_mm = baum_welch_multistart(R, K;
-            n_starts=ML_MULTI_N_STARTS, max_iter=ML_MULTI_MAX_ITER, tol=ML_MULTI_TOL,
-            seed=SEED + 100 * idx + K);
+        # recomputed via the shared configuration.
+        Tmm, μmm, σmm, _, _, _, diags_mm = fit_published_multistart(R, K, idx);
         π̄mm = _stationary_pi_unchecked(Tmm);
         d_mm = diags_mm[argmax([d.ll for d in diags_mm])];
         mlmulti[ticker] = (met=_fit_metrics(Tmm, π̄mm, μmm, σmm, ρ̂, xq, R),
@@ -385,7 +383,7 @@ for sector_name in vcat([s for (s, _) in SECTOR_PANEL], ["SPY (control)"])
                 "rho_fit" => mm.met.rho, "near" => mm.met.near, "far" => mm.met.far,
                 "acf_sse" => mm.met.sse, "cvm" => mm.met.cvm, "kurt" => mm.met.kurt,
                 "mll" => mm.met.mll, "qerr" => mm.met.qerr,
-                "n_starts" => ML_MULTI_N_STARTS, "seed" => SEED + 100 * idx + K,
+                "n_starts" => ML_MULTISTART_N_STARTS[K], "seed" => ml_multistart_seed(idx, K),
                 "ll_best" => mm.best.ll, "diagnostics" => mm.diags);
         end
         for (ai, arm) in enumerate(arms)

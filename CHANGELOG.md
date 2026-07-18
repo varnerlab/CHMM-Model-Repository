@@ -7,6 +7,31 @@ peer-review item tags such as "Peer-review item 4 (R1 Q4)" are a separate,
 stable cross-reference system and are retained). The manuscript itself
 describes the current methodology without this history.
 
+## Tenth-review response (2026-07)
+
+- **Shared comparator configuration** (engineering item): the multistart
+  constants and fitting call for the published converged likelihood fits moved
+  into `runners/spectral/ml_multistart_config.jl`, consumed by BOTH
+  `run_spectral_rank_cross_ticker.jl` and `run_hmm_acf_frontier.jl`
+  (`fit_published_multistart(R, K, idx)`), so the spectral panel and the
+  frontier comparator can no longer drift apart in start count, iteration cap,
+  tolerance, or seed schedule. Behavior-identical refactor; no artifacts
+  regenerated.
+- **Stronger comparator identity test**: the frontier certificate test now
+  pins the recomputed multistart fit to the spectral artifact by winning start
+  index and its exact iteration count (integers), plus best log-likelihood and
+  cross-start spread at printed precision, instead of the rounded best
+  likelihood alone.
+- Paper-side calibration (no numeric changes): categorical "do not compete"
+  replaced everywhere by the achieved-level formulation ("no necessary
+  trade-off between the two measured targets at the achieved levels"), the
+  likelihood-versus-tail causal sentence corrected (log score penalizes low
+  fitted density at observed extremes; ML does not weight tail observations),
+  the lambda = 0.1 headline choice explained with the lambda = 0.3 primary-
+  statistic optimum quoted (median max regret 1.11, 25/31; new aggregate gate
+  entry), review-process language removed from the appendix, the abstract
+  compressed, and the Results/appendix frontier paragraphs split.
+
 ## Ninth-review response (2026-07)
 
 - **Frontier comparator aligned with the published fits** (finding 1): the

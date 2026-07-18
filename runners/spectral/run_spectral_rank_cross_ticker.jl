@@ -37,14 +37,17 @@
 using Pkg; Pkg.activate(".");
 include(joinpath(@__DIR__, "..", "..", "Include.jl"));
 include(joinpath(@__DIR__, "spectral_common.jl"));
+include(joinpath(@__DIR__, "ml_multistart_config.jl"));
 
 using Printf
 
-const SEED      = 20260420;
+# Multistart fitting configuration is shared with the frontier runner via
+# ml_multistart_config.jl (single source of truth; see CHANGELOG.md).
+const SEED      = ML_MULTISTART_SEED;
 const K_LIST    = [3, 18];
-const N_STARTS  = Dict(3 => 3, 18 => 5);
-const MAX_ITER  = 4000;
-const TOL       = 1e-4;
+const N_STARTS  = ML_MULTISTART_N_STARTS;
+const MAX_ITER  = ML_MULTISTART_MAX_ITER;
+const TOL       = ML_MULTISTART_TOL;
 const DT        = 1/252;
 const RISK_FREE = 0.0;
 const N_M_DRAW  = 200_000;   # non-Normal fallback only; Normal moments are analytic
@@ -123,9 +126,7 @@ for (si, sector_name) in enumerate(vcat([s for (s, _) in SECTOR_PANEL], ["SPY (c
         maes = Dict{Int, NamedTuple}();
         for K in K_LIST
             try
-                T, μ, σ, πv, llh, γ, diags = baum_welch_multistart(R_is, K;
-                    n_starts=N_STARTS[K], max_iter=MAX_ITER, tol=TOL,
-                    seed=SEED + 100 * idx + K);
+                T, μ, σ, πv, llh, γ, diags = fit_published_multistart(R_is, K, idx);
                 best = argmax([d.ll for d in diags]);
                 d = diags[best];
                 lls = [x.ll for x in diags];
