@@ -220,7 +220,8 @@ function _adam_minimize(f, θ0::Vector{Float64}; lr::Float64=0.05, n_iter::Int=4
 end
 
 """
-    fit_acf_hmm(ρ̂, K; n_starts, seed, R=nothing, ml_seed=nothing, n_iter=4000)
+    fit_acf_hmm(ρ̂, K; n_starts, seed, R=nothing, ml_seed=nothing, n_iter=4000,
+                objective=nothing)
         -> NamedTuple
 
 Multistart ACF-targeted fit of a valid K-state Gaussian-emission HMM to the target
@@ -236,7 +237,11 @@ sample ACF ρ̂. Starts:
 
 Returns the best start's realizable HMM with band MAEs, the optimized population
 ACF, eigenvalue magnitudes of T (unit eigenvalue excluded), and per-start
-diagnostics (start, sse_init, sse_final, n_iter, converged).
+diagnostics (start, sse_init, sse_final, objective_init, objective_final, n_iter,
+stop_reason). Under the default pure-ACF objective the sse_* fields ARE the ACF
+SSE; under a custom `objective` they hold that objective's value (the objective_*
+aliases carry the same numbers under an honest name), and the returned
+`objective_value` equals `sse`.
 """
 function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
                      R::Union{Nothing,Vector{Float64}}=nothing,
@@ -282,7 +287,9 @@ function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
     for (si, θ0) in enumerate(starts)
         sse0 = f(θ0);
         θb, fb, nit, stop = _adam_minimize(f, θ0; n_iter=n_iter);
-        push!(diags, (start=si, sse_init=sse0, sse_final=fb, n_iter=nit, stop_reason=stop));
+        push!(diags, (start=si, sse_init=sse0, sse_final=fb,
+                      objective_init=sse0, objective_final=fb,
+                      n_iter=nit, stop_reason=stop));
         if fb < best_sse
             best_sse = fb; best_θ = θb; best_start = si;
         end
@@ -296,7 +303,8 @@ function fit_acf_hmm(ρ̂::Vector{Float64}, K::Int; n_starts::Int, seed::Int,
     near = mean(abs.(ρ[1:nb] .- ρ̂[1:nb]));
     far = length(ρ̂) > 63 ? mean(abs.(ρ[64:end] .- ρ̂[64:end])) : NaN;
     lam = sort(abs.(eigvals(T)); rev=true)[2:end];
-    return (T=T, π̄=π̄, μ=μ, σ=σ, sse=best_sse, near_mae=near, far_mae=far,
+    return (T=T, π̄=π̄, μ=μ, σ=σ, sse=best_sse, objective_value=best_sse,
+            near_mae=near, far_mae=far,
             best_start=best_start, n_starts=length(starts),
             stop_reason=diags[best_start].stop_reason, n_iter=diags[best_start].n_iter,
             diagnostics=diags, abs_lams=lam, rho=ρ);

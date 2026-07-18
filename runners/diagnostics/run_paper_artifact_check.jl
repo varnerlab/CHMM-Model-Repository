@@ -251,25 +251,44 @@ const AGG = [
     ("capacity_k18_all_itercap", "results/diagnostics/hmm_acf_capacity.csv",
         r"\n\w+,[^,]+,18,\d+,\d+,(iter_cap),",
         :count, 0, "31", "sections/sensitivity_appendix.tex", "all \$31\$"),
-    # Frontier medians quoted in the paper: lambda = 0.1 arm vs the ml_ref rows.
+    # Frontier medians quoted in the paper: lambda = 0.1 arm vs the ml_multi rows
+    # (the published converged multistart likelihood fit; ninth review, finding 1).
     ("frontier_l01_kurt", "results/diagnostics/hmm_acf_frontier.csv",
         r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,([-\d.]+),",
-        :median, 1, "2.3", "sections/sensitivity_appendix.tex", "\$2.3\$ against the likelihood fit's \$7.0\$"),
-    ("frontier_mlref_kurt", "results/diagnostics/hmm_acf_frontier.csv",
-        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,([-\d.]+),",
-        :median, 1, "7.0", "sections/sensitivity_appendix.tex", "\$2.3\$ against the likelihood fit's \$7.0\$"),
+        :median, 1, "2.3", "sections/sensitivity_appendix.tex", "\$2.3\$ against \$7.0\$"),
+    ("frontier_mlmulti_kurt", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_multi,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,([-\d.]+),",
+        :median, 1, "7.0", "sections/sensitivity_appendix.tex", "\$2.3\$ against \$7.0\$"),
     ("frontier_l01_mll", "results/diagnostics/hmm_acf_frontier.csv",
         r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,([-\d.]+),",
         :median, 3, "-2.608", "sections/sensitivity_appendix.tex", "-2.608"),
-    ("frontier_mlref_mll", "results/diagnostics/hmm_acf_frontier.csv",
-        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,([-\d.]+),",
+    ("frontier_mlmulti_mll", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_multi,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,([-\d.]+),",
         :median, 3, "-2.597", "sections/sensitivity_appendix.tex", "-2.597"),
     ("frontier_l01_q99", "results/diagnostics/hmm_acf_frontier.csv",
         r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,([-\d.]+),",
         :median, 2, "0.83", "sections/sensitivity_appendix.tex", "\$0.83\$ against \$0.23\$"),
-    ("frontier_mlref_q99", "results/diagnostics/hmm_acf_frontier.csv",
-        r"\n\w+,ml_ref,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,([-\d.]+),",
+    ("frontier_mlmulti_q99", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_multi,[-\d.]+,[-\d.]+,[-\d.]+,[\d.e+-]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,[-\d.]+,([-\d.]+),",
         :median, 2, "0.23", "sections/sensitivity_appendix.tex", "\$0.83\$ against \$0.23\$"),
+    ("frontier_mlmulti_near", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,ml_multi,([-\d.]+),",
+        :median, 4, "0.0497", "sections/sensitivity_appendix.tex", "0.0497"),
+    # Per-ticker joint regret (ninth review, finding 3): median of max(regrets) and
+    # the both-axes threshold counts, recomputed from the per-ticker regret CSV.
+    ("frontier_l01_medmax_regret", "results/diagnostics/hmm_acf_frontier_regret.csv",
+        r"\n\w+,0\.1,[-\d.]+,[-\d.]+,([-\d.]+),",
+        :median, 2, "1.17", "sections/results.tex", "median per-ticker maximum"),
+    ("frontier_l01_both_count", "results/diagnostics/hmm_acf_frontier_regret.csv",
+        r"\n\w+,0\.1,[-\d.]+,[-\d.]+,[-\d.]+,(1)(?=\n)",
+        :count, 0, "24", "sections/sensitivity_appendix.tex", "24/31"),
+    ("frontier_l03_both_count", "results/diagnostics/hmm_acf_frontier_regret.csv",
+        r"\n\w+,0\.3,[-\d.]+,[-\d.]+,[-\d.]+,(1)(?=\n)",
+        :count, 0, "25", "sections/sensitivity_appendix.tex", "25/31"),
+    # Optimizer honesty (ninth review, finding 2): lambda = 0.1 winners at the cap.
+    ("frontier_l01_itercap", "results/diagnostics/hmm_acf_frontier.csv",
+        r"\n\w+,0\.1,[^\n]*,(iter_cap)\n",
+        :count, 0, "29", "sections/sensitivity_appendix.tex", "29/31"),
 ];
 
 println();
@@ -304,6 +323,30 @@ for (name, art_rel, pat, agg, digits, expect, tex_rel, tex_sub) in AGG
             rpad("expect=$expect", 14),
             "artifact: ", rpad(art_ok ? "ok" : "mismatch", 10),
             "paper: ", tex_ok ? "ok" : "substring absent");
+end
+
+# ----------------------------------------------------------------------------------------- #
+# [5] Typography gate: no em dashes anywhere in the paper source (author directive,
+# ninth review round) — neither the TeX ligature "---" nor the Unicode character.
+# En dashes ("--") remain legitimate for numeric/date ranges and are not checked.
+# ----------------------------------------------------------------------------------------- #
+println();
+println("="^96);
+println("  [5] Typography gate   (no em dashes in paper.tex or sections/*.tex)");
+println("="^96);
+let tex_files = vcat([joinpath(PAPER_ROOT, "paper.tex")],
+                     [joinpath(PAPER_ROOT, "sections", f)
+                      for f in readdir(joinpath(PAPER_ROOT, "sections"))
+                      if endswith(f, ".tex")])
+    for tf in tex_files
+        txt = read(tf, String);
+        n_tex = length(collect(eachmatch(r"---", txt)));
+        n_uni = length(collect(eachmatch(r"—", txt)));
+        ok = n_tex == 0 && n_uni == 0;
+        ok || (global n_fail += 1);
+        println(rpad(ok ? "PASS" : "FAIL", 5), rpad(basename(tf), 30),
+                "em dashes: tex=", n_tex, " unicode=", n_uni);
+    end
 end
 
 println("-"^96);

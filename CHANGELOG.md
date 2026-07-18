@@ -7,6 +7,56 @@ peer-review item tags such as "Peer-review item 4 (R1 Q4)" are a separate,
 stable cross-reference system and are retained). The manuscript itself
 describes the current methodology without this history.
 
+## Ninth-review response (2026-07)
+
+- **Frontier comparator aligned with the published fits** (finding 1): the
+  frontier's "likelihood fit" was a fresh single-start Baum-Welch reference,
+  while the surrounding paper compares against the converged multistart fits
+  of `run_spectral_rank_cross_ticker.jl` (canonical start best at only 12/31
+  K = 3 tickers; max cross-start LL spread 31.1 nats). Those exact fits were
+  not persisted anywhere, so `run_hmm_acf_frontier.jl` now recomputes them
+  deterministically (same constants and seed formula, identical data path),
+  evaluates the full frontier metric set on them, writes them as `ml_multi`
+  CSV rows, and persists their parameters in every frontier JLD2; the
+  certificate test ties each recomputed fit's log-likelihood back to the
+  spectral artifact. The single-start `ml_ref` remains as a labeled internal
+  row (it seeds the optimizer and sets the balance scale s, which is kept at
+  its original provenance so the arm objectives stay byte-deterministic).
+  Paper comparisons now quote `ml_multi`.
+- **Per-ticker joint regret** (finding 3): the declared reading rule
+  aggregated the two axes as separate cross-ticker medians, which need not be
+  attained by the same tickers. The runner now also computes, per arm, the
+  median over tickers of max(ACF regret, CvM regret) and the count of tickers
+  with both regrets <= 1.5, writes a per-ticker
+  `hmm_acf_frontier_regret.csv`, and reports this joint statistic as the
+  primary panel summary (the original two-median rule is retained, labeled
+  secondary). A test recomputes the regret CSV from the main CSV; the paper
+  gate recomputes the quoted median and count as aggregates.
+- **Achieved-feasible terminology** (finding 2): weighted-arm winners mostly
+  hit the 4,000-iteration cap (lambda = 0.1: 29/31; pure-marginal: 19/31),
+  and objective stall is not a stationarity certificate, so "near-optimal"
+  and "multistart optima" language was replaced throughout the runner txt and
+  the manuscript by achieved-feasible phrasing, with per-arm stop-reason
+  counts now printed in the artifact.
+- **Objective field names** (finding 7): under a custom frontier objective the
+  `fit_acf_hmm` diagnostics fields `sse_init`/`sse_final` hold the weighted
+  objective, not ACF SSE; parallel `objective_init`/`objective_final` fields
+  and an `objective_value` return alias now carry the honest name (capacity
+  certificates, fitted under the default pure-ACF objective where the sse
+  names are accurate, are unchanged), the frontier JLD2s store
+  `objective_value` + `lambda_scaled`, the certificate test recomputes each
+  arm's objective from the stored model, and the stale `converged` docstring
+  reference is fixed to `stop_reason`.
+- **Runner ergonomics**: `run_hmm_acf_frontier.jl --summary-only` rebuilds the
+  txt and regret CSV from the main CSV without refits (the summary layer is a
+  pure function of the CSV), mirroring the capacity runner.
+- **Typography gate**: the paper checker gains a section that fails on any em
+  dash (TeX `---` or Unicode) in `paper.tex`/`sections/*.tex` (author
+  directive; en dashes for ranges are untouched).
+- Determinism: the rerun reproduces every pre-existing arm and ml_ref CSV row
+  byte-identically; `ml_multi` rows, the regret CSV, and the enriched JLD2
+  keys are the only additions.
+
 ## Eighth-review response (2026-07)
 
 - **Pareto-frontier experiment** (finding 1): the seventh round's realizable

@@ -4,8 +4,12 @@ J_lambda = ACF_SSE + lambda * s * CvM; s = SPY-likelihood-fit balance scale (see
 ================================================================================================
 
 Balance scale s = 2.562e+04 (SPY single-start likelihood fit: ACF_SSE 0.44496 / CvM 1.737e-05).
-All fits are multistart heuristic optima (achieved points bound the true frontier
-from above); n = 31 tickers, 6 starts per arm, K = 3.
+All fits are achieved feasible points from capped multistart heuristic searches
+(achieved points bound the true frontier from above); n = 31 tickers,
+6 starts per arm, K = 3. Comparators: ml_ref = internal single-start
+Baum-Welch reference (optimizer seed and scale source); ml_multi = published
+converged multistart likelihood fit (run_spectral_rank_cross_ticker.jl constants,
+recomputed deterministically). Paper comparisons quote ml_multi.
 
 Cross-ticker medians per arm:
 ------------------------------------------------------------------------------------------------
@@ -21,9 +25,48 @@ lambda     | near 1-63  | far        | CvM        | exc.kurt   | regret-A  | reg
 100        | 0.0333     | 0.0208     | 5.590e-06  | 2.30       | 2.06      | 1.00     
 marginal   | 0.0464     | 0.0224     | 5.590e-06  | 2.31       | 2.68      | 1.00     
 ml_ref     | 0.0499     | 0.0245     | 5.178e-05  | 6.96       | -         | -        
+ml_multi   | 0.0497     | 0.0245     | 5.178e-05  | 6.96       | -         | -        
 
-Reading (rule declared before the run: regret of a fit on an axis = metric / best
-attained across arms per ticker; medians across tickers):
+Comparator medians (marginal-density and tail axes):
+  ml_ref   : mll/obs -2.5968   | q01 err 0.3234  | q99 err 0.2258 
+  ml_multi : mll/obs -2.5968   | q01 err 0.3234  | q99 err 0.2258 
+  0.1      : mll/obs -2.6081   | q01 err 0.8898  | q99 err 0.8295 
+
+Optimizer stop reasons per arm (stall / iter_cap of 4000); stall is an
+objective-stall early stop, NOT a first-order stationarity certificate:
+  lambda 0        : 25 stalled,  6 hit the iteration cap
+  lambda 0.1      :  2 stalled, 29 hit the iteration cap
+  lambda 0.3      :  2 stalled, 29 hit the iteration cap
+  lambda 1        :  2 stalled, 29 hit the iteration cap
+  lambda 3        :  2 stalled, 29 hit the iteration cap
+  lambda 10       :  1 stalled, 30 hit the iteration cap
+  lambda 30       :  0 stalled, 31 hit the iteration cap
+  lambda 100      :  0 stalled, 31 hit the iteration cap
+  lambda marginal : 12 stalled, 19 hit the iteration cap
+
+Per-ticker joint regret (PRIMARY panel summary; added at the ninth review -
+the same ticker must be good on both axes):
+------------------------------------------------------------------------------------------------
+lambda     | median max(regret)       | tickers with both <= 1.5    
+------------------------------------------------------------------------------------------------
+0          | 4968.5798                | 0 / 31
+0.1        | 1.1735                   | 24 / 31
+0.3        | 1.1097                   | 25 / 31
+1          | 1.1274                   | 25 / 31
+3          | 1.2475                   | 23 / 31
+10         | 1.3743                   | 21 / 31
+30         | 1.3901                   | 19 / 31
+100        | 2.0627                   | 11 / 31
+marginal   | 2.6833                   | 5 / 31
+
+Reading (regret of a fit on an axis = metric / best attained across arms per
+ticker):
+PRIMARY (per-ticker joint statistic):
+  JOINT ATTAINABILITY INDICATED: arm(s) 0.1, 0.3, 1, 3, 10, 30 have median per-ticker
+  max(ACF-regret, CvM-regret) <= 1.5; best arm 0.3 at 1.11 with 25/31
+  tickers within the threshold on BOTH axes - the typical ticker is close
+  to both single-axis optima with one and the same chain.
+ORIGINAL rule (two cross-ticker medians; declared before the first run):
   min over arms of max(median ACF-regret, median CvM-regret) = 1.07
   JOINT ATTAINABILITY INDICATED: arm(s) 0.1, 0.3, 1, 3, 10, 30
   reach both median regrets <= 1.5 - the axes do not strictly compete at K = 3;
@@ -62,6 +105,7 @@ Per-ticker nondominated arms (near-band ACF MAE vs CvM), by ticker:
   WMT   : 0.3, 3, 10, 30, 100, marginal
   XOM   : 0, 0.1, 1
 
-Full per-arm models (T, pi, mu, sigma, fitted curves, per-start diagnostics) are
-the JLD2 files in results/hmm_acf_frontier/. The marginal log-likelihood column is
-a stationary-mixture marginal-density measure and ignores serial dependence.
+Full per-arm models (T, pi, mu, sigma, fitted curves, per-start diagnostics)
+and both comparators' parameters are the JLD2 files in
+results/hmm_acf_frontier/. The marginal log-likelihood column is a
+stationary-mixture marginal-density measure and ignores serial dependence.

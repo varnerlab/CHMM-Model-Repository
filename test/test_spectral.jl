@@ -196,6 +196,14 @@ end
     frt_dir = joinpath(@__DIR__, "..", "results", "hmm_acf_frontier")
     files = filter(f -> endswith(f, ".jld2"), readdir(frt_dir))
     @test length(files) == 31
+    # published multistart likelihood fits: ll_best per (ticker, K=3) from the
+    # spectral cross-ticker artifact (printed at 4 decimals)
+    spectral_ll = Dict{String,Float64}()
+    for ln in readlines(joinpath(@__DIR__, "..", "results", "diagnostics",
+                                 "spectral_rank_cross_ticker_fits.csv"))[2:end]
+        p = split(ln, ",")
+        parse(Int, p[2]) == 3 && (spectral_ll[String(p[1])] = parse(Float64, p[7]))
+    end
     for fl in files
         d = JLD2.load(joinpath(frt_dir, fl))
         ρ̂ = d["rho_target"]; xq = d["xq"]
@@ -212,6 +220,52 @@ end
             @test maximum(abs.(ρ .- w["rho_fit"])) < 1e-10
             @test mean(abs.(ρ[1:63] .- ρ̂[1:63])) ≈ w["near"] atol = 1e-10
             @test _marginal_cvm(π̄, μ, σ, xq) ≈ w["cvm"] rtol = 1e-8
+            # the saved winning objective value is the weighted objective at the
+            # saved model: J = ACF_SSE + lambda_s * CvM (CvM alone for the
+            # pure-marginal arm), recomputed here from the stored metrics
+            λs = w["lambda_scaled"]
+            J = isfinite(λs) ? w["acf_sse"] + λs * w["cvm"] : w["cvm"]
+            @test J ≈ w["objective_value"] rtol = 1e-8
+            θ = _pack_acf_params(T, μ, σ)
+            @test _joint_objective(θ, ρ̂, xq, λs, 3) ≈ w["objective_value"] rtol = 1e-6
         end
+        # ml_multi comparator: the published converged multistart likelihood fit,
+        # verified as a model and tied back to the spectral cross-ticker artifact
+        mm = d["ml_multi"]
+        T = mm["T"]; π̄ = mm["pi"]; μ = mm["mu"]; σ = mm["sigma"]
+        @test all(abs.(sum(T, dims=2) .- 1.0) .< 1e-10)
+        @test all(σ .> 0.0)
+        @test maximum(abs.(vec(π̄' * T) .- π̄)) < 1e-8
+        m, M = _folded_moments(μ, σ)
+        ρ = _population_acf(T, π̄, m, M, length(ρ̂))
+        @test maximum(abs.(ρ .- mm["rho_fit"])) < 1e-10
+        @test mean(abs.(ρ[1:63] .- ρ̂[1:63])) ≈ mm["near"] atol = 1e-10
+        @test _marginal_cvm(π̄, μ, σ, xq) ≈ mm["cvm"] rtol = 1e-8
+        @test mm["ll_best"] ≈ spectral_ll[d["ticker"]] atol = 1e-3
+    end
+    # regret CSV is a pure function of the main CSV (rebuildable via --summary-only)
+    diag_dir = joinpath(@__DIR__, "..", "results", "diagnostics")
+    main = Dict{Tuple{String,String},Tuple{Float64,Float64}}()
+    tickers = Set{String}()
+    for ln in readlines(joinpath(diag_dir, "hmm_acf_frontier.csv"))[2:end]
+        p = split(ln, ",")
+        main[(String(p[1]), String(p[2]))] = (parse(Float64, p[3]), parse(Float64, p[6]))
+        push!(tickers, String(p[1]))
+    end
+    sweep_arms = ["0", "0.1", "0.3", "1", "3", "10", "30", "100", "marginal"]
+    reg_lines = readlines(joinpath(diag_dir, "hmm_acf_frontier_regret.csv"))
+    @test reg_lines[1] == "ticker,arm,acf_regret,cvm_regret,max_regret,both_le_1p5"
+    @test length(reg_lines) == 1 + length(sweep_arms) * length(tickers)
+    for ln in reg_lines[2:end]
+        p = split(ln, ",")
+        t = String(p[1]); arm = String(p[2])
+        best_acf = minimum(main[(t, a)][1] for a in sweep_arms)
+        best_cvm = minimum(main[(t, a)][2] for a in sweep_arms)
+        a_r = main[(t, arm)][1] / best_acf
+        c_r = main[(t, arm)][2] / best_cvm
+        @test parse(Float64, p[3]) ≈ a_r atol = 5e-5
+        @test parse(Float64, p[4]) ≈ c_r atol = 5e-5
+        @test parse(Float64, p[5]) ≈ max(a_r, c_r) atol = 5e-5
+        @test parse(Int, p[6]) == ((a_r <= 1.5 && c_r <= 1.5) ? 1 : 0)
     end
 end
